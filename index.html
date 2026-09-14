@@ -261,7 +261,8 @@ document.getElementById("sign-in-btn").addEventListener("click", async () => {
   try {
     await signInWithEmailAndPassword(auth, email, password);
   } catch (err) {
-    authError.textContent = "Couldn't sign in — check your email and password.";
+    authError.textContent = "Sign-in error (" + (err.code || "unknown") + ") — " + err.message;
+    console.error(err);
   }
 });
 
