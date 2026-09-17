@@ -645,7 +645,7 @@ window.addEventListener("online", () => setSyncText("Reconnecting…", ""));
 window.addEventListener("offline", () => setSyncText("Offline — changes queued", "offline"));
 
 /* 8) DATA HELPERS */
-function siteById(id) { return sites.find((s) => s.id === id) || { id, name: id, epa: "", assistant: "", nurseryId: "", potfillingTarget: null, nmName: "", nmPhone: "" }; }
+function siteById(id) { return sites.find((s) => s.id === id) || { id, name: id, epa: "", assistant: "", nurseryId: "", potfillingTarget: null, nmName: "", nmPhone: "", lat: null, lng: null }; }
 function checkinsForSite(siteId) { return checkins.filter((c) => c.siteId === siteId).sort((a, b) => (b.week - a.week) || DAY_ORDER.indexOf(b.day) - DAY_ORDER.indexOf(a.day)); }
 function observationsForCheckin(checkinId) { return observations.filter((o) => o.checkinId === checkinId).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)); }
 function observationsForSite(siteId) { return observations.filter((o) => o.siteId === siteId).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)); }
@@ -1367,6 +1367,7 @@ function renderSiteProfile() {
   const openFups = observationsForSite(site.id).filter((o) => o.type === "followUp" && isUnresolved(o)).length;
   const completedCount = history.filter((c) => c.status === "Completed").length;
   const hasPhone = !!site.nmPhone;
+  const hasCoords = typeof site.lat === "number" && typeof site.lng === "number";
 
   el.innerHTML = `
     <div class="sp-top">
@@ -1386,9 +1387,14 @@ function renderSiteProfile() {
             <div class="nm-name">${site.nmName ? esc(site.nmName) : "No manager on file"}</div>
             <div class="nm-phone">${hasPhone ? esc(site.nmPhone) : "No phone number yet"}</div>
           </div>
-          ${hasPhone
-            ? `<a class="call-btn" href="tel:${esc(site.nmPhone)}">${icon("phone", 18)}</a>`
-            : `<button class="call-btn" disabled>${icon("phone", 18)}</button>`}
+          <div style="display:flex;gap:8px;">
+            ${hasPhone
+              ? `<a class="call-btn" href="tel:${esc(site.nmPhone)}" title="Call ${esc(site.nmName || "manager")}">${icon("phone", 18)}</a>`
+              : `<button class="call-btn" disabled title="No phone number yet">${icon("phone", 18)}</button>`}
+            ${hasCoords
+              ? `<a class="call-btn" href="https://www.google.com/maps/dir/?api=1&destination=${site.lat},${site.lng}" target="_blank" rel="noopener" title="Directions to ${esc(site.name)}">${icon("map-pin", 18)}</a>`
+              : `<button class="call-btn" disabled title="No GPS coordinates yet">${icon("map-pin", 18)}</button>`}
+          </div>
         </div>
       </div>
 
