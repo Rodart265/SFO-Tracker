@@ -1,0 +1,8 @@
+{
+  "name": "sfo-tracker-scripts",
+  "private": true,
+  "description": "One-time admin scripts for SFO Field Tracker. Run from a trusted machine only.",
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}
