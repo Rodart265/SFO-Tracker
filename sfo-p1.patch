@@ -1,0 +1,1017 @@
+diff --git a/index.html b/index.html
+index 613e1b4..c57f8e1 100644
+--- a/index.html
++++ b/index.html
+@@ -267,6 +267,79 @@ a{color:inherit;text-decoration:none;}
+   border-radius:99px;width:56px;height:56px;box-shadow:0 10px 24px -6px rgba(201,162,39,.55), var(--shadow-sm);
+   display:flex;align-items:center;justify-content:center;z-index:9;}
+ @media (max-width:560px){ #fab{right:18px;} }
++
++/* ---- Today screen ---- */
++.today-hero{margin:2px 2px 16px;}
++.today-greet{font-size:20px;font-weight:750;color:var(--forest-dark);letter-spacing:-.3px;}
++.today-date{font-size:12.5px;color:var(--ink-soft);font-weight:600;margin-top:2px;}
++.today-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px;}
++.today-stat{background:#fff;border-radius:var(--radius-md);padding:13px 6px;text-align:center;box-shadow:var(--shadow-sm);border:1px solid var(--line);}
++.today-stat .num{font-size:20px;font-weight:750;color:var(--forest-dark);line-height:1.1;}
++.today-stat .lbl{font-size:9.5px;color:var(--ink-soft);font-weight:700;margin-top:3px;text-transform:uppercase;letter-spacing:.2px;}
++.today-stat.warn .num{color:var(--obs-issue);}
++
++.attn-card{background:#fff;border:1px solid var(--line);border-left:3px solid var(--accent,var(--ink-faint));border-radius:var(--radius-md);
++  padding:12px 14px;margin-bottom:9px;display:flex;align-items:center;gap:11px;width:100%;text-align:left;box-shadow:var(--shadow-sm);}
++.attn-card .attn-icon{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
++  background:var(--accent-bg,var(--cream));color:var(--accent,var(--ink-soft));}
++/* These live inside a <button>, so they must be spans (a div is invalid there).
++   Spans are inline by default, which would collapse all three onto one line. */
++.attn-card .attn-body{flex:1;min-width:0;display:block;}
++.attn-card .attn-title{display:block;font-size:14px;font-weight:700;color:var(--ink);}
++.attn-card .attn-sub{font-size:11.5px;color:var(--ink-soft);margin-top:2px;line-height:1.35;
++  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
++.attn-card .attn-tag{display:block;font-size:10px;font-weight:750;text-transform:uppercase;letter-spacing:.3px;color:var(--accent,var(--ink-soft));margin-bottom:2px;}
++.attn-card > .ic{color:var(--ink-faint);flex-shrink:0;}
++.all-clear{background:var(--status-completed-bg);color:var(--status-completed-fg);border-radius:var(--radius-md);
++  padding:16px;font-size:13.5px;font-weight:650;display:flex;align-items:center;gap:9px;}
++
++.week-progress{background:#fff;border:1px solid var(--line);border-radius:var(--radius-md);padding:15px 16px;box-shadow:var(--shadow-sm);}
++.week-progress .wp-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px;}
++.week-progress .wp-num{font-size:19px;font-weight:750;color:var(--forest-dark);}
++.week-progress .wp-pct{font-size:13px;font-weight:750;color:var(--forest-soft);}
++.week-progress .wp-track{height:8px;background:#EFEDE4;border-radius:99px;overflow:hidden;}
++.week-progress .wp-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--forest-soft),var(--forest-dark));}
++
++/* ---- Issue / follow-up lifecycle ---- */
++.obs-status-row{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap;}
++.obs-status-btn{border:1px solid var(--line);background:#fff;border-radius:99px;padding:4px 10px;font-size:10.5px;font-weight:700;color:var(--ink-soft);}
++.obs-status-btn.on-open{background:var(--status-skipped-bg);color:var(--status-skipped-fg);border-color:transparent;}
++.obs-status-btn.on-progress{background:var(--status-pending-bg);color:var(--status-pending-fg);border-color:transparent;}
++.obs-status-btn.on-resolved{background:var(--status-completed-bg);color:var(--status-completed-fg);border-color:transparent;}
++.obs-assign{font-size:11px;color:var(--ink-soft);margin-top:4px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
++.obs-assign .due-over{color:var(--obs-issue);font-weight:700;}
++.obs-entry.resolved .obs-text{color:var(--ink-soft);}
++.composer-extra{display:flex;flex-direction:column;gap:9px;margin-top:9px;}
++.composer-extra .mini-label{font-size:10.5px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.3px;}
++.composer-extra input[type="date"]{width:100%;border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;background:#fff;color:var(--ink);}
++.composer-extra .picker-btn{padding:10px 12px;font-size:13.5px;}
++
++/* ---- Add check-in overlay ---- */
++#add-checkin-screen{position:fixed;inset:0;background:var(--cream);z-index:40;display:flex;flex-direction:column;overflow-y:auto;}
++.ac-top{background:linear-gradient(155deg,var(--forest) 0%, var(--forest-dark) 100%);color:#fff;
++  padding:16px 18px 20px;padding-top:calc(16px + env(safe-area-inset-top,0px));}
++.ac-back{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.85);font-size:13px;font-weight:650;margin-bottom:12px;}
++.ac-title{font-size:21px;font-weight:750;}
++.ac-sub{font-size:12.5px;color:rgba(255,255,255,.7);margin-top:3px;}
++.ac-body{padding:16px 16px calc(var(--navh) + 40px);max-width:560px;width:100%;margin:0 auto;}
++.ac-card{background:#fff;border-radius:var(--radius-lg);padding:18px;box-shadow:var(--shadow-md);}
++.form-error{color:var(--status-skipped-fg);font-size:12.5px;font-weight:650;min-height:16px;}
++.picker-btn.placeholder span{color:var(--ink-faint);}
++
++/* ---- Global search results ---- */
++.res-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:9px;
++  width:100%;text-align:left;box-shadow:var(--shadow-sm);display:flex;gap:10px;align-items:flex-start;}
++.res-card .res-dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0;}
++.res-card .res-body{flex:1;min-width:0;display:block;}
++.res-card .res-head{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
++.res-card .res-site{font-size:13.5px;font-weight:700;}
++.res-card .res-type{font-size:9.5px;font-weight:750;text-transform:uppercase;letter-spacing:.3px;}
++.res-card .res-text{font-size:12.5px;color:var(--ink-soft);line-height:1.4;margin-top:3px;
++  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
++.res-card .res-meta{display:block;font-size:10.5px;color:var(--ink-faint);margin-top:3px;}
++/* The status chip is a span inside a button here, not a real control. */
++.res-card .obs-status-btn{display:inline-block;}
++mark{background:var(--gold-soft);color:var(--ink);border-radius:3px;padding:0 2px;}
+ </style>
+ </head>
+ <body>
+@@ -294,7 +367,8 @@ a{color:inherit;text-decoration:none;}
+       <div id="sync-pill"><span class="dot"></span><span id="sync-text">Loading…</span></div>
+     </div>
+ 
+-    <div id="screen-schedule" class="screen"></div>
++    <div id="screen-today" class="screen"></div>
++    <div id="screen-schedule" class="screen hidden"></div>
+     <div id="screen-analytics" class="screen hidden"></div>
+     <div id="screen-sites" class="screen hidden"></div>
+ 
+@@ -302,10 +376,12 @@ a{color:inherit;text-decoration:none;}
+   </div>
+ 
+   <div id="site-profile-screen" class="hidden"></div>
++  <div id="add-checkin-screen" class="hidden"></div>
+ 
+   <div id="bottom-nav" class="hidden">
+     <div id="bottom-nav-inner">
+-      <button class="nav-btn active" data-tab="schedule"><svg class="ic" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v3" /> <path d="M16 2v3" /> <rect x="3" y="3" width="18" height="18" rx="2" /> <path d="M3 9h18" /></svg><span>Schedule</span></button>
++      <button class="nav-btn active" data-tab="today"><svg class="ic" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v3" /> <path d="M16 2v3" /> <rect x="3" y="3" width="18" height="18" rx="2" /> <path d="M3 9h18" /> <path d="m9 15 2 2 4-4" /></svg><span>Today</span></button>
++      <button class="nav-btn" data-tab="schedule"><svg class="ic" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v3" /> <path d="M16 2v3" /> <rect x="3" y="3" width="18" height="18" rx="2" /> <path d="M3 9h18" /></svg><span>Schedule</span></button>
+       <button class="nav-btn" data-tab="analytics"><svg class="ic" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16" /> <path d="M18 17V9" /> <path d="M13 17V5" /> <path d="M8 17v-3" /></svg><span>Analytics</span></button>
+       <button class="nav-btn" data-tab="sites"><svg class="ic" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /> <path d="M16 3.128a4 4 0 0 1 0 7.744" /> <path d="M22 21v-2a4 4 0 0 0-3-3.87" /> <circle cx="9" cy="7" r="4" /></svg><span>Sites &amp; Team</span></button>
+     </div>
+@@ -366,6 +442,31 @@ const OBS_LABEL = { observation: "Observation", issue: "Issue", action: "Action"
+ const STATUS_ICON = {
+   Pending: "clock", Completed: "check", Rescheduled: "calendar-check", Skipped: "x",
+ };
++/* Issues and follow-ups carry a lifecycle. Observations and actions are just
++   records of what happened, so they have no status. */
++const TRACKED_TYPES = ["issue", "followUp"];
++const OBS_STATUSES = ["Open", "In Progress", "Resolved"];
++const OBS_STATUS_CLASS = { "Open": "on-open", "In Progress": "on-progress", "Resolved": "on-resolved" };
++
++function todayISO() {
++  const d = new Date();
++  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
++}
++function todayDayName() { return ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][new Date().getDay()]; }
++function fmtLongDate(iso) {
++  const d = iso ? new Date(iso + "T00:00:00") : new Date();
++  return d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
++}
++function fmtShortDate(iso) {
++  if (!iso) return "";
++  const d = new Date(iso + "T00:00:00");
++  if (isNaN(d)) return iso;
++  return d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
++}
++function greeting() {
++  const h = new Date().getHours();
++  return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
++}
+ 
+ function slugify(name) { return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""); }
+ function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+@@ -377,14 +478,19 @@ let sites = [];
+ let checkins = [];
+ let observations = [];
+ let unsubs = [];
+-let activeTab = "schedule";
++let activeTab = "today";
+ let selectedWeek = 1;
+ let openDrawerId = null;
+ let openEditId = null;
+ let editDraft = null;
+ let noteComposerFor = null;
+ let noteDraftType = "observation";
++/* Assignment + due date for issue/follow-up notes being composed. Reset each
++   time the composer opens so one note's due date can't leak into the next. */
++let noteDraftMeta = { assignedTo: "", dueDate: "" };
+ let selectedSiteId = null;
++let addDraft = null;
++let addFormError = "";
+ let deferredInstallPrompt = null;
+ let migrationDone = false;
+ 
+@@ -479,6 +585,33 @@ function observationsForCheckin(checkinId) { return observations.filter((o) => o
+ function observationsForSite(siteId) { return observations.filter((o) => o.siteId === siteId).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)); }
+ function fmtWhen(ts) { if (!ts || !ts.seconds) return "Just now"; return new Date(ts.seconds * 1000).toLocaleDateString(undefined, { month: "short", day: "numeric" }); }
+ 
++/* --- Issue / follow-up lifecycle ---
++   Notes created before this feature existed have no status field. Treating a
++   missing status as "Open" keeps old issues visible rather than silently
++   counting them as done. */
++function isTracked(o) { return TRACKED_TYPES.includes(o.type); }
++function obsStatus(o) { return isTracked(o) ? (o.status || "Open") : null; }
++function isUnresolved(o) { return isTracked(o) && obsStatus(o) !== "Resolved"; }
++function openIssuesForSite(siteId) { return observations.filter((o) => o.siteId === siteId && o.type === "issue" && isUnresolved(o)); }
++function openFollowUps() { return observations.filter((o) => o.type === "followUp" && isUnresolved(o)); }
++function isDueOrOverdue(o) { return !!o.dueDate && o.dueDate <= todayISO(); }
++
++/* --- Check-in timing ---
++   A check-in only counts as overdue if it carries a real date. Undated
++   check-ins are schedule placeholders, not missed visits. */
++function isToday(c) { return !!c.date && c.date === todayISO(); }
++function isOverdue(c) { return !!c.date && c.date < todayISO() && c.status === "Pending"; }
++function checkinsToday() { return checkins.filter(isToday); }
++function overdueCheckins() { return checkins.filter(isOverdue).sort((a, b) => a.date.localeCompare(b.date)); }
++
++/* Every field assistant known to the data, for assignment pickers. Reads from
++   Firestore sites first so it stays right as the directory changes. */
++function allAssistants() {
++  const fromSites = sites.map((s) => s.assistant);
++  const fromCheckins = checkins.map((c) => c.assistant);
++  return [...new Set([...fromSites, ...fromCheckins].filter((a) => a && a !== "N/A"))].sort();
++}
++
+ /* 9) MUTATIONS */
+ async function saveCheckin(id, patch) { await updateDoc(doc(db, "checkins", id), { ...patch, updatedAt: serverTimestamp() }); }
+ async function createCheckin(data) {
+@@ -486,11 +619,32 @@ async function createCheckin(data) {
+   await addDoc(collection(db, "checkins"), { ...data, order: maxOrder + 1, updatedAt: serverTimestamp() });
+ }
+ async function removeCheckin(id) { await deleteDoc(doc(db, "checkins", id)); }
+-async function addObservation(siteId, checkinId, type, text) {
+-  await addDoc(collection(db, "observations"), {
++async function addObservation(siteId, checkinId, type, text, meta) {
++  const record = {
+     siteId, checkinId: checkinId || null, type, text,
+     author: auth.currentUser?.email || "Unknown", createdAt: serverTimestamp(),
+-  });
++  };
++  /* Only issues and follow-ups get a lifecycle. Attaching a status to a plain
++     observation would make it look actionable when it isn't. */
++  if (TRACKED_TYPES.includes(type)) {
++    record.status = "Open";
++    record.assignedTo = (meta && meta.assignedTo) || "";
++    record.dueDate = (meta && meta.dueDate) || "";
++    record.resolvedAt = null;
++    record.resolvedBy = "";
++  }
++  await addDoc(collection(db, "observations"), record);
++}
++async function setObservationStatus(id, status) {
++  const patch = { status, updatedAt: serverTimestamp() };
++  if (status === "Resolved") {
++    patch.resolvedAt = serverTimestamp();
++    patch.resolvedBy = auth.currentUser?.email || "Unknown";
++  } else {
++    patch.resolvedAt = null;
++    patch.resolvedBy = "";
++  }
++  await updateDoc(doc(db, "observations", id), patch);
+ }
+ 
+ /* 10) BOTTOM SHEET */
+@@ -514,12 +668,13 @@ document.querySelectorAll(".nav-btn").forEach((btn) => {
+     activeTab = btn.dataset.tab;
+     selectedSiteId = null;
+     document.querySelectorAll(".nav-btn").forEach((b) => b.classList.toggle("active", b === btn));
++    document.getElementById("screen-today").classList.toggle("hidden", activeTab !== "today");
+     document.getElementById("screen-schedule").classList.toggle("hidden", activeTab !== "schedule");
+     document.getElementById("screen-analytics").classList.toggle("hidden", activeTab !== "analytics");
+     document.getElementById("screen-sites").classList.toggle("hidden", activeTab !== "sites");
+     document.getElementById("site-profile-screen").classList.add("hidden");
+-    document.getElementById("top-title").textContent = { schedule: "Schedule", analytics: "Analytics", sites: "Sites & Team" }[activeTab];
+-    document.getElementById("fab").style.display = activeTab === "schedule" ? "flex" : "none";
++    document.getElementById("top-title").textContent = { today: "Today", schedule: "Schedule", analytics: "Analytics", sites: "Sites & Team" }[activeTab];
++    document.getElementById("fab").style.display = (activeTab === "schedule" || activeTab === "today") ? "flex" : "none";
+     render();
+   });
+ });
+@@ -533,14 +688,111 @@ function openSiteProfile(siteId) {
+ function closeSiteProfile() {
+   selectedSiteId = null;
+   document.getElementById("site-profile-screen").classList.add("hidden");
+-  document.getElementById("fab").style.display = activeTab === "schedule" ? "flex" : "none";
++  document.getElementById("fab").style.display =
++    (activeTab === "schedule" || activeTab === "today") ? "flex" : "none";
+ }
+ 
+ function render() {
+-  if (activeTab === "schedule") renderSchedule();
++  if (activeTab === "today") renderToday();
++  else if (activeTab === "schedule") renderSchedule();
+   else if (activeTab === "analytics") renderAnalytics();
+   else renderSitesTeam();
+   if (selectedSiteId) renderSiteProfile();
++  if (addDraft) renderAddCheckin();
++}
++
++/* 11b) TODAY SCREEN
++   Answers the one question the app is opened to answer in the field:
++   what do I need to deal with right now? */
++function renderToday() {
++  const el = document.getElementById("screen-today");
++  const iso = todayISO();
++  const mine = checkinsToday();
++  const done = mine.filter((c) => c.status === "Completed").length;
++  const pending = mine.filter((c) => c.status === "Pending").length;
++  const overdue = overdueCheckins();
++  const dueFollowUps = openFollowUps().filter(isDueOrOverdue)
++    .sort((a, b) => (a.dueDate || "").localeCompare(b.dueDate || ""));
++  const openIssues = observations.filter((o) => o.type === "issue" && isUnresolved(o))
++    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
++
++  /* Most urgent first: a missed visit blocks today's plan, a due follow-up is
++     time-bound, an open issue is important but not necessarily dated. */
++  const attention = [
++    ...overdue.slice(0, 5).map((c) => ({
++      kind: "overdue", siteId: c.siteId, accent: "var(--obs-issue)", accentBg: "var(--status-skipped-bg)",
++      icon: "triangle-alert", tag: "Visit overdue",
++      title: siteById(c.siteId).name,
++      sub: `${esc(c.purpose || "Visit")} · was due ${fmtShortDate(c.date)} · ${esc(c.assistant || "Unassigned")}`,
++    })),
++    ...dueFollowUps.slice(0, 5).map((o) => ({
++      kind: "followUp", siteId: o.siteId, accent: "var(--obs-followUp)", accentBg: "var(--status-pending-bg)",
++      icon: "clock", tag: o.dueDate < iso ? "Follow-up overdue" : "Follow-up due today",
++      title: siteById(o.siteId).name,
++      sub: esc(o.text) + (o.assignedTo ? ` · ${esc(o.assignedTo)}` : ""),
++    })),
++    ...openIssues.slice(0, 5).map((o) => ({
++      kind: "issue", siteId: o.siteId, accent: "var(--obs-issue)", accentBg: "var(--status-skipped-bg)",
++      icon: "circle-alert", tag: obsStatus(o) === "In Progress" ? "Issue in progress" : "Issue unresolved",
++      title: siteById(o.siteId).name,
++      sub: esc(o.text) + (o.assignedTo ? ` · ${esc(o.assignedTo)}` : ""),
++    })),
++  ];
++
++  const weekItems = checkins.filter((c) => c.week === selectedWeek);
++  const weekDone = weekItems.filter((c) => c.status === "Completed").length;
++  const weekPct = weekItems.length ? Math.round((weekDone / weekItems.length) * 100) : 0;
++
++  el.innerHTML = `
++    <div class="today-hero">
++      <div class="today-greet headline">${greeting()}</div>
++      <div class="today-date">${esc(fmtLongDate(iso))}</div>
++    </div>
++
++    <div class="today-stats">
++      <div class="today-stat"><div class="num">${mine.length}</div><div class="lbl">Today</div></div>
++      <div class="today-stat"><div class="num">${done}</div><div class="lbl">Done</div></div>
++      <div class="today-stat"><div class="num">${pending}</div><div class="lbl">Pending</div></div>
++      <div class="today-stat ${overdue.length ? "warn" : ""}"><div class="num">${overdue.length}</div><div class="lbl">Overdue</div></div>
++    </div>
++
++    ${mine.length ? `
++      <div class="sec-title">Today's visits</div>
++      ${mine.map(renderCheckinCard).join("")}
++    ` : `
++      <div class="sec-title">Today's visits</div>
++      <div class="empty-state" style="padding:26px 20px;">
++        No visits dated today.${checkins.length ? " Set a date on a check-in to see it here." : ""}
++      </div>
++    `}
++
++    <div class="sec-title">Needs your attention</div>
++    ${attention.length ? attention.map((a) => `
++      <button class="attn-card" data-site="${esc(a.siteId)}" style="--accent:${a.accent};--accent-bg:${a.accentBg}">
++        <span class="attn-icon">${icon(a.icon, 16)}</span>
++        <span class="attn-body">
++          <span class="attn-tag">${esc(a.tag)}</span>
++          <span class="attn-title">${esc(a.title)}</span>
++          <span class="attn-sub">${a.sub}</span>
++        </span>
++        ${icon("chevron-right", 16)}
++      </button>`).join("")
++    : `<div class="all-clear">${icon("badge-check", 18)} Nothing outstanding. You're clear.</div>`}
++
++    ${weekItems.length ? `
++      <div class="sec-title">Week ${selectedWeek} progress</div>
++      <div class="week-progress">
++        <div class="wp-top">
++          <span class="wp-num">${weekDone} / ${weekItems.length} visits</span>
++          <span class="wp-pct">${weekPct}%</span>
++        </div>
++        <div class="wp-track"><div class="wp-fill" style="width:${weekPct}%"></div></div>
++      </div>` : ""}
++  `;
++
++  el.querySelectorAll(".attn-card").forEach((c) =>
++    c.addEventListener("click", () => openSiteProfile(c.dataset.site)));
++  wireCardEvents(el);
+ }
+ 
+ /* 12) SCHEDULE SCREEN */
+@@ -629,32 +881,136 @@ function renderCheckinCard(c) {
+   `;
+ }
+ 
++function renderObsEntry(o) {
++  const tracked = isTracked(o);
++  const status = obsStatus(o);
++  const overdueDue = o.dueDate && o.dueDate < todayISO() && status !== "Resolved";
++  return `
++    <div class="obs-entry ${status === "Resolved" ? "resolved" : ""}" data-obs="${o.id}">
++      <span class="obs-dot" style="background:var(--obs-${o.type})"></span>
++      <div class="obs-body">
++        <div class="obs-type" style="color:var(--obs-${o.type})">${OBS_LABEL[o.type] || o.type}</div>
++        <div class="obs-text">${esc(o.text)}</div>
++        ${tracked && (o.assignedTo || o.dueDate) ? `
++          <div class="obs-assign">
++            ${o.assignedTo ? `<span>${icon("user", 11)} ${esc(o.assignedTo)}</span>` : ""}
++            ${o.dueDate ? `<span class="${overdueDue ? "due-over" : ""}">${icon("clock", 11)} Due ${esc(fmtShortDate(o.dueDate))}</span>` : ""}
++          </div>` : ""}
++        <div class="obs-meta">${esc(o.author || "")} · ${fmtWhen(o.createdAt)}${
++          status === "Resolved" && o.resolvedBy ? ` · resolved by ${esc(o.resolvedBy)}` : ""}</div>
++        ${tracked ? `
++          <div class="obs-status-row" data-role="obs-status">
++            ${OBS_STATUSES.map((s) => `
++              <button class="obs-status-btn ${status === s ? OBS_STATUS_CLASS[s] : ""}" data-status="${esc(s)}">${esc(s)}</button>
++            `).join("")}
++          </div>` : ""}
++      </div>
++    </div>`;
++}
++
+ function renderNotesPanel(c, obsList) {
+   const composerOpen = noteComposerFor === c.id;
++  const needsMeta = TRACKED_TYPES.includes(noteDraftType);
++  const placeholder = {
++    observation: "What did you observe?",
++    issue: "What's the problem?",
++    action: "What action was taken?",
++    followUp: "What needs following up?",
++  }[noteDraftType] || "What did you observe?";
++
+   return `
+-    ${obsList.length ? obsList.map((o) => `
+-      <div class="obs-entry">
+-        <span class="obs-dot" style="background:var(--obs-${o.type})"></span>
+-        <div class="obs-body">
+-          <div class="obs-type" style="color:var(--obs-${o.type})">${OBS_LABEL[o.type] || o.type}</div>
+-          <div class="obs-text">${esc(o.text)}</div>
+-          <div class="obs-meta">${esc(o.author || "")} · ${fmtWhen(o.createdAt)}</div>
+-        </div>
+-      </div>`).join("") : '<p style="font-size:12.5px;color:var(--ink-faint);margin:0 0 8px;">No notes logged for this check-in yet.</p>'}
++    ${obsList.length ? obsList.map(renderObsEntry).join("")
++      : '<p style="font-size:12.5px;color:var(--ink-faint);margin:0 0 8px;">No notes logged for this check-in yet.</p>'}
+     ${composerOpen ? `
+       <div class="note-composer">
+         <div class="type-chips" data-role="type-chips">
+           ${OBS_TYPES.map((t) => `<button class="type-chip ${noteDraftType === t ? "active" : ""}" data-type="${t}" style="${noteDraftType === t ? `background:var(--obs-${t})` : ""}">${OBS_LABEL[t]}</button>`).join("")}
+         </div>
+-        <textarea data-role="note-text" placeholder="What did you observe?"></textarea>
+-        <button class="save-note" data-role="save-note">Save note</button>
++        <textarea data-role="note-text" placeholder="${esc(placeholder)}">${esc(noteDraftMeta.text || "")}</textarea>
++        ${needsMeta ? `
++          <div class="composer-extra">
++            <div>
++              <div class="mini-label">Assign to</div>
++              <button class="picker-btn ${noteDraftMeta.assignedTo ? "" : "placeholder"}" data-role="assign-picker" type="button">
++                <span>${esc(noteDraftMeta.assignedTo || "Unassigned")}</span>${icon("chevron-right", 15)}
++              </button>
++            </div>
++            <div>
++              <div class="mini-label">Due date${noteDraftType === "issue" ? " (optional)" : ""}</div>
++              <input type="date" data-role="due-date" value="${esc(noteDraftMeta.dueDate || "")}">
++            </div>
++          </div>` : ""}
++        <button class="save-note" data-role="save-note">Save ${needsMeta ? OBS_LABEL[noteDraftType].toLowerCase() : "note"}</button>
+       </div>
+     ` : `<button class="picker-btn" data-role="open-composer" style="margin-top:8px;"><span>${icon("plus", 15)} Add a note</span></button>`}
+   `;
+ }
+ 
+-function renderEditFormBody(d) {
+-  const site = siteById(d.siteId);
++/* Wires one notes panel. Used by both the schedule card drawer and the site
++   profile history, so the two stay in step. `rerender` is whichever render
++   function owns the surrounding screen. */
++function wireNotesPanel(notesPanel, c, rerender) {
++  if (!notesPanel) return;
++
++  notesPanel.querySelectorAll('[data-role="obs-status"]').forEach((row) => {
++    const obsId = row.closest(".obs-entry").dataset.obs;
++    row.querySelectorAll(".obs-status-btn").forEach((btn) => {
++      btn.addEventListener("click", async () => {
++        const current = observations.find((o) => o.id === obsId);
++        if (current && obsStatus(current) === btn.dataset.status) return;
++        await setObservationStatus(obsId, btn.dataset.status);
++      });
++    });
++  });
++
++  const openBtn = notesPanel.querySelector('[data-role="open-composer"]');
++  if (openBtn) openBtn.addEventListener("click", () => {
++    noteComposerFor = c.id;
++    noteDraftType = "observation";
++    noteDraftMeta = { assignedTo: "", dueDate: "", text: "" };
++    rerender();
++  });
++
++  const textarea = notesPanel.querySelector('[data-role="note-text"]');
++  /* Keep the typed text in state so switching note type or picking an
++     assignee doesn't wipe what's already been written. */
++  if (textarea) textarea.addEventListener("input", () => { noteDraftMeta.text = textarea.value; });
++
++  const chips = notesPanel.querySelector('[data-role="type-chips"]');
++  if (chips) chips.querySelectorAll(".type-chip").forEach((chip) =>
++    chip.addEventListener("click", () => {
++      noteDraftType = chip.dataset.type;
++      if (!TRACKED_TYPES.includes(noteDraftType)) { noteDraftMeta.assignedTo = ""; noteDraftMeta.dueDate = ""; }
++      rerender();
++    }));
++
++  const assignBtn = notesPanel.querySelector('[data-role="assign-picker"]');
++  if (assignBtn) assignBtn.addEventListener("click", () => {
++    const options = ["Unassigned", ...allAssistants()];
++    openSheet("Assign to", options, noteDraftMeta.assignedTo || "Unassigned", (val) => {
++      noteDraftMeta.assignedTo = val === "Unassigned" ? "" : val;
++      rerender();
++    });
++  });
++
++  const dueInput = notesPanel.querySelector('[data-role="due-date"]');
++  if (dueInput) dueInput.addEventListener("input", () => { noteDraftMeta.dueDate = dueInput.value; });
++
++  const saveNoteBtn = notesPanel.querySelector('[data-role="save-note"]');
++  if (saveNoteBtn) saveNoteBtn.addEventListener("click", async () => {
++    const text = (textarea ? textarea.value : "").trim();
++    if (!text) return;
++    await addObservation(c.siteId, c.id, noteDraftType, text, noteDraftMeta);
++    noteComposerFor = null;
++    noteDraftMeta = { assignedTo: "", dueDate: "", text: "" };
++    rerender();
++  });
++}
++
++function renderEditFormBody(d, mode) {
++  mode = mode || "edit";
++  const isAdd = mode === "add";
++  const siteLabel = d.siteId ? siteById(d.siteId).name : "";
+   return `
+     <div class="edit-grid">
+       <div class="field"><label>Day</label>
+@@ -666,17 +1022,27 @@ function renderEditFormBody(d) {
+         <div class="segmented" data-role="epa-seg">${REFERENCE.epas.map((e) => `<button data-value="${esc(e)}" class="${d.epa === e ? "active" : ""}">${esc(e)}</button>`).join("")}</div>
+       </div>
+       <div class="field"><label>Field Assistant</label>
+-        <button class="picker-btn" data-role="fa-picker" type="button"><span>${esc(d.assistant)}</span>${icon("chevron-right", 16)}</button>
++        <button class="picker-btn ${d.assistant ? "" : "placeholder"}" data-role="fa-picker" type="button"><span>${esc(d.assistant || "Select a field assistant…")}</span>${icon("chevron-right", 16)}</button>
+       </div>
+       <div class="field"><label>Site</label>
+-        <button class="picker-btn" data-role="site-picker" type="button"><span>${esc(site.name)}</span>${icon("chevron-right", 16)}</button>
++        <button class="picker-btn ${siteLabel ? "" : "placeholder"}" data-role="site-picker" type="button"><span>${esc(siteLabel || "Select a site…")}</span>${icon("chevron-right", 16)}</button>
+       </div>
+       <div class="field"><label>Visit Purpose</label>
+-        <button class="picker-btn" data-role="purpose-picker" type="button"><span>${esc(d.purpose)}</span>${icon("chevron-right", 16)}</button>
++        <button class="picker-btn ${d.purpose ? "" : "placeholder"}" data-role="purpose-picker" type="button"><span>${esc(d.purpose || "Select a purpose…")}</span>${icon("chevron-right", 16)}</button>
+       </div>
++      ${d.checklistItems && d.checklistItems.length ? `
++        <div class="field"><label>Checklist for this purpose</label>
++          <div class="checklist" style="margin-top:0;">
++            ${d.checklistItems.map((it) => `
++              <div class="chk-item" style="pointer-events:none;">
++                <span class="chk-box"></span><span class="chk-text">${esc(it)}</span>
++              </div>`).join("")}
++          </div>
++        </div>` : ""}
++      ${isAdd ? `<div class="form-error" data-role="form-error">${esc(addFormError)}</div>` : ""}
+       <div class="edit-actions">
+-        <button class="btn-primary" data-role="save-btn" type="button">Save changes</button>
+-        <button class="btn-delete" data-role="delete-btn" type="button">Delete</button>
++        <button class="btn-primary" data-role="save-btn" type="button">${isAdd ? "Create check-in" : "Save changes"}</button>
++        <button class="${isAdd ? "btn-delete" : "btn-delete"}" data-role="delete-btn" type="button">${isAdd ? "Cancel" : "Delete"}</button>
+       </div>
+     </div>
+   `;
+@@ -722,75 +1088,96 @@ function wireCardEvents(scope) {
+     });
+ 
+     if (openDrawerId === id) {
+-      const notesPanel = card.querySelector('[data-role="notes-panel"]');
+-      const openBtn = notesPanel.querySelector('[data-role="open-composer"]');
+-      if (openBtn) openBtn.addEventListener("click", () => { noteComposerFor = id; noteDraftType = "observation"; render(); });
+-      const chips = notesPanel.querySelector('[data-role="type-chips"]');
+-      if (chips) chips.querySelectorAll(".type-chip").forEach((chip) => chip.addEventListener("click", () => { noteDraftType = chip.dataset.type; render(); }));
+-      const saveNoteBtn = notesPanel.querySelector('[data-role="save-note"]');
+-      if (saveNoteBtn) saveNoteBtn.addEventListener("click", async () => {
+-        const text = notesPanel.querySelector('[data-role="note-text"]').value.trim();
+-        if (!text) return;
+-        await addObservation(c.siteId, c.id, noteDraftType, text);
+-        noteComposerFor = null;
+-        render();
+-      });
++      wireNotesPanel(card.querySelector('[data-role="notes-panel"]'), c, render);
+     }
+ 
+     if (openEditId === id) wireEditForm(card.querySelector('[data-role="edit-panel"]'), id, c);
+   });
+ }
+ 
+-function wireEditForm(panelInner, id, checkin) {
+-  function refresh() { panelInner.innerHTML = renderEditFormBody(editDraft); wireEditForm(panelInner, id, checkin); }
++/* Sites for a given assistant, preferring Firestore over the hardcoded
++   REFERENCE map so a reassignment in the database shows up here. Falls back to
++   REFERENCE only when Firestore hasn't loaded or knows nothing about them. */
++function sitesForAssistant(assistant) {
++  if (!assistant) return [];
++  const fromDb = sites.filter((s) => s.assistant === assistant && s.id !== "n-a").map((s) => s.name);
++  if (fromDb.length) return fromDb.sort((a, b) => a.localeCompare(b));
++  return REFERENCE.sitesByFa[assistant] || [];
++}
++function assistantsForEpa(epa) {
++  if (!epa) return [];
++  const fromDb = [...new Set(sites.filter((s) => s.epa === epa && s.assistant && s.assistant !== "N/A").map((s) => s.assistant))];
++  if (fromDb.length) return fromDb.sort((a, b) => a.localeCompare(b));
++  return REFERENCE.faByEpa[epa] || [];
++}
++
++/* One wiring routine for both the inline edit drawer and the full Add screen.
++   `draft` is mutated in place; `opts` decides what save and the secondary
++   button actually do. */
++function wireDraftForm(panelInner, draft, opts) {
++  const mode = opts.mode || "edit";
++  function refresh() {
++    panelInner.innerHTML = renderEditFormBody(draft, mode);
++    wireDraftForm(panelInner, draft, opts);
++  }
+ 
+   panelInner.querySelector('[data-role="day-seg"]').querySelectorAll("button").forEach((b) =>
+-    b.addEventListener("click", () => { editDraft.day = b.dataset.value; refresh(); }));
++    b.addEventListener("click", () => { draft.day = b.dataset.value; refresh(); }));
+ 
+   panelInner.querySelector('[data-role="epa-seg"]').querySelectorAll("button").forEach((b) =>
+     b.addEventListener("click", () => {
+-      editDraft.epa = b.dataset.value;
+-      const faList = REFERENCE.faByEpa[editDraft.epa] || [];
+-      if (!faList.includes(editDraft.assistant)) editDraft.assistant = faList[0];
+-      const siteList = REFERENCE.sitesByFa[editDraft.assistant] || [];
+-      editDraft.siteId = slugify(siteList[0] || "N/A");
++      draft.epa = b.dataset.value;
++      const faList = assistantsForEpa(draft.epa);
++      /* Clear rather than auto-pick: a silently chosen assistant is how the
++         old + button produced check-ins nobody meant to create. */
++      if (!faList.includes(draft.assistant)) { draft.assistant = ""; draft.siteId = ""; }
+       refresh();
+     }));
+ 
+   panelInner.querySelector('[data-role="fa-picker"]').addEventListener("click", () => {
+-    const faList = REFERENCE.faByEpa[editDraft.epa] || [];
+-    openSheet("Field Assistant", faList, editDraft.assistant, (val) => {
+-      editDraft.assistant = val;
+-      const siteList = REFERENCE.sitesByFa[val] || [];
+-      editDraft.siteId = slugify(siteList[0] || "N/A");
++    const faList = assistantsForEpa(draft.epa);
++    if (!faList.length) { alert("Pick an EPA first."); return; }
++    openSheet("Field Assistant", faList, draft.assistant, (val) => {
++      draft.assistant = val;
++      const siteList = sitesForAssistant(val);
++      if (!siteList.includes(draft.siteId ? siteById(draft.siteId).name : "")) draft.siteId = "";
+       refresh();
+     });
+   });
+   panelInner.querySelector('[data-role="site-picker"]').addEventListener("click", () => {
+-    const siteList = REFERENCE.sitesByFa[editDraft.assistant] || [];
+-    const currentName = siteById(editDraft.siteId).name;
+-    openSheet("Site", siteList, currentName, (val) => { editDraft.siteId = slugify(val); refresh(); });
++    const siteList = sitesForAssistant(draft.assistant);
++    if (!siteList.length) { alert("Pick a field assistant first."); return; }
++    const currentName = draft.siteId ? siteById(draft.siteId).name : "";
++    openSheet("Site", siteList, currentName, (val) => { draft.siteId = slugify(val); refresh(); });
+   });
+   panelInner.querySelector('[data-role="purpose-picker"]').addEventListener("click", () => {
+-    openSheet("Visit Purpose", REFERENCE.purposes, editDraft.purpose, (val) => {
+-      editDraft.purpose = val;
++    openSheet("Visit Purpose", REFERENCE.purposes, draft.purpose, (val) => {
++      draft.purpose = val;
+       const items = PURPOSE_CHECKLIST[val] || [];
+-      editDraft.checklistItems = items; editDraft.checkedItems = items.map(() => false);
++      draft.checklistItems = items; draft.checkedItems = items.map(() => false);
+       refresh();
+     });
+   });
+   panelInner.querySelectorAll("[data-field]").forEach((f) =>
+-    f.addEventListener("input", () => { editDraft[f.dataset.field] = f.dataset.field === "week" ? Number(f.value) : f.value; }));
++    f.addEventListener("input", () => { draft[f.dataset.field] = f.dataset.field === "week" ? Number(f.value) : f.value; }));
+ 
+-  panelInner.querySelector('[data-role="save-btn"]').addEventListener("click", async () => {
+-    const patch = { ...editDraft }; delete patch.id;
+-    await saveCheckin(id, patch);
+-    openEditId = null; editDraft = null; render();
+-  });
+-  panelInner.querySelector('[data-role="delete-btn"]').addEventListener("click", async () => {
+-    if (!confirm("Delete this check-in? Its logged notes will remain in the site's history.")) return;
+-    await removeCheckin(id);
+-    openEditId = null; editDraft = null;
++  panelInner.querySelector('[data-role="save-btn"]').addEventListener("click", () => opts.onSave(draft, refresh));
++  panelInner.querySelector('[data-role="delete-btn"]').addEventListener("click", () => opts.onSecondary(draft));
++}
++
++function wireEditForm(panelInner, id, checkin) {
++  wireDraftForm(panelInner, editDraft, {
++    mode: "edit",
++    onSave: async (draft) => {
++      const patch = { ...draft }; delete patch.id;
++      await saveCheckin(id, patch);
++      openEditId = null; editDraft = null; render();
++    },
++    onSecondary: async () => {
++      if (!confirm("Delete this check-in? Its logged notes will remain in the site's history.")) return;
++      await removeCheckin(id);
++      openEditId = null; editDraft = null;
++    },
+   });
+ }
+ 
+@@ -800,7 +1187,9 @@ function renderSiteProfile() {
+   const site = siteById(selectedSiteId);
+   const epaClass = EPA_CLASS[site.epa] || "office";
+   const history = checkinsForSite(site.id);
+-  const openIssues = observationsForSite(site.id).filter((o) => o.type === "issue").length;
++  const openIssues = openIssuesForSite(site.id).length;
++  const resolvedIssues = observationsForSite(site.id).filter((o) => o.type === "issue" && obsStatus(o) === "Resolved").length;
++  const openFups = observationsForSite(site.id).filter((o) => o.type === "followUp" && isUnresolved(o)).length;
+   const completedCount = history.filter((c) => c.status === "Completed").length;
+   const hasPhone = !!site.nmPhone;
+ 
+@@ -841,6 +1230,11 @@ function renderSiteProfile() {
+         <div class="sp-stat"><div class="num">${completedCount}</div><div class="lbl">Completed</div></div>
+         <div class="sp-stat"><div class="num" style="${openIssues ? "color:var(--obs-issue)" : ""}">${openIssues}</div><div class="lbl">Open issues</div></div>
+       </div>
++      <div class="sp-stats">
++        <div class="sp-stat"><div class="num" style="${openFups ? "color:var(--obs-followUp)" : ""}">${openFups}</div><div class="lbl">Open follow-ups</div></div>
++        <div class="sp-stat"><div class="num" style="${resolvedIssues ? "color:var(--status-completed-fg)" : ""}">${resolvedIssues}</div><div class="lbl">Issues resolved</div></div>
++        <div class="sp-stat"><div class="num">${observationsForSite(site.id).length}</div><div class="lbl">Total notes</div></div>
++      </div>
+ 
+       <div class="sec-title">Check-in history</div>
+       ${history.length ? history.map((c) => renderHistoryItem(c)).join("") : '<div class="empty-state">No check-ins recorded at this site yet.</div>'}
+@@ -855,19 +1249,7 @@ function renderSiteProfile() {
+     });
+     if (openDrawerId === cid) {
+       const c = checkins.find((x) => x.id === cid);
+-      const notesPanel = item.querySelector('[data-role="notes-panel"]');
+-      const obsForThis = observationsForCheckin(cid);
+-      const openBtn = notesPanel.querySelector('[data-role="open-composer"]');
+-      if (openBtn) openBtn.addEventListener("click", () => { noteComposerFor = cid; noteDraftType = "observation"; renderSiteProfile(); });
+-      const chips = notesPanel.querySelector('[data-role="type-chips"]');
+-      if (chips) chips.querySelectorAll(".type-chip").forEach((chip) => chip.addEventListener("click", () => { noteDraftType = chip.dataset.type; renderSiteProfile(); }));
+-      const saveNoteBtn = notesPanel.querySelector('[data-role="save-note"]');
+-      if (saveNoteBtn) saveNoteBtn.addEventListener("click", async () => {
+-        const text = notesPanel.querySelector('[data-role="note-text"]').value.trim();
+-        if (!text) return;
+-        await addObservation(c.siteId, cid, noteDraftType, text);
+-        noteComposerFor = null; renderSiteProfile();
+-      });
++      if (c) wireNotesPanel(item.querySelector('[data-role="notes-panel"]'), c, renderSiteProfile);
+     }
+   });
+ }
+@@ -897,42 +1279,132 @@ function renderHistoryItem(c) {
+ /* 14) SITES & TEAM SCREEN */
+ let siteSearch = "";
+ let siteFilterEpa = "All";
++/* Highlights the matched substring without ever putting raw user text into
++   the DOM: escape first, then wrap the match. */
++function highlight(text, q) {
++  const safe = esc(text);
++  if (!q) return safe;
++  const safeQ = esc(q).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
++  return safe.replace(new RegExp(safeQ, "ig"), (m) => `<mark>${m}</mark>`);
++}
++
+ function renderSitesTeam() {
+   const el = document.getElementById("screen-sites");
+   const epaOptions = ["All", ...REFERENCE.epas.filter((e) => e !== "Office")];
++  const q = siteSearch.trim().toLowerCase();
++
+   let filtered = sites.filter((s) => s.id !== "n-a");
+   if (siteFilterEpa !== "All") filtered = filtered.filter((s) => s.epa === siteFilterEpa);
+-  if (siteSearch.trim()) {
+-    const q = siteSearch.trim().toLowerCase();
+-    filtered = filtered.filter((s) => s.name.toLowerCase().includes(q) || (s.nurseryId || "").toLowerCase().includes(q) || (s.assistant||"").toLowerCase().includes(q));
++  if (q) {
++    filtered = filtered.filter((s) =>
++      (s.name || "").toLowerCase().includes(q) ||
++      (s.nurseryId || "").toLowerCase().includes(q) ||
++      (s.assistant || "").toLowerCase().includes(q) ||
++      (s.nmName || "").toLowerCase().includes(q) ||
++      (s.epa || "").toLowerCase().includes(q));
+   }
+   filtered.sort((a, b) => a.name.localeCompare(b.name));
+ 
++  /* Notes matter as much as sites here: three weeks later you remember what
++     you wrote, not which check-in you wrote it on. */
++  let noteHits = [];
++  let visitHits = [];
++  if (q) {
++    noteHits = observations.filter((o) => {
++      if (siteFilterEpa !== "All" && siteById(o.siteId).epa !== siteFilterEpa) return false;
++      return (o.text || "").toLowerCase().includes(q) ||
++             (o.assignedTo || "").toLowerCase().includes(q) ||
++             (o.author || "").toLowerCase().includes(q) ||
++             (OBS_LABEL[o.type] || "").toLowerCase().includes(q) ||
++             (obsStatus(o) || "").toLowerCase().includes(q);
++    }).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)).slice(0, 25);
++
++    visitHits = checkins.filter((c) => {
++      if (siteFilterEpa !== "All" && c.epa !== siteFilterEpa) return false;
++      return (c.purpose || "").toLowerCase().includes(q) ||
++             (c.checklistItems || []).join(" ").toLowerCase().includes(q) ||
++             (c.date || "").includes(q);
++    }).slice(0, 15);
++  }
++
++  const totalHits = filtered.length + noteHits.length + visitHits.length;
++
+   el.innerHTML = `
+-    <div class="search-bar">${icon("search", 16)}<input id="site-search-input" placeholder="Search sites, nursery ID, staff…" value="${esc(siteSearch)}"></div>
++    <div class="search-bar">${icon("search", 16)}<input id="site-search-input" placeholder="Search sites, staff, notes, issues…" value="${esc(siteSearch)}"></div>
+     <div class="pill-row">${epaOptions.map((e) => `<button class="filter-pill ${siteFilterEpa === e ? "active" : ""}" data-epa="${esc(e)}">${esc(e)}</button>`).join("")}</div>
+-    <div class="sec-title">${filtered.length} site${filtered.length === 1 ? "" : "s"}</div>
+-    ${filtered.map((s) => {
+-      const epaClass = EPA_CLASS[s.epa] || "office";
+-      const issues = observationsForSite(s.id).filter((o) => o.type === "issue").length;
+-      return `
+-        <button class="site-row" data-site="${s.id}">
+-          <span class="dot" style="background:var(--epa-${epaClass}-dot)"></span>
+-          <div class="info">
+-            <div class="name">${esc(s.name)}</div>
+-            <div class="meta">
+-              <span>${esc(s.assistant)}</span>
+-              ${s.nurseryId ? `<span class="mono">${esc(s.nurseryId)}</span>` : ""}
+-              ${issues ? `<span class="issue-flag">${icon("triangle-alert", 12)} ${issues}</span>` : ""}
++
++    ${q && totalHits === 0 ? `<div class="empty-state">Nothing matches “${esc(siteSearch.trim())}”.</div>` : ""}
++
++    ${filtered.length ? `
++      <div class="sec-title">${filtered.length} site${filtered.length === 1 ? "" : "s"}</div>
++      ${filtered.map((s) => {
++        const epaClass = EPA_CLASS[s.epa] || "office";
++        const issues = openIssuesForSite(s.id).length;
++        return `
++          <button class="site-row" data-site="${s.id}">
++            <span class="dot" style="background:var(--epa-${epaClass}-dot)"></span>
++            <div class="info">
++              <div class="name">${highlight(s.name, q)}</div>
++              <div class="meta">
++                <span>${highlight(s.assistant || "", q)}</span>
++                ${s.nurseryId ? `<span class="mono">${highlight(s.nurseryId, q)}</span>` : ""}
++                ${issues ? `<span class="issue-flag">${icon("triangle-alert", 12)} ${issues}</span>` : ""}
++              </div>
+             </div>
+-          </div>
+-          ${icon("chevron-right", 17)}
+-        </button>`;
+-    }).join("")}
++            ${icon("chevron-right", 17)}
++          </button>`;
++      }).join("")}` : ""}
++
++    ${noteHits.length ? `
++      <div class="sec-title">${noteHits.length} note${noteHits.length === 1 ? "" : "s"} &amp; issues</div>
++      ${noteHits.map((o) => {
++        const st = obsStatus(o);
++        return `
++          <button class="res-card" data-site="${esc(o.siteId)}">
++            <span class="res-dot" style="background:var(--obs-${o.type})"></span>
++            <span class="res-body">
++              <span class="res-head">
++                <span class="res-site">${esc(siteById(o.siteId).name)}</span>
++                <span class="res-type" style="color:var(--obs-${o.type})">${OBS_LABEL[o.type] || o.type}</span>
++                ${st ? `<span class="obs-status-btn ${OBS_STATUS_CLASS[st]}" style="pointer-events:none;">${esc(st)}</span>` : ""}
++              </span>
++              <span class="res-text">${highlight(o.text || "", q)}</span>
++              <span class="res-meta">${esc(o.author || "")} · ${fmtWhen(o.createdAt)}${
++                o.assignedTo ? ` · ${esc(o.assignedTo)}` : ""}${
++                o.dueDate ? ` · due ${esc(fmtShortDate(o.dueDate))}` : ""}</span>
++            </span>
++          </button>`;
++      }).join("")}` : ""}
++
++    ${visitHits.length ? `
++      <div class="sec-title">${visitHits.length} check-in${visitHits.length === 1 ? "" : "s"}</div>
++      ${visitHits.map((c) => `
++        <button class="res-card" data-site="${esc(c.siteId)}">
++          <span class="res-dot" style="background:var(--epa-${EPA_CLASS[c.epa] || "office"}-dot)"></span>
++          <span class="res-body">
++            <span class="res-head">
++              <span class="res-site">${esc(siteById(c.siteId).name)}</span>
++              <span class="res-type" style="color:var(--ink-faint)">Week ${c.week} · ${esc(c.day || "")}</span>
++            </span>
++            <span class="res-text">${highlight(c.purpose || "", q)}</span>
++            <span class="res-meta">${esc(c.assistant || "")}${c.date ? ` · ${esc(fmtShortDate(c.date))}` : ""} · ${esc(c.status || "Pending")}</span>
++          </span>
++        </button>`).join("")}` : ""}
+   `;
+-  el.querySelector("#site-search-input").addEventListener("input", (e) => { siteSearch = e.target.value; renderSitesTeam(); });
++
++  const input = el.querySelector("#site-search-input");
++  input.addEventListener("input", (e) => {
++    siteSearch = e.target.value;
++    renderSitesTeam();
++    /* Re-rendering replaces the input, so restore focus and caret to keep
++       typing uninterrupted. */
++    const next = document.getElementById("site-search-input");
++    next.focus();
++    next.setSelectionRange(next.value.length, next.value.length);
++  });
+   el.querySelectorAll(".filter-pill").forEach((p) => p.addEventListener("click", () => { siteFilterEpa = p.dataset.epa; renderSitesTeam(); }));
+   el.querySelectorAll(".site-row").forEach((r) => r.addEventListener("click", () => openSiteProfile(r.dataset.site)));
++  el.querySelectorAll(".res-card").forEach((r) => r.addEventListener("click", () => openSiteProfile(r.dataset.site)));
+ }
+ 
+ /* 15) ANALYTICS SCREEN */
+@@ -943,7 +1415,12 @@ function renderAnalytics() {
+   const total = checkins.length;
+   const completed = checkins.filter((c) => c.status === "Completed").length;
+   const pct = total ? Math.round((completed / total) * 100) : 0;
+-  const openIssues = observations.filter((o) => o.type === "issue").length;
++  const allIssues = observations.filter((o) => o.type === "issue");
++  const openIssues = allIssues.filter((o) => obsStatus(o) === "Open").length;
++  const inProgIssues = allIssues.filter((o) => obsStatus(o) === "In Progress").length;
++  const resolvedIssues = allIssues.filter((o) => obsStatus(o) === "Resolved").length;
++  const dueFups = openFollowUps().filter(isDueOrOverdue).length;
++  const overdueVisits = overdueCheckins().length;
+ 
+   const epaRows = REFERENCE.epas.map((epa) => {
+     const items = checkins.filter((c) => c.epa === epa);
+@@ -968,7 +1445,23 @@ function renderAnalytics() {
+       <div class="stat-tile"><div class="num">${pct}%</div><div class="label">Completed</div></div>
+       <div class="stat-tile"><div class="num" style="${openIssues ? "color:var(--obs-issue)" : ""}">${openIssues}</div><div class="label">Open issues</div></div>
+       <div class="stat-tile"><div class="num">${sites.filter(s=>s.id!=="n-a").length}</div><div class="label">Sites tracked</div></div>
++      <div class="stat-tile"><div class="num" style="${overdueVisits ? "color:var(--obs-issue)" : ""}">${overdueVisits}</div><div class="label">Overdue visits</div></div>
++      <div class="stat-tile"><div class="num" style="${dueFups ? "color:var(--obs-followUp)" : ""}">${dueFups}</div><div class="label">Follow-ups due</div></div>
+     </div>
++    ${allIssues.length ? `
++    <div class="dash-card">
++      <h2>Issue lifecycle</h2>
++      <div class="dist-bar">
++        ${openIssues ? `<div style="width:${openIssues / allIssues.length * 100}%;background:var(--status-skipped-fg)"></div>` : ""}
++        ${inProgIssues ? `<div style="width:${inProgIssues / allIssues.length * 100}%;background:var(--status-pending-fg)"></div>` : ""}
++        ${resolvedIssues ? `<div style="width:${resolvedIssues / allIssues.length * 100}%;background:var(--status-completed-fg)"></div>` : ""}
++      </div>
++      <div class="dist-legend">
++        <span class="item"><span class="sw" style="background:var(--status-skipped-fg)"></span>Open (${openIssues})</span>
++        <span class="item"><span class="sw" style="background:var(--status-pending-fg)"></span>In progress (${inProgIssues})</span>
++        <span class="item"><span class="sw" style="background:var(--status-completed-fg)"></span>Resolved (${resolvedIssues})</span>
++      </div>
++    </div>` : ""}
+     <div class="dash-card">
+       <h2>Status distribution</h2>
+       <div class="dist-bar">${statusCounts.map((r) => r.count ? `<div style="width:${(r.count/total*100)}%;background:var(${{Pending:"--status-pending-fg",Completed:"--status-completed-fg",Rescheduled:"--status-rescheduled-fg",Skipped:"--status-skipped-fg"}[r.status]})"></div>` : "").join("")}</div>
+@@ -1000,18 +1493,72 @@ function renderAnalytics() {
+   `;
+ }
+ 
+-/* 16) FAB — add check-in */
+-document.getElementById("fab").addEventListener("click", async () => {
+-  const firstEpa = REFERENCE.epas[0];
+-  const firstFa = REFERENCE.faByEpa[firstEpa][0];
+-  const firstSiteName = REFERENCE.sitesByFa[firstFa][0];
+-  const purpose = REFERENCE.purposes[0];
+-  await createCheckin({
+-    week: selectedWeek || 1, day: "Monday", date: "", epa: firstEpa, assistant: firstFa,
+-    siteId: slugify(firstSiteName), purpose, checklistItems: PURPOSE_CHECKLIST[purpose] || [],
+-    checkedItems: (PURPOSE_CHECKLIST[purpose] || []).map(() => false), status: "Pending",
++/* 16) ADD CHECK-IN
++   The old + button immediately wrote a check-in using the first EPA, first
++   assistant and first site in the reference data, leaving the user to correct
++   a record that already existed. This opens a form instead: week, day and date
++   are prefilled from context, but who and where must be chosen deliberately. */
++function openAddCheckin() {
++  const today = todayISO();
++  const dayName = todayDayName();
++  addFormError = "";
++  addDraft = {
++    week: selectedWeek || 1,
++    day: DAY_ORDER.includes(dayName) ? dayName : "Monday",
++    date: today,
++    epa: "", assistant: "", siteId: "", purpose: "",
++    checklistItems: [], checkedItems: [], status: "Pending",
++  };
++  document.getElementById("add-checkin-screen").classList.remove("hidden");
++  document.getElementById("fab").style.display = "none";
++  renderAddCheckin();
++}
++function closeAddCheckin() {
++  addDraft = null; addFormError = "";
++  document.getElementById("add-checkin-screen").classList.add("hidden");
++  document.getElementById("fab").style.display =
++    (activeTab === "schedule" || activeTab === "today") && !selectedSiteId ? "flex" : "none";
++}
++function renderAddCheckin() {
++  const el = document.getElementById("add-checkin-screen");
++  if (!addDraft) return;
++  el.innerHTML = `
++    <div class="ac-top">
++      <button class="ac-back" data-role="ac-back">${icon("chevron-left", 16)} Cancel</button>
++      <div class="ac-title headline">Add check-in</div>
++      <div class="ac-sub">Prefilled for ${esc(fmtLongDate(addDraft.date || todayISO()))}</div>
++    </div>
++    <div class="ac-body">
++      <div class="ac-card"><div data-role="ac-form"></div></div>
++    </div>
++  `;
++  const formHost = el.querySelector('[data-role="ac-form"]');
++  formHost.innerHTML = renderEditFormBody(addDraft, "add");
++  el.querySelector('[data-role="ac-back"]').addEventListener("click", closeAddCheckin);
++
++  wireDraftForm(formHost, addDraft, {
++    mode: "add",
++    onSave: async (draft, refresh) => {
++      const missing = [];
++      if (!draft.epa) missing.push("EPA");
++      if (!draft.assistant) missing.push("field assistant");
++      if (!draft.siteId) missing.push("site");
++      if (!draft.purpose) missing.push("visit purpose");
++      if (missing.length) {
++        addFormError = "Still needed: " + missing.join(", ") + ".";
++        refresh();
++        return;
++      }
++      addFormError = "";
++      const payload = { ...draft };
++      await createCheckin(payload);
++      closeAddCheckin();
++      render();
++    },
++    onSecondary: () => closeAddCheckin(),
+   });
+-});
++}
++document.getElementById("fab").addEventListener("click", openAddCheckin);
+ 
+ /* 17) INSTALL PROMPT + SERVICE WORKER */
+ window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferredInstallPrompt = e; document.getElementById("install-btn").style.display = "flex"; });
+diff --git a/service-worker.js b/service-worker.js
+index e3cd0b8..d01645f 100644
+--- a/service-worker.js
++++ b/service-worker.js
+@@ -1,4 +1,7 @@
+-const CACHE_NAME = "sfo-field-tracker-v3";
++/* Bump this on every deploy. The fetch handler is cache-first, so an installed
++   phone will keep serving the old index.html forever until the cache name
++   changes and the activate handler clears the previous version. */
++const CACHE_NAME = "sfo-field-tracker-v4";
+ const APP_SHELL = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
+ const CACHEABLE_CROSS_ORIGIN = ["https://fonts.googleapis.com", "https://fonts.gstatic.com"];
+ 
