@@ -1,5 +1,6 @@
-const CACHE_NAME = "sfo-visit-tracker-v1";
+const CACHE_NAME = "sfo-field-tracker-v2";
 const APP_SHELL = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
+const CACHEABLE_CROSS_ORIGIN = ["https://fonts.googleapis.com", "https://fonts.gstatic.com"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -18,12 +19,11 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  // Only cache same-origin GET requests for the app shell.
-  // Firebase Auth/Firestore calls go straight to the network as normal —
-  // Firestore's own offline cache handles those independently.
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
-  if (url.origin !== self.location.origin) return;
+  const isSameOrigin = url.origin === self.location.origin;
+  const isCacheableFont = CACHEABLE_CROSS_ORIGIN.includes(url.origin);
+  if (!isSameOrigin && !isCacheableFont) return; // let Firebase/Auth/Firestore calls go straight to network
 
   event.respondWith(
     caches.match(event.request).then((cached) => {
