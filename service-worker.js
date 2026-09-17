@@ -1,7 +1,7 @@
 /* Bump this on every deploy. The fetch handler is cache-first, so an installed
    phone will keep serving the old index.html forever until the cache name
    changes and the activate handler clears the previous version. */
-const CACHE_NAME = "sfo-field-tracker-v4";
+const CACHE_NAME = "sfo-field-tracker-v5";
 const APP_SHELL = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 const CACHEABLE_CROSS_ORIGIN = ["https://fonts.googleapis.com", "https://fonts.gstatic.com"];
 
