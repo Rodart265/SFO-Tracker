@@ -1,4 +1,4 @@
-const CACHE_NAME = "sfo-field-tracker-v2";
+const CACHE_NAME = "sfo-field-tracker-v3";
 const APP_SHELL = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 const CACHEABLE_CROSS_ORIGIN = ["https://fonts.googleapis.com", "https://fonts.gstatic.com"];
 
