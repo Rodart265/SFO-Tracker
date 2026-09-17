@@ -340,6 +340,70 @@ a{color:inherit;text-decoration:none;}
 /* The status chip is a span inside a button here, not a real control. */
 .res-card .obs-status-btn{display:inline-block;}
 mark{background:var(--gold-soft);color:var(--ink);border-radius:3px;padding:0 2px;}
+
+/* ---- Activity feed (Today screen) ---- */
+.activity-item{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid #F2F0E8;width:100%;text-align:left;}
+.activity-item:last-child{border-bottom:none;}
+.activity-dot{width:7px;height:7px;border-radius:50%;margin-top:6px;flex-shrink:0;}
+.activity-body{flex:1;min-width:0;display:block;}
+.activity-line{font-size:12.5px;color:var(--ink);display:block;}
+.activity-line b{font-weight:700;}
+.activity-time{font-size:10.5px;color:var(--ink-faint);margin-top:2px;display:block;}
+
+/* ---- Risk (Analytics screen) ---- */
+.risk-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #F2F0E8;width:100%;text-align:left;}
+.risk-row:last-child{border-bottom:none;}
+.risk-row .risk-name{font-size:13.5px;font-weight:700;color:var(--ink);}
+.risk-row .risk-body{flex:1;min-width:0;display:block;}
+.risk-badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;}
+.risk-badge{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;display:inline-flex;align-items:center;gap:3px;}
+.risk-badge.issue{background:var(--status-skipped-bg);color:var(--status-skipped-fg);}
+.risk-badge.followup{background:var(--status-pending-bg);color:var(--status-pending-fg);}
+.risk-badge.stale{background:var(--epa-mpingu-bg);color:var(--epa-mpingu-fg);}
+.risk-badge.never{background:var(--epa-office-bg);color:var(--epa-office-fg);}
+.risk-badge.repeat{background:#F1E4F2;color:#7A3E7F;}
+.risk-empty{font-size:12.5px;color:var(--ink-soft);padding:6px 0;}
+.report-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:#fff;border:1px solid var(--line);
+  border-radius:var(--radius-md);padding:14px;font-size:14px;font-weight:700;color:var(--forest-dark);box-shadow:var(--shadow-sm);margin-bottom:14px;}
+
+/* ---- Weekly report overlay ---- */
+#report-screen{position:fixed;inset:0;background:var(--cream);z-index:41;display:flex;flex-direction:column;overflow-y:auto;}
+.rep-top{background:linear-gradient(155deg,var(--forest) 0%, var(--forest-dark) 100%);color:#fff;
+  padding:16px 18px 18px;padding-top:calc(16px + env(safe-area-inset-top,0px));}
+.rep-back{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.85);font-size:13px;font-weight:650;margin-bottom:12px;}
+.rep-title-row{display:flex;justify-content:space-between;align-items:center;}
+.rep-title{font-size:20px;font-weight:750;}
+.rep-week-btn{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.14);border-radius:99px;padding:7px 12px;font-size:12.5px;font-weight:700;color:#fff;}
+.rep-actions{display:flex;gap:8px;margin-top:14px;}
+.rep-actions button{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;background:rgba(255,255,255,.14);
+  border-radius:var(--radius-sm);padding:10px;font-size:12.5px;font-weight:700;color:#fff;}
+.rep-body{padding:16px 16px calc(var(--navh) + 40px);max-width:560px;width:100%;margin:0 auto;}
+.rep-card{background:#fff;border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow-sm);}
+.rep-card h3{font-size:12px;margin:0 0 10px;color:var(--forest-dark);font-weight:750;text-transform:uppercase;letter-spacing:.3px;}
+.rep-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.rep-stat{text-align:center;}
+.rep-stat .num{font-size:19px;font-weight:750;color:var(--forest-dark);}
+.rep-stat .lbl{font-size:9.5px;color:var(--ink-soft);font-weight:650;margin-top:2px;text-transform:uppercase;}
+.rep-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #F2F0E8;font-size:13px;}
+.rep-row:last-child{border-bottom:none;}
+.rep-row .rep-row-val{font-weight:700;color:var(--forest-dark);}
+.rep-note{padding:9px 0;border-bottom:1px solid #F2F0E8;}
+.rep-note:last-child{border-bottom:none;}
+.rep-note .rn-head{display:flex;gap:7px;align-items:center;font-size:11.5px;font-weight:700;}
+.rep-note .rn-type{text-transform:uppercase;letter-spacing:.3px;font-size:9.5px;}
+.rep-note .rn-text{font-size:12.5px;color:var(--ink-soft);margin-top:3px;line-height:1.4;}
+.rep-empty{font-size:12.5px;color:var(--ink-soft);padding:4px 0;}
+
+@media print{
+  body *{visibility:hidden;}
+  #report-screen, #report-screen *{visibility:visible;}
+  #report-screen{position:absolute;inset:0;overflow:visible;background:#fff;}
+  #report-screen .no-print{display:none !important;}
+  .rep-top{background:#fff !important;color:var(--ink) !important;padding:0 0 14px;}
+  .rep-title{color:var(--forest-dark);}
+  .rep-body{padding:0;max-width:100%;}
+  .rep-card{box-shadow:none;border:1px solid var(--line);break-inside:avoid;}
+}
 </style>
 </head>
 <body>
@@ -377,6 +441,7 @@ mark{background:var(--gold-soft);color:var(--ink);border-radius:3px;padding:0 2p
 
   <div id="site-profile-screen" class="hidden"></div>
   <div id="add-checkin-screen" class="hidden"></div>
+  <div id="report-screen" class="hidden"></div>
 
   <div id="bottom-nav" class="hidden">
     <div id="bottom-nav-inner">
@@ -419,7 +484,7 @@ const db = getFirestore(app);
 try { await enableIndexedDbPersistence(db); } catch (err) { console.warn("Offline persistence unavailable:", err.code); }
 
 /* 2) ICONS */
-const ICONS = {"check": "<path d=\"M20 6 9 17l-5-5\" />", "x": "<path d=\"M18 6 6 18\" /> <path d=\"m6 6 12 12\" />", "chevron-right": "<path d=\"m9 18 6-6-6-6\" />", "chevron-down": "<path d=\"m6 9 6 6 6-6\" />", "chevron-left": "<path d=\"m15 18-6-6 6-6\" />", "phone": "<path d=\"M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384\" />", "map-pin": "<path d=\"M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0\" /> <circle cx=\"12\" cy=\"10\" r=\"3\" />", "users": "<path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\" /> <path d=\"M16 3.128a4 4 0 0 1 0 7.744\" /> <path d=\"M22 21v-2a4 4 0 0 0-3-3.87\" /> <circle cx=\"9\" cy=\"7\" r=\"4\" />", "layout-grid": "<rect width=\"7\" height=\"7\" x=\"3\" y=\"3\" rx=\"1\" /> <rect width=\"7\" height=\"7\" x=\"14\" y=\"3\" rx=\"1\" /> <rect width=\"7\" height=\"7\" x=\"14\" y=\"14\" rx=\"1\" /> <rect width=\"7\" height=\"7\" x=\"3\" y=\"14\" rx=\"1\" />", "bar-chart-3": "<path d=\"M3 3v16a2 2 0 0 0 2 2h16\" /> <path d=\"M18 17V9\" /> <path d=\"M13 17V5\" /> <path d=\"M8 17v-3\" />", "calendar": "<path d=\"M8 2v3\" /> <path d=\"M16 2v3\" /> <rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\" /> <path d=\"M3 9h18\" />", "calendar-check": "<path d=\"M8 2v3\" /> <path d=\"M16 2v3\" /> <rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\" /> <path d=\"M3 9h18\" /> <path d=\"m9 15 2 2 4-4\" />", "plus": "<path d=\"M5 12h14\" /> <path d=\"M12 5v14\" />", "pencil": "<path d=\"M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z\" /> <path d=\"m15 5 4 4\" />", "trash-2": "<path d=\"M10 11v6\" /> <path d=\"M14 11v6\" /> <path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6\" /> <path d=\"M3 6h18\" /> <path d=\"M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\" />", "cloud": "<path d=\"M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z\" />", "cloud-off": "<path d=\"M10.94 5.274A7 7 0 0 1 15.71 10h1.79a4.5 4.5 0 0 1 4.222 6.057\" /> <path d=\"M18.796 18.81A4.5 4.5 0 0 1 17.5 19H9A7 7 0 0 1 5.79 5.78\" /> <path d=\"m2 2 20 20\" />", "wifi-off": "<path d=\"M12 20h.01\" /> <path d=\"M8.5 16.429a5 5 0 0 1 7 0\" /> <path d=\"M5 12.859a10 10 0 0 1 5.17-2.69\" /> <path d=\"M19 12.859a10 10 0 0 0-2.007-1.523\" /> <path d=\"M2 8.82a15 15 0 0 1 4.177-2.643\" /> <path d=\"M22 8.82a15 15 0 0 0-11.288-3.764\" /> <path d=\"m2 2 20 20\" />", "clock": "<circle cx=\"12\" cy=\"12\" r=\"10\" /> <path d=\"M12 6v6l4 2\" />", "circle-check": "<circle cx=\"12\" cy=\"12\" r=\"10\" /> <path d=\"m16 9-5.5 5.5L8 12\" />", "circle-alert": "<circle cx=\"12\" cy=\"12\" r=\"10\" /> <line x1=\"12\" x2=\"12\" y1=\"8\" y2=\"12\" /> <line x1=\"12\" x2=\"12.01\" y1=\"16\" y2=\"16\" />", "list-checks": "<path d=\"M13 5h8\" /> <path d=\"M13 12h8\" /> <path d=\"M13 19h8\" /> <path d=\"m3 17 2 2 4-4\" /> <path d=\"m3 7 2 2 4-4\" />", "sprout": "<path d=\"M14 9.536V7a4 4 0 0 1 4-4h1.5a.5.5 0 0 1 .5.5V5a4 4 0 0 1-4 4 4 4 0 0 0-4 4c0 2 1 3 1 5a5 5 0 0 1-1 3\" /> <path d=\"M4 9a5 5 0 0 1 8 4 5 5 0 0 1-8-4\" /> <path d=\"M5 21h14\" />", "building-2": "<path d=\"M10 12h4\" /> <path d=\"M10 8h4\" /> <path d=\"M14 21v-3a2 2 0 0 0-4 0v3\" /> <path d=\"M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2\" /> <path d=\"M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16\" />", "search": "<path d=\"m21 21-4.34-4.34\" /> <circle cx=\"11\" cy=\"11\" r=\"8\" />", "sliders-horizontal": "<path d=\"M10 5H3\" /> <path d=\"M12 19H3\" /> <path d=\"M14 3v4\" /> <path d=\"M16 17v4\" /> <path d=\"M21 12h-9\" /> <path d=\"M21 19h-5\" /> <path d=\"M21 5h-7\" /> <path d=\"M8 10v4\" /> <path d=\"M8 12H3\" />", "log-out": "<path d=\"m16 17 5-5-5-5\" /> <path d=\"M21 12H9\" /> <path d=\"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4\" />", "user": "<path d=\"M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2\" /> <circle cx=\"12\" cy=\"7\" r=\"4\" />", "folder": "<path d=\"M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z\" />", "file-text": "<path d=\"M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z\" /> <path d=\"M14 2v5a1 1 0 0 0 1 1h5\" /> <path d=\"M10 9H8\" /> <path d=\"M16 13H8\" /> <path d=\"M16 17H8\" />", "download": "<path d=\"M12 15V3\" /> <path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\" /> <path d=\"m7 10 5 5 5-5\" />", "arrow-up": "<path d=\"m5 12 7-7 7 7\" /> <path d=\"M12 19V5\" />", "arrow-down": "<path d=\"M12 5v14\" /> <path d=\"m19 12-7 7-7-7\" />", "send": "<path d=\"M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z\" /> <path d=\"m21.854 2.147-10.94 10.939\" />", "trees": "<path d=\"M10 10v.2A3 3 0 0 1 8.9 16H5a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z\" /> <path d=\"M7 16v6\" /> <path d=\"M13 19v3\" /> <path d=\"M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.5\" />", "clipboard-list": "<rect width=\"8\" height=\"4\" x=\"8\" y=\"2\" rx=\"1\" ry=\"1\" /> <path d=\"M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2\" /> <path d=\"M12 11h4\" /> <path d=\"M12 16h4\" /> <path d=\"M8 11h.01\" /> <path d=\"M8 16h.01\" />", "message-square": "<path d=\"M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z\" />", "camera": "<path d=\"M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z\" /> <circle cx=\"12\" cy=\"13\" r=\"3\" />", "image": "<rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\" ry=\"2\" /> <circle cx=\"9\" cy=\"9\" r=\"2\" /> <path d=\"m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21\" />", "badge-check": "<path d=\"M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z\" /> <path d=\"m16 9-5.5 5.5L8 12\" />", "activity": "<path d=\"M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2\" />", "more-vertical": "<circle cx=\"12\" cy=\"12\" r=\"1\" /> <circle cx=\"12\" cy=\"5\" r=\"1\" /> <circle cx=\"12\" cy=\"19\" r=\"1\" />", "info": "<circle cx=\"12\" cy=\"12\" r=\"10\" /> <path d=\"M12 16v-4\" /> <path d=\"M12 8h.01\" />", "triangle-alert": "<path d=\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3\" /> <path d=\"M12 9v4\" /> <path d=\"M12 17h.01\" />", "loader-circle": "<path d=\"M21 12a9 9 0 1 1-6.219-8.56\" />", "leaf": "<path d=\"M11 20a10 10 0 0010-10 25.9 25.9 0 00-1.04-7.281 1 1 0 00-1.755-.325C15.833 5.5 13 5.5 9.8 6.1A7 7 0 0011 20\" /> <path d=\"M2 21a5 5 0 012.911-4.544C7.613 15.212 8.351 15.24 11 13\" />"};
+const ICONS = {"check": "<path d=\"M20 6 9 17l-5-5\" />", "x": "<path d=\"M18 6 6 18\" /> <path d=\"m6 6 12 12\" />", "chevron-right": "<path d=\"m9 18 6-6-6-6\" />", "chevron-down": "<path d=\"m6 9 6 6 6-6\" />", "chevron-left": "<path d=\"m15 18-6-6 6-6\" />", "phone": "<path d=\"M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384\" />", "map-pin": "<path d=\"M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0\" /> <circle cx=\"12\" cy=\"10\" r=\"3\" />", "users": "<path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\" /> <path d=\"M16 3.128a4 4 0 0 1 0 7.744\" /> <path d=\"M22 21v-2a4 4 0 0 0-3-3.87\" /> <circle cx=\"9\" cy=\"7\" r=\"4\" />", "layout-grid": "<rect width=\"7\" height=\"7\" x=\"3\" y=\"3\" rx=\"1\" /> <rect width=\"7\" height=\"7\" x=\"14\" y=\"3\" rx=\"1\" /> <rect width=\"7\" height=\"7\" x=\"14\" y=\"14\" rx=\"1\" /> <rect width=\"7\" height=\"7\" x=\"3\" y=\"14\" rx=\"1\" />", "bar-chart-3": "<path d=\"M3 3v16a2 2 0 0 0 2 2h16\" /> <path d=\"M18 17V9\" /> <path d=\"M13 17V5\" /> <path d=\"M8 17v-3\" />", "calendar": "<path d=\"M8 2v3\" /> <path d=\"M16 2v3\" /> <rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\" /> <path d=\"M3 9h18\" />", "calendar-check": "<path d=\"M8 2v3\" /> <path d=\"M16 2v3\" /> <rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\" /> <path d=\"M3 9h18\" /> <path d=\"m9 15 2 2 4-4\" />", "plus": "<path d=\"M5 12h14\" /> <path d=\"M12 5v14\" />", "pencil": "<path d=\"M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z\" /> <path d=\"m15 5 4 4\" />", "trash-2": "<path d=\"M10 11v6\" /> <path d=\"M14 11v6\" /> <path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6\" /> <path d=\"M3 6h18\" /> <path d=\"M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\" />", "cloud": "<path d=\"M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z\" />", "cloud-off": "<path d=\"M10.94 5.274A7 7 0 0 1 15.71 10h1.79a4.5 4.5 0 0 1 4.222 6.057\" /> <path d=\"M18.796 18.81A4.5 4.5 0 0 1 17.5 19H9A7 7 0 0 1 5.79 5.78\" /> <path d=\"m2 2 20 20\" />", "wifi-off": "<path d=\"M12 20h.01\" /> <path d=\"M8.5 16.429a5 5 0 0 1 7 0\" /> <path d=\"M5 12.859a10 10 0 0 1 5.17-2.69\" /> <path d=\"M19 12.859a10 10 0 0 0-2.007-1.523\" /> <path d=\"M2 8.82a15 15 0 0 1 4.177-2.643\" /> <path d=\"M22 8.82a15 15 0 0 0-11.288-3.764\" /> <path d=\"m2 2 20 20\" />", "clock": "<circle cx=\"12\" cy=\"12\" r=\"10\" /> <path d=\"M12 6v6l4 2\" />", "circle-check": "<circle cx=\"12\" cy=\"12\" r=\"10\" /> <path d=\"m16 9-5.5 5.5L8 12\" />", "circle-alert": "<circle cx=\"12\" cy=\"12\" r=\"10\" /> <line x1=\"12\" x2=\"12\" y1=\"8\" y2=\"12\" /> <line x1=\"12\" x2=\"12.01\" y1=\"16\" y2=\"16\" />", "list-checks": "<path d=\"M13 5h8\" /> <path d=\"M13 12h8\" /> <path d=\"M13 19h8\" /> <path d=\"m3 17 2 2 4-4\" /> <path d=\"m3 7 2 2 4-4\" />", "sprout": "<path d=\"M14 9.536V7a4 4 0 0 1 4-4h1.5a.5.5 0 0 1 .5.5V5a4 4 0 0 1-4 4 4 4 0 0 0-4 4c0 2 1 3 1 5a5 5 0 0 1-1 3\" /> <path d=\"M4 9a5 5 0 0 1 8 4 5 5 0 0 1-8-4\" /> <path d=\"M5 21h14\" />", "building-2": "<path d=\"M10 12h4\" /> <path d=\"M10 8h4\" /> <path d=\"M14 21v-3a2 2 0 0 0-4 0v3\" /> <path d=\"M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2\" /> <path d=\"M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16\" />", "search": "<path d=\"m21 21-4.34-4.34\" /> <circle cx=\"11\" cy=\"11\" r=\"8\" />", "sliders-horizontal": "<path d=\"M10 5H3\" /> <path d=\"M12 19H3\" /> <path d=\"M14 3v4\" /> <path d=\"M16 17v4\" /> <path d=\"M21 12h-9\" /> <path d=\"M21 19h-5\" /> <path d=\"M21 5h-7\" /> <path d=\"M8 10v4\" /> <path d=\"M8 12H3\" />", "log-out": "<path d=\"m16 17 5-5-5-5\" /> <path d=\"M21 12H9\" /> <path d=\"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4\" />", "user": "<path d=\"M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2\" /> <circle cx=\"12\" cy=\"7\" r=\"4\" />", "folder": "<path d=\"M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z\" />", "file-text": "<path d=\"M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z\" /> <path d=\"M14 2v5a1 1 0 0 0 1 1h5\" /> <path d=\"M10 9H8\" /> <path d=\"M16 13H8\" /> <path d=\"M16 17H8\" />", "download": "<path d=\"M12 15V3\" /> <path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\" /> <path d=\"m7 10 5 5 5-5\" />", "arrow-up": "<path d=\"m5 12 7-7 7 7\" /> <path d=\"M12 19V5\" />", "arrow-down": "<path d=\"M12 5v14\" /> <path d=\"m19 12-7 7-7-7\" />", "send": "<path d=\"M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z\" /> <path d=\"m21.854 2.147-10.94 10.939\" />", "trees": "<path d=\"M10 10v.2A3 3 0 0 1 8.9 16H5a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z\" /> <path d=\"M7 16v6\" /> <path d=\"M13 19v3\" /> <path d=\"M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.5\" />", "clipboard-list": "<rect width=\"8\" height=\"4\" x=\"8\" y=\"2\" rx=\"1\" ry=\"1\" /> <path d=\"M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2\" /> <path d=\"M12 11h4\" /> <path d=\"M12 16h4\" /> <path d=\"M8 11h.01\" /> <path d=\"M8 16h.01\" />", "message-square": "<path d=\"M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z\" />", "camera": "<path d=\"M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z\" /> <circle cx=\"12\" cy=\"13\" r=\"3\" />", "image": "<rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\" ry=\"2\" /> <circle cx=\"9\" cy=\"9\" r=\"2\" /> <path d=\"m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21\" />", "badge-check": "<path d=\"M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z\" /> <path d=\"m16 9-5.5 5.5L8 12\" />", "activity": "<path d=\"M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2\" />", "more-vertical": "<circle cx=\"12\" cy=\"12\" r=\"1\" /> <circle cx=\"12\" cy=\"5\" r=\"1\" /> <circle cx=\"12\" cy=\"19\" r=\"1\" />", "info": "<circle cx=\"12\" cy=\"12\" r=\"10\" /> <path d=\"M12 16v-4\" /> <path d=\"M12 8h.01\" />", "triangle-alert": "<path d=\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3\" /> <path d=\"M12 9v4\" /> <path d=\"M12 17h.01\" />", "loader-circle": "<path d=\"M21 12a9 9 0 1 1-6.219-8.56\" />", "leaf": "<path d=\"M11 20a10 10 0 0010-10 25.9 25.9 0 00-1.04-7.281 1 1 0 00-1.755-.325C15.833 5.5 13 5.5 9.8 6.1A7 7 0 0011 20\" /> <path d=\"M2 21a5 5 0 012.911-4.544C7.613 15.212 8.351 15.24 11 13\" />", "copy": "<rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\" /> <path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\" />", "printer": "<path d=\"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2\" /> <path d=\"M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6\" /> <rect x=\"6\" y=\"14\" width=\"12\" height=\"8\" rx=\"1\" />", "repeat": "<path d=\"m17 2 4 4-4 4\" /> <path d=\"M3 11v-1a4 4 0 0 1 4-4h14\" /> <path d=\"m7 22-4-4 4-4\" /> <path d=\"M21 13v1a4 4 0 0 1-4 4H3\" />"};
 function icon(name, size) {
   size = size || 18;
   return '<svg class="ic" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || "") + '</svg>';
@@ -491,6 +556,7 @@ let noteDraftMeta = { assignedTo: "", dueDate: "" };
 let selectedSiteId = null;
 let addDraft = null;
 let addFormError = "";
+let reportWeek = null;
 let deferredInstallPrompt = null;
 let migrationDone = false;
 
@@ -585,6 +651,87 @@ function observationsForCheckin(checkinId) { return observations.filter((o) => o
 function observationsForSite(siteId) { return observations.filter((o) => o.siteId === siteId).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)); }
 function fmtWhen(ts) { if (!ts || !ts.seconds) return "Just now"; return new Date(ts.seconds * 1000).toLocaleDateString(undefined, { month: "short", day: "numeric" }); }
 
+/* "12 min ago" style label for the activity feed. Falls back to a short date
+   once something is more than a week old, since "9 days ago" is less useful
+   than just seeing the date at that point. */
+function relTime(ts) {
+  if (!ts || !ts.seconds) return "Just now";
+  const diffMs = Date.now() - ts.seconds * 1000;
+  const min = Math.floor(diffMs / 60000);
+  if (min < 1) return "Just now";
+  if (min < 60) return `${min} min ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr} hr${hr === 1 ? "" : "s"} ago`;
+  const day = Math.floor(hr / 24);
+  if (day === 1) return "Yesterday";
+  if (day < 7) return `${day} days ago`;
+  return new Date(ts.seconds * 1000).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+/* --- Activity feed ---
+   There's no dedicated event log in this data model, so the feed is built by
+   reading three things as events: a note being created, an issue/follow-up
+   being resolved, and a check-in being marked Completed. Resolving is the
+   only observation "edit" that counts as a distinct event; other edits to a
+   check-in (ticking a checklist box, changing notes) don't get their own
+   entry, since `updatedAt` is overwritten by any edit and can't distinguish
+   "just completed" from "checklist ticked five minutes later." */
+function buildActivityFeed(limit) {
+  const events = [];
+  observations.forEach((o) => {
+    if (o.createdAt?.seconds) {
+      events.push({
+        ts: o.createdAt.seconds, siteId: o.siteId, color: `var(--obs-${o.type})`,
+        text: `<b>${OBS_LABEL[o.type] || o.type}</b> logged`,
+      });
+    }
+    if (isTracked(o) && obsStatus(o) === "Resolved" && o.resolvedAt?.seconds) {
+      events.push({
+        ts: o.resolvedAt.seconds, siteId: o.siteId, color: "var(--status-completed-fg)",
+        text: `<b>${OBS_LABEL[o.type]}</b> resolved`,
+      });
+    }
+  });
+  checkins.forEach((c) => {
+    if (c.status === "Completed" && c.updatedAt?.seconds) {
+      events.push({ ts: c.updatedAt.seconds, siteId: c.siteId, color: "var(--status-completed-fg)", text: "Visit completed" });
+    }
+  });
+  events.sort((a, b) => b.ts - a.ts);
+  return events.slice(0, limit || 10);
+}
+
+/* --- Risk ---
+   Flags sites worth a second look. Each factor is independent and cheap to
+   explain; the score is just how many fired, so "two problems" outranks
+   "one problem" without pretending to be a precise model. */
+const STALE_VISIT_DAYS = 21;
+function computeSiteRisk() {
+  const iso = todayISO();
+  return sites.filter((s) => s.id !== "n-a").map((s) => {
+    const history = checkinsForSite(s.id);
+    const datedVisits = history.filter((c) => c.date).sort((a, b) => b.date.localeCompare(a.date));
+    const allIssuesForSite = observations.filter((o) => o.siteId === s.id && o.type === "issue");
+    const factors = [];
+
+    if (openIssuesForSite(s.id).length) factors.push({ key: "issue", label: `${openIssuesForSite(s.id).length} open issue${openIssuesForSite(s.id).length === 1 ? "" : "s"}` });
+
+    const overdueFup = observations.some((o) => o.siteId === s.id && o.type === "followUp" && isUnresolved(o) && isDueOrOverdue(o));
+    if (overdueFup) factors.push({ key: "followup", label: "Follow-up overdue" });
+
+    if (!history.length) {
+      factors.push({ key: "never", label: "Never visited" });
+    } else if (datedVisits.length) {
+      const daysSince = Math.floor((new Date(iso) - new Date(datedVisits[0].date)) / 86400000);
+      if (daysSince > STALE_VISIT_DAYS) factors.push({ key: "stale", label: `No visit in ${daysSince}d` });
+    }
+
+    if (allIssuesForSite.length >= 3) factors.push({ key: "repeat", label: `${allIssuesForSite.length} issues logged (recurring)` });
+
+    return { site: s, factors, score: factors.length };
+  }).filter((r) => r.score > 0).sort((a, b) => b.score - a.score);
+}
+
 /* --- Issue / follow-up lifecycle ---
    Notes created before this feature existed have no status field. Treating a
    missing status as "Open" keeps old issues visible rather than silently
@@ -662,19 +809,33 @@ function openSheet(title, options, currentValue, onSelect) {
 function closeSheet() { document.getElementById("sheet-backdrop").classList.remove("open"); }
 document.getElementById("sheet-backdrop").addEventListener("click", (e) => { if (e.target.id === "sheet-backdrop") closeSheet(); });
 
+/* Single source of truth for FAB visibility: visible only on Today/Schedule,
+   and only when no full-screen overlay is covering it. Called from every
+   place that opens or closes an overlay, instead of each one re-deriving
+   this condition (and risking them drifting out of sync). */
+function updateFab() {
+  const overlayOpen = !!selectedSiteId || !!addDraft || reportWeek !== null;
+  document.getElementById("fab").style.display =
+    (!overlayOpen && (activeTab === "schedule" || activeTab === "today")) ? "flex" : "none";
+}
+
 /* 11) NAV */
 document.querySelectorAll(".nav-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
     activeTab = btn.dataset.tab;
     selectedSiteId = null;
+    addDraft = null; addFormError = "";
+    reportWeek = null;
     document.querySelectorAll(".nav-btn").forEach((b) => b.classList.toggle("active", b === btn));
     document.getElementById("screen-today").classList.toggle("hidden", activeTab !== "today");
     document.getElementById("screen-schedule").classList.toggle("hidden", activeTab !== "schedule");
     document.getElementById("screen-analytics").classList.toggle("hidden", activeTab !== "analytics");
     document.getElementById("screen-sites").classList.toggle("hidden", activeTab !== "sites");
     document.getElementById("site-profile-screen").classList.add("hidden");
+    document.getElementById("report-screen").classList.add("hidden");
+    document.getElementById("add-checkin-screen").classList.add("hidden");
     document.getElementById("top-title").textContent = { today: "Today", schedule: "Schedule", analytics: "Analytics", sites: "Sites & Team" }[activeTab];
-    document.getElementById("fab").style.display = (activeTab === "schedule" || activeTab === "today") ? "flex" : "none";
+    updateFab();
     render();
   });
 });
@@ -682,14 +843,13 @@ document.querySelectorAll(".nav-btn").forEach((btn) => {
 function openSiteProfile(siteId) {
   selectedSiteId = siteId;
   document.getElementById("site-profile-screen").classList.remove("hidden");
-  document.getElementById("fab").style.display = "none";
+  updateFab();
   renderSiteProfile();
 }
 function closeSiteProfile() {
   selectedSiteId = null;
   document.getElementById("site-profile-screen").classList.add("hidden");
-  document.getElementById("fab").style.display =
-    (activeTab === "schedule" || activeTab === "today") ? "flex" : "none";
+  updateFab();
 }
 
 function render() {
@@ -699,6 +859,7 @@ function render() {
   else renderSitesTeam();
   if (selectedSiteId) renderSiteProfile();
   if (addDraft) renderAddCheckin();
+  if (reportWeek !== null) renderReport();
 }
 
 /* 11b) TODAY SCREEN
@@ -742,6 +903,7 @@ function renderToday() {
   const weekItems = checkins.filter((c) => c.week === selectedWeek);
   const weekDone = weekItems.filter((c) => c.status === "Completed").length;
   const weekPct = weekItems.length ? Math.round((weekDone / weekItems.length) * 100) : 0;
+  const activity = buildActivityFeed(8);
 
   el.innerHTML = `
     <div class="today-hero">
@@ -788,9 +950,22 @@ function renderToday() {
         </div>
         <div class="wp-track"><div class="wp-fill" style="width:${weekPct}%"></div></div>
       </div>` : ""}
+
+    ${activity.length ? `
+      <div class="sec-title">Recent activity</div>
+      <div class="dash-card" style="padding:4px 16px;">
+        ${activity.map((ev) => `
+          <button class="activity-item" data-site="${esc(ev.siteId)}">
+            <span class="activity-dot" style="background:${ev.color}"></span>
+            <span class="activity-body">
+              <span class="activity-line">${esc(siteById(ev.siteId).name)} · ${ev.text}</span>
+              <span class="activity-time">${esc(relTime({ seconds: ev.ts }))}</span>
+            </span>
+          </button>`).join("")}
+      </div>` : ""}
   `;
 
-  el.querySelectorAll(".attn-card").forEach((c) =>
+  el.querySelectorAll(".attn-card, .activity-item").forEach((c) =>
     c.addEventListener("click", () => openSiteProfile(c.dataset.site)));
   wireCardEvents(el);
 }
@@ -1439,7 +1614,11 @@ function renderAnalytics() {
     return { fa, epa, cls: EPA_CLASS[epa], total: items.length, pct: items.length ? Math.round((c / items.length) * 100) : 0 };
   });
 
+  const risk = computeSiteRisk();
+  const riskBadgeIcon = { issue: "circle-alert", followup: "clock", stale: "calendar", never: "map-pin", repeat: "repeat" };
+
   el.innerHTML = `
+    <button class="report-btn" data-role="open-report">${icon("file-text", 17)} Generate weekly report</button>
     <div class="stat-grid">
       <div class="stat-tile"><div class="num">${total}</div><div class="label">Total check-ins</div></div>
       <div class="stat-tile"><div class="num">${pct}%</div><div class="label">Completed</div></div>
@@ -1447,6 +1626,19 @@ function renderAnalytics() {
       <div class="stat-tile"><div class="num">${sites.filter(s=>s.id!=="n-a").length}</div><div class="label">Sites tracked</div></div>
       <div class="stat-tile"><div class="num" style="${overdueVisits ? "color:var(--obs-issue)" : ""}">${overdueVisits}</div><div class="label">Overdue visits</div></div>
       <div class="stat-tile"><div class="num" style="${dueFups ? "color:var(--obs-followUp)" : ""}">${dueFups}</div><div class="label">Follow-ups due</div></div>
+    </div>
+    <div class="dash-card">
+      <h2>Sites needing attention</h2>
+      ${risk.length ? risk.slice(0, 8).map((r) => `
+        <button class="risk-row" data-site="${esc(r.site.id)}">
+          <span class="risk-body">
+            <span class="risk-name">${esc(r.site.name)}</span>
+            <span class="risk-badges">
+              ${r.factors.map((f) => `<span class="risk-badge ${f.key}">${icon(riskBadgeIcon[f.key], 10)}${esc(f.label)}</span>`).join("")}
+            </span>
+          </span>
+          ${icon("chevron-right", 16)}
+        </button>`).join("") : `<div class="risk-empty">${icon("badge-check", 15)} No sites flagged right now.</div>`}
     </div>
     ${allIssues.length ? `
     <div class="dash-card">
@@ -1491,6 +1683,9 @@ function renderAnalytics() {
         </div>`).join("")}
     </div>
   `;
+
+  el.querySelector('[data-role="open-report"]').addEventListener("click", () => openReport());
+  el.querySelectorAll(".risk-row").forEach((r) => r.addEventListener("click", () => openSiteProfile(r.dataset.site)));
 }
 
 /* 16) ADD CHECK-IN
@@ -1510,14 +1705,13 @@ function openAddCheckin() {
     checklistItems: [], checkedItems: [], status: "Pending",
   };
   document.getElementById("add-checkin-screen").classList.remove("hidden");
-  document.getElementById("fab").style.display = "none";
+  updateFab();
   renderAddCheckin();
 }
 function closeAddCheckin() {
   addDraft = null; addFormError = "";
   document.getElementById("add-checkin-screen").classList.add("hidden");
-  document.getElementById("fab").style.display =
-    (activeTab === "schedule" || activeTab === "today") && !selectedSiteId ? "flex" : "none";
+  updateFab();
 }
 function renderAddCheckin() {
   const el = document.getElementById("add-checkin-screen");
@@ -1559,6 +1753,173 @@ function renderAddCheckin() {
   });
 }
 document.getElementById("fab").addEventListener("click", openAddCheckin);
+
+/* 16b) WEEKLY REPORT
+   Builds a report scoped to check-ins whose `week` field matches the chosen
+   week, plus the observations logged against those specific check-ins. Notes
+   are bucketed by which week's visit they were logged during, not by
+   calendar date, because `date` is often blank and `week` is the one field
+   every check-in reliably has. */
+function weeksWithData() {
+  return [...new Set(checkins.map((c) => c.week).filter((w) => typeof w === "number"))].sort((a, b) => a - b);
+}
+function buildReportData(week) {
+  const weekCheckins = checkins.filter((c) => c.week === week);
+  const weekIds = new Set(weekCheckins.map((c) => c.id));
+  const weekObs = observations.filter((o) => weekIds.has(o.checkinId));
+
+  const visitsPlanned = weekCheckins.length;
+  const visitsCompleted = weekCheckins.filter((c) => c.status === "Completed").length;
+  const visitsMissed = weekCheckins.filter((c) => c.status === "Skipped" || c.status === "Rescheduled").length;
+  const sitesInvolved = [...new Set(weekCheckins.map((c) => c.siteId).filter((id) => id !== "n-a"))];
+  const sitesCompleted = [...new Set(weekCheckins.filter((c) => c.status === "Completed").map((c) => c.siteId).filter((id) => id !== "n-a"))];
+
+  const weekIssues = weekObs.filter((o) => o.type === "issue");
+  const weekFollowUps = weekObs.filter((o) => o.type === "followUp");
+
+  const byAssistant = {};
+  weekCheckins.forEach((c) => {
+    if (!c.assistant || c.assistant === "N/A") return;
+    (byAssistant[c.assistant] ||= []).push(c);
+  });
+  const faRows = Object.entries(byAssistant).map(([fa, items]) => {
+    const done = items.filter((c) => c.status === "Completed").length;
+    return { fa, total: items.length, done, pct: items.length ? Math.round((done / items.length) * 100) : 0 };
+  }).sort((a, b) => b.pct - a.pct);
+
+  const byEpa = {};
+  weekCheckins.forEach((c) => { (byEpa[c.epa] ||= []).push(c); });
+  const epaRows = Object.entries(byEpa).map(([epa, items]) => {
+    const done = items.filter((c) => c.status === "Completed").length;
+    return { epa, total: items.length, done };
+  });
+
+  const notable = weekObs.filter((o) => o.type !== "observation")
+    .sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+
+  return {
+    week, visitsPlanned, visitsCompleted, visitsMissed,
+    sitesCovered: sitesCompleted.length, sitesInvolved: sitesInvolved.length,
+    issuesLogged: weekIssues.length, issuesNowResolved: weekIssues.filter((o) => obsStatus(o) === "Resolved").length,
+    followUpsLogged: weekFollowUps.length, followUpsOpen: weekFollowUps.filter(isUnresolved).length,
+    faRows, epaRows, notable,
+  };
+}
+function buildReportText(d) {
+  const lines = [];
+  lines.push(`SFO FIELD TRACKER — WEEK ${d.week} REPORT`);
+  lines.push(`Generated ${fmtLongDate(todayISO())}`);
+  lines.push("");
+  lines.push(`Visits: ${d.visitsCompleted}/${d.visitsPlanned} completed${d.visitsMissed ? `, ${d.visitsMissed} missed/rescheduled` : ""}`);
+  lines.push(`Sites covered: ${d.sitesCovered}/${d.sitesInvolved}`);
+  lines.push(`Issues: ${d.issuesLogged} logged, ${d.issuesNowResolved} now resolved`);
+  lines.push(`Follow-ups: ${d.followUpsLogged} logged, ${d.followUpsOpen} still open`);
+  if (d.faRows.length) {
+    lines.push("");
+    lines.push("FIELD ASSISTANT PERFORMANCE");
+    d.faRows.forEach((r) => lines.push(`  ${r.fa}: ${r.done}/${r.total} (${r.pct}%)`));
+  }
+  if (d.epaRows.length) {
+    lines.push("");
+    lines.push("EPA COVERAGE");
+    d.epaRows.forEach((r) => lines.push(`  ${r.epa}: ${r.done}/${r.total}`));
+  }
+  if (d.notable.length) {
+    lines.push("");
+    lines.push("KEY OBSERVATIONS");
+    d.notable.forEach((o) => lines.push(`  [${OBS_LABEL[o.type]}] ${siteById(o.siteId).name}: ${o.text}`));
+  }
+  return lines.join("\n");
+}
+
+function openReport() {
+  const weeks = weeksWithData();
+  reportWeek = weeks.includes(selectedWeek) ? selectedWeek : (weeks[weeks.length - 1] ?? 1);
+  document.getElementById("report-screen").classList.remove("hidden");
+  updateFab();
+  renderReport();
+}
+function closeReport() {
+  reportWeek = null;
+  document.getElementById("report-screen").classList.add("hidden");
+  updateFab();
+}
+function renderReport() {
+  const el = document.getElementById("report-screen");
+  if (reportWeek === null) return;
+  const d = buildReportData(reportWeek);
+  const weeks = weeksWithData();
+
+  el.innerHTML = `
+    <div class="rep-top">
+      <button class="rep-back no-print" data-role="rep-back">${icon("chevron-left", 16)} Back</button>
+      <div class="rep-title-row">
+        <div class="rep-title headline">Weekly Report</div>
+        <button class="rep-week-btn no-print" data-role="rep-week">Week ${d.week} ${icon("chevron-down", 13)}</button>
+      </div>
+      <div class="rep-actions no-print">
+        <button data-role="rep-copy">${icon("copy", 14)} Copy as text</button>
+        <button data-role="rep-print">${icon("printer", 14)} Print / Save PDF</button>
+      </div>
+    </div>
+    <div class="rep-body">
+      <div class="rep-card">
+        <h3>Visits</h3>
+        <div class="rep-stat-grid">
+          <div class="rep-stat"><div class="num">${d.visitsPlanned}</div><div class="lbl">Planned</div></div>
+          <div class="rep-stat"><div class="num">${d.visitsCompleted}</div><div class="lbl">Completed</div></div>
+          <div class="rep-stat"><div class="num" style="${d.visitsMissed ? "color:var(--obs-issue)" : ""}">${d.visitsMissed}</div><div class="lbl">Missed</div></div>
+        </div>
+      </div>
+      <div class="rep-card">
+        <h3>Coverage &amp; lifecycle</h3>
+        <div class="rep-row"><span>Sites covered</span><span class="rep-row-val">${d.sitesCovered} / ${d.sitesInvolved}</span></div>
+        <div class="rep-row"><span>Issues logged</span><span class="rep-row-val">${d.issuesLogged}</span></div>
+        <div class="rep-row"><span>Issues now resolved</span><span class="rep-row-val">${d.issuesNowResolved}</span></div>
+        <div class="rep-row"><span>Follow-ups logged</span><span class="rep-row-val">${d.followUpsLogged}</span></div>
+        <div class="rep-row"><span>Follow-ups still open</span><span class="rep-row-val">${d.followUpsOpen}</span></div>
+      </div>
+      ${d.faRows.length ? `
+      <div class="rep-card">
+        <h3>Field assistant performance</h3>
+        ${d.faRows.map((r) => `<div class="rep-row"><span>${esc(r.fa)}</span><span class="rep-row-val">${r.done}/${r.total} (${r.pct}%)</span></div>`).join("")}
+      </div>` : ""}
+      ${d.epaRows.length ? `
+      <div class="rep-card">
+        <h3>EPA coverage</h3>
+        ${d.epaRows.map((r) => `<div class="rep-row"><span>${esc(r.epa)}</span><span class="rep-row-val">${r.done}/${r.total}</span></div>`).join("")}
+      </div>` : ""}
+      <div class="rep-card">
+        <h3>Key observations</h3>
+        ${d.notable.length ? d.notable.map((o) => `
+          <div class="rep-note">
+            <div class="rn-head"><span class="rn-type" style="color:var(--obs-${o.type})">${OBS_LABEL[o.type]}</span><span>${esc(siteById(o.siteId).name)}</span></div>
+            <div class="rn-text">${esc(o.text)}</div>
+          </div>`).join("") : `<div class="rep-empty">No issues, actions, or follow-ups logged this week.</div>`}
+      </div>
+    </div>
+  `;
+
+  el.querySelector('[data-role="rep-back"]').addEventListener("click", closeReport);
+  el.querySelector('[data-role="rep-week"]').addEventListener("click", () => {
+    openSheet("Week", weeks.map((w) => `Week ${w}`), `Week ${d.week}`, (val) => {
+      reportWeek = Number(val.replace("Week ", ""));
+      renderReport();
+    });
+  });
+  el.querySelector('[data-role="rep-copy"]').addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    const original = btn.innerHTML;
+    try {
+      await navigator.clipboard.writeText(buildReportText(d));
+      btn.innerHTML = `${icon("check", 14)} Copied`;
+    } catch {
+      btn.innerHTML = `${icon("x", 14)} Couldn't copy`;
+    }
+    setTimeout(() => { btn.innerHTML = original; }, 1800);
+  });
+  el.querySelector('[data-role="rep-print"]').addEventListener("click", () => window.print());
+}
 
 /* 17) INSTALL PROMPT + SERVICE WORKER */
 window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferredInstallPrompt = e; document.getElementById("install-btn").style.display = "flex"; });
