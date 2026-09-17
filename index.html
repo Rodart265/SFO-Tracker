@@ -3,11 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SFO Visit Tracker</title>
-<meta name="theme-color" content="#1F4E3D">
+<title>SFO Field Tracker</title>
+<meta name="theme-color" content="#153A2C">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --forest:#1F4E3D; --forest-dark:#153A2C; --forest-soft:#2E6B52;
@@ -22,268 +25,290 @@
   --status-completed-bg:#DCEEDD; --status-completed-fg:#1F4E3D;
   --status-rescheduled-bg:#F8DFC0; --status-rescheduled-fg:#9A4B00;
   --status-skipped-bg:#F4D4CC; --status-skipped-fg:#9C3B26;
+  --obs-observation:#5C7EAB; --obs-issue:#C0442C; --obs-action:#3E8F63; --obs-followUp:#B5811D;
   --radius-lg:20px; --radius-md:16px; --radius-sm:12px;
   --shadow-sm:0 1px 2px rgba(31,45,36,.05), 0 1px 1px rgba(31,45,36,.04);
   --shadow-md:0 10px 28px -10px rgba(31,45,36,.20), 0 2px 8px rgba(31,45,36,.06);
-  --ease:cubic-bezier(.4,0,.2,1);
-  --dur:.22s;
+  --ease:cubic-bezier(.4,0,.2,1); --dur:.2s;
+  --navh:64px;
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
 body{
   background:var(--cream); color:var(--ink);
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  -webkit-tap-highlight-color:transparent;
-  -webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent; -webkit-font-smoothing:antialiased;
 }
-@media (prefers-reduced-motion:reduce){
-  *{transition-duration:.001s !important; animation-duration:.001s !important;}
-}
+.headline{font-family:"Space Grotesk",-apple-system,sans-serif;}
+@media (prefers-reduced-motion:reduce){ *{transition-duration:.001s !important;} }
 #app{max-width:560px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;}
-button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;background:none;border:none;}
 button:active{transform:scale(.97);}
 input,select,textarea{font-family:inherit;font-size:15px;}
+.ic{display:block;flex-shrink:0;}
+a{color:inherit;text-decoration:none;}
 
-/* ---------- Auth screen ---------- */
+/* Auth */
 #auth-screen{flex:1;display:flex;flex-direction:column;justify-content:center;padding:40px 26px;gap:20px;}
-#auth-screen .mark{width:52px;height:52px;border-radius:16px;background:var(--forest);display:flex;align-items:center;justify-content:center;margin-bottom:4px;}
-#auth-screen h1{font-size:23px;margin:0;color:var(--forest-dark);font-weight:700;letter-spacing:-.3px;}
+#auth-screen .mark{width:52px;height:52px;border-radius:16px;background:var(--forest);display:flex;align-items:center;justify-content:center;}
+#auth-screen h1{font-size:23px;margin:0;color:var(--forest-dark);font-weight:700;}
 #auth-screen p.sub{margin:0 0 6px;color:var(--ink-soft);font-size:14px;line-height:1.55;}
 .field{display:flex;flex-direction:column;gap:7px;}
-.field label{font-size:12.5px;color:var(--ink-soft);font-weight:600;letter-spacing:.1px;}
-.field input,.field textarea{
-  border:1px solid var(--line);border-radius:var(--radius-sm);
-  padding:13px 14px;background:#fff;color:var(--ink);
-  transition:border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
-}
+.field label{font-size:12.5px;color:var(--ink-soft);font-weight:600;}
+.field input,.field textarea{border:1px solid var(--line);border-radius:var(--radius-sm);padding:13px 14px;background:#fff;color:var(--ink);}
 .field input:focus,.field textarea:focus{outline:none;border-color:var(--forest-soft);box-shadow:0 0 0 3px rgba(46,107,82,.12);}
 .field textarea{resize:vertical;min-height:64px;line-height:1.5;}
-.btn-primary{
-  background:var(--forest);color:#fff;border:none;border-radius:var(--radius-sm);
-  padding:14px 16px;font-size:15px;font-weight:650;letter-spacing:.1px;
-  transition:background var(--dur) var(--ease), transform var(--dur) var(--ease);
-  box-shadow:var(--shadow-sm);
-}
+.btn-primary{background:var(--forest);color:#fff;border-radius:var(--radius-sm);padding:14px 16px;font-size:15px;font-weight:650;box-shadow:var(--shadow-sm);}
 .btn-primary:active{background:var(--forest-dark);}
-#auth-error{color:var(--status-skipped-fg);font-size:13px;min-height:16px;line-height:1.4;}
+.btn-primary:disabled{opacity:.5;}
+#auth-error{color:var(--status-skipped-fg);font-size:13px;min-height:16px;}
 
-/* ---------- Top bar ---------- */
-#top-bar{
-  position:sticky;top:0;z-index:10;
-  background:linear-gradient(155deg,var(--forest) 0%, var(--forest-dark) 100%);
-  color:#fff;padding:16px 20px;padding-top:calc(16px + env(safe-area-inset-top,0px));
-  display:flex;align-items:center;justify-content:space-between;
-  box-shadow:0 6px 18px -8px rgba(21,58,44,.5);
-}
-#top-bar h1{font-size:18px;margin:0;font-weight:700;letter-spacing:-.2px;}
+/* Top bar */
+#top-bar{position:sticky;top:0;z-index:10;background:linear-gradient(155deg,var(--forest) 0%, var(--forest-dark) 100%);
+  color:#fff;padding:14px 18px;padding-top:calc(14px + env(safe-area-inset-top,0px));box-shadow:0 6px 18px -8px rgba(21,58,44,.5);}
+#top-bar .row1{display:flex;align-items:center;justify-content:space-between;}
+#top-bar h1{font-size:17px;margin:0;font-weight:700;}
 #top-bar .actions{display:flex;gap:8px;align-items:center;}
-#top-bar button.icon-btn{
-  background:rgba(255,255,255,.14);border:none;color:#fff;border-radius:10px;
-  width:36px;height:36px;display:flex;align-items:center;justify-content:center;
-  transition:background var(--dur) var(--ease);
-}
+#top-bar button.icon-btn{background:rgba(255,255,255,.14);color:#fff;border-radius:10px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;}
 #top-bar button.icon-btn:active{background:rgba(255,255,255,.26);}
-#offline-banner{
-  background:var(--status-rescheduled-bg);color:var(--status-rescheduled-fg);
-  font-size:12.5px;font-weight:600;padding:9px 20px;text-align:center;display:none;
-}
-#offline-banner.show{display:block;}
+#sync-pill{display:flex;align-items:center;gap:6px;margin-top:7px;font-size:11.5px;color:rgba(255,255,255,.75);font-weight:600;}
+#sync-pill .dot{width:7px;height:7px;border-radius:50%;background:var(--gold-soft);}
+#sync-pill.offline .dot{background:#E9A98D;}
+#sync-pill.synced .dot{background:#8FD3A6;}
 
-/* ---------- Tabs ---------- */
-#tabs{display:flex;position:relative;padding:14px 20px 0;background:var(--cream);gap:4px;}
-.tab-btn{
-  flex:1;background:transparent;border:none;padding:11px 4px;font-size:14px;font-weight:650;
-  color:var(--ink-faint);transition:color var(--dur) var(--ease);position:relative;z-index:1;
-}
-.tab-btn.active{color:var(--forest-dark);}
-#tab-indicator{
-  position:absolute;bottom:0;height:3px;background:var(--gold);border-radius:3px 3px 0 0;
-  transition:left var(--dur) var(--ease), width var(--dur) var(--ease);
-}
+/* Bottom nav */
+#bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:20;background:#fff;border-top:1px solid var(--line);
+  display:flex;justify-content:center;box-shadow:0 -4px 16px rgba(31,45,36,.06);}
+#bottom-nav-inner{max-width:560px;width:100%;display:flex;padding-bottom:env(safe-area-inset-bottom,0px);}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px 9px;color:var(--ink-faint);}
+.nav-btn .ic{transition:transform var(--dur) var(--ease);}
+.nav-btn span{font-size:10.5px;font-weight:650;}
+.nav-btn.active{color:var(--forest-dark);}
+.nav-btn.active .ic{transform:translateY(-1px);}
 
-/* ---------- Schedule ---------- */
-#schedule-view, #dashboard-view{padding:18px 16px 110px;}
-.week-section{margin-bottom:18px;border-radius:var(--radius-lg);background:#fff;overflow:hidden;box-shadow:var(--shadow-sm);}
-.week-header{
-  display:flex;align-items:center;justify-content:space-between;padding:16px 18px;
-  background:#fff;cursor:pointer;
-}
-.week-header .title{font-weight:700;font-size:15px;color:var(--forest-dark);letter-spacing:-.1px;}
-.week-header .meta{font-size:12px;color:var(--ink-soft);font-weight:600;}
-.week-header .chev{color:var(--ink-faint);transition:transform var(--dur) var(--ease);}
-.week-header.open .chev{transform:rotate(180deg);}
-.week-body-outer{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s var(--ease);}
-.week-body-outer.open{grid-template-rows:1fr;}
-.week-body{overflow:hidden;}
-.day-group{padding:2px 14px 4px;}
-.day-label{font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-faint);font-weight:700;margin:14px 2px 8px;}
+.screen{padding:16px 16px calc(var(--navh) + 96px);flex:1;}
+.hidden{display:none !important;}
+.empty-state{padding:48px 20px;text-align:center;color:var(--ink-soft);font-size:14px;}
 
-.visit-card{
-  border-radius:var(--radius-md);background:#fff;margin-bottom:10px;overflow:hidden;
-  border:1px solid var(--line);position:relative;
-}
+/* Section title */
+.sec-title{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-faint);font-weight:700;margin:18px 2px 9px;}
+.sec-title:first-child{margin-top:2px;}
+
+/* Week strip */
+#week-strip{display:flex;gap:9px;overflow-x:auto;padding:2px 2px 6px;margin-bottom:6px;-webkit-overflow-scrolling:touch;}
+#week-strip::-webkit-scrollbar{display:none;}
+.week-chip{flex:0 0 auto;background:#fff;border:1px solid var(--line);border-radius:var(--radius-md);padding:10px 16px;min-width:92px;
+  box-shadow:var(--shadow-sm);}
+.week-chip.active{background:var(--forest);border-color:var(--forest);}
+.week-chip .wk-label{font-size:11px;font-weight:700;color:var(--ink-soft);text-align:left;}
+.week-chip.active .wk-label{color:rgba(255,255,255,.8);}
+.week-chip .wk-count{font-size:15px;font-weight:750;color:var(--forest-dark);text-align:left;margin-top:2px;}
+.week-chip.active .wk-count{color:#fff;}
+.week-chip .wk-track{height:4px;background:#EFEDE4;border-radius:99px;margin-top:6px;overflow:hidden;width:100%;}
+.week-chip.active .wk-track{background:rgba(255,255,255,.25);}
+.week-chip .wk-fill{height:100%;background:var(--gold);border-radius:99px;}
+
+.day-label{font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-faint);font-weight:700;margin:16px 2px 8px;}
+
+/* Checkin card */
+.visit-card{border-radius:var(--radius-md);background:#fff;margin-bottom:10px;overflow:hidden;border:1px solid var(--line);position:relative;}
 .visit-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent,var(--epa-office-dot));}
-.visit-card .card-top{padding:14px 16px 12px 18px;}
-.badge-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
-.badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;letter-spacing:.2px;}
+.card-top{padding:14px 16px 12px 18px;}
+.badge-row{display:flex;align-items:center;gap:7px;margin-bottom:7px;flex-wrap:wrap;}
+.badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;}
 .date-tag{font-size:11px;color:var(--ink-faint);font-weight:600;}
-.card-title{font-size:15.5px;font-weight:650;color:var(--ink);margin:0 0 3px;letter-spacing:-.1px;}
-.card-sub{font-size:12.5px;color:var(--ink-soft);margin:0;line-height:1.4;}
-.status-row{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:12px;}
-.status-pill{
-  border:1px solid var(--line);background:#fff;color:var(--ink-soft);
-  border-radius:99px;padding:8px 6px;font-size:11.5px;font-weight:700;text-align:center;
-  display:flex;align-items:center;justify-content:center;gap:4px;
-  transition:background var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease);
-}
-.status-pill svg{width:12px;height:12px;flex-shrink:0;}
+.site-link{font-size:15.5px;font-weight:700;color:var(--ink);display:inline-flex;align-items:center;gap:4px;}
+.site-link .ic{color:var(--ink-faint);}
+.card-sub{font-size:12.5px;color:var(--ink-soft);margin:2px 0 0;}
+
+.checklist{margin-top:12px;display:flex;flex-direction:column;gap:2px;}
+.chk-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.chk-head .lbl{font-size:11px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.3px;}
+.chk-head .tally{font-size:11px;font-weight:700;color:var(--forest-soft);}
+.chk-item{display:flex;align-items:center;gap:9px;padding:6px 2px;}
+.chk-box{width:20px;height:20px;border-radius:6px;border:1.6px solid var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;transition:background var(--dur) var(--ease),border-color var(--dur) var(--ease);}
+.chk-box.checked{background:var(--forest-soft);border-color:var(--forest-soft);}
+.chk-text{font-size:13.5px;color:var(--ink);line-height:1.35;}
+
+.status-row{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:13px;}
+.status-pill{border:1px solid var(--line);background:#fff;color:var(--ink-soft);border-radius:99px;padding:8px 6px;font-size:11.5px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;gap:4px;transition:background var(--dur) var(--ease),color var(--dur) var(--ease),border-color var(--dur) var(--ease);}
+.status-pill svg{width:12px;height:12px;}
 .status-pill.active-pending{background:var(--status-pending-bg);color:var(--status-pending-fg);border-color:transparent;}
 .status-pill.active-completed{background:var(--status-completed-bg);color:var(--status-completed-fg);border-color:transparent;}
 .status-pill.active-rescheduled{background:var(--status-rescheduled-bg);color:var(--status-rescheduled-fg);border-color:transparent;}
 .status-pill.active-skipped{background:var(--status-skipped-bg);color:var(--status-skipped-fg);border-color:transparent;}
-.card-footer{display:flex;justify-content:flex-end;padding:0 12px 10px 18px;}
-.edit-toggle{
-  background:none;border:none;color:var(--forest);font-size:12.5px;font-weight:700;
-  display:flex;align-items:center;gap:5px;padding:5px 6px;
-}
-.edit-panel-outer{display:grid;grid-template-rows:0fr;transition:grid-template-rows .26s var(--ease);}
-.edit-panel-outer.open{grid-template-rows:1fr;}
-.edit-panel{overflow:hidden;}
-.edit-panel-inner{padding:4px 16px 18px 18px;border-top:1px solid var(--line);}
-.edit-grid{display:flex;flex-direction:column;gap:12px;padding-top:14px;}
-.edit-actions{display:flex;gap:10px;margin-top:4px;}
-.edit-actions .btn-primary{flex:1;}
-.btn-delete{background:none;border:1px solid var(--status-skipped-fg);color:var(--status-skipped-fg);
-  border-radius:var(--radius-sm);padding:12px 14px;font-size:13.5px;font-weight:650;
-  transition:background var(--dur) var(--ease);}
-.btn-delete:active{background:var(--status-skipped-bg);}
 
-/* segmented control (EPA / Day) */
+.card-actions{display:flex;border-top:1px solid var(--line);}
+.card-actions button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:11px 4px;font-size:12.5px;font-weight:650;color:var(--forest);}
+.card-actions button:first-child{border-right:1px solid var(--line);}
+.card-actions button .badge-count{background:var(--gold);color:var(--forest-dark);border-radius:99px;font-size:10px;font-weight:750;padding:1px 6px;margin-left:2px;}
+
+.drawer-outer{display:grid;grid-template-rows:0fr;transition:grid-template-rows .26s var(--ease);}
+.drawer-outer.open{grid-template-rows:1fr;}
+.drawer{overflow:hidden;}
+.drawer-inner{padding:14px 16px 16px 18px;border-top:1px solid var(--line);background:var(--cream);}
+
+.obs-entry{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid #EAE7DC;}
+.obs-entry:last-child{border-bottom:none;}
+.obs-dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0;}
+.obs-body{flex:1;min-width:0;}
+.obs-type{font-size:10px;font-weight:750;text-transform:uppercase;letter-spacing:.3px;}
+.obs-text{font-size:13.5px;color:var(--ink);line-height:1.4;margin-top:2px;}
+.obs-meta{font-size:11px;color:var(--ink-faint);margin-top:3px;}
+
+.note-composer{margin-top:12px;background:#fff;border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px;}
+.type-chips{display:flex;gap:6px;margin-bottom:9px;flex-wrap:wrap;}
+.type-chip{border:1px solid var(--line);border-radius:99px;padding:6px 12px;font-size:11.5px;font-weight:650;color:var(--ink-soft);}
+.type-chip.active{color:#fff;border-color:transparent;}
+.note-composer textarea{width:100%;border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;min-height:56px;resize:vertical;}
+.note-composer .save-note{margin-top:9px;width:100%;background:var(--forest);color:#fff;border-radius:var(--radius-sm);padding:11px;font-size:13.5px;font-weight:650;}
+
+/* Segmented + picker (edit form) */
 .segmented{display:flex;gap:4px;background:var(--cream);padding:4px;border-radius:var(--radius-sm);}
-.segmented button{flex:1;border:none;background:transparent;padding:10px 4px;border-radius:9px;
-  font-size:12.5px;font-weight:650;color:var(--ink-soft);
-  transition:background var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);}
+.segmented button{flex:1;padding:10px 4px;border-radius:9px;font-size:12.5px;font-weight:650;color:var(--ink-soft);transition:background var(--dur) var(--ease),color var(--dur) var(--ease);}
 .segmented button.active{background:#fff;color:var(--forest-dark);box-shadow:var(--shadow-sm);}
-
-/* picker button (opens bottom sheet) */
-.picker-btn{width:100%;text-align:left;border:1px solid var(--line);border-radius:var(--radius-sm);
-  padding:13px 14px;background:#fff;display:flex;align-items:center;justify-content:space-between;
-  gap:10px;color:var(--ink);font-size:14.5px;line-height:1.4;
-  transition:border-color var(--dur) var(--ease), background var(--dur) var(--ease);}
-.picker-btn:active{background:var(--cream);}
+.picker-btn{width:100%;text-align:left;border:1px solid var(--line);border-radius:var(--radius-sm);padding:13px 14px;background:#fff;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--ink);font-size:14.5px;}
 .picker-btn .chevron{color:var(--ink-faint);flex-shrink:0;}
 .picker-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.edit-grid{display:flex;flex-direction:column;gap:12px;}
+.edit-actions{display:flex;gap:10px;margin-top:4px;}
+.edit-actions .btn-primary{flex:1;}
+.btn-delete{border:1px solid var(--status-skipped-fg);color:var(--status-skipped-fg);border-radius:var(--radius-sm);padding:12px 14px;font-size:13.5px;font-weight:650;}
 
-/* bottom sheet */
-.sheet-backdrop{position:fixed;inset:0;background:rgba(20,24,18,0);pointer-events:none;
-  transition:background .28s var(--ease);z-index:50;display:flex;align-items:flex-end;justify-content:center;}
+/* Bottom sheet */
+.sheet-backdrop{position:fixed;inset:0;background:rgba(20,24,18,0);pointer-events:none;transition:background .28s var(--ease);z-index:60;display:flex;align-items:flex-end;justify-content:center;}
 .sheet-backdrop.open{background:rgba(20,24,18,.44);pointer-events:auto;}
-.sheet{width:100%;max-width:560px;background:#fff;border-radius:22px 22px 0 0;box-shadow:var(--shadow-md);
-  padding:10px 6px calc(16px + env(safe-area-inset-bottom,0px));max-height:70vh;
-  display:flex;flex-direction:column;transform:translateY(102%);transition:transform .3s var(--ease);}
+.sheet{width:100%;max-width:560px;background:#fff;border-radius:22px 22px 0 0;box-shadow:var(--shadow-md);padding:10px 6px calc(16px + env(safe-area-inset-bottom,0px));
+  max-height:76vh;display:flex;flex-direction:column;transform:translateY(102%);transition:transform .3s var(--ease);}
 .sheet-backdrop.open .sheet{transform:translateY(0);}
 .sheet-handle{width:36px;height:4px;background:var(--line);border-radius:99px;margin:4px auto 12px;}
-.sheet-title{font-size:12px;font-weight:700;color:var(--ink-faint);padding:0 16px 8px;
-  text-transform:uppercase;letter-spacing:.5px;}
+.sheet-title{font-size:12px;font-weight:700;color:var(--ink-faint);padding:0 16px 8px;text-transform:uppercase;letter-spacing:.5px;}
 .sheet-list{overflow-y:auto;padding:0 6px 6px;}
-.sheet-option{width:100%;text-align:left;background:none;border:none;padding:14px 12px;font-size:15px;
-  color:var(--ink);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:space-between;
-  gap:10px;line-height:1.4;transition:background var(--dur) var(--ease);}
+.sheet-option{width:100%;text-align:left;background:none;border:none;padding:14px 12px;font-size:15px;color:var(--ink);border-radius:var(--radius-sm);
+  display:flex;align-items:center;justify-content:space-between;gap:10px;line-height:1.4;}
 .sheet-option:active{background:var(--cream);}
 .sheet-option.selected{color:var(--forest-dark);font-weight:650;background:var(--epa-chilaza-bg);}
 .sheet-option .check-icon{opacity:0;color:var(--forest);flex-shrink:0;}
 .sheet-option.selected .check-icon{opacity:1;}
+.sheet-form{padding:6px 16px 4px;}
 
-/* ---------- Dashboard ---------- */
+/* Sites & Team */
+.search-bar{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px 14px;margin-bottom:12px;}
+.search-bar input{border:none;outline:none;flex:1;background:none;font-size:14.5px;}
+.search-bar .ic{color:var(--ink-faint);}
+.pill-row{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;-webkit-overflow-scrolling:touch;}
+.pill-row::-webkit-scrollbar{display:none;}
+.filter-pill{flex:0 0 auto;border:1px solid var(--line);background:#fff;border-radius:99px;padding:8px 15px;font-size:12.5px;font-weight:650;color:var(--ink-soft);}
+.filter-pill.active{background:var(--forest);color:#fff;border-color:var(--forest);}
+.site-row{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:var(--radius-md);padding:13px 14px;margin-bottom:9px;box-shadow:var(--shadow-sm);width:100%;}
+.site-row .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.site-row .info{flex:1;min-width:0;text-align:left;}
+.site-row .name{font-size:14.5px;font-weight:700;}
+.site-row .meta{font-size:11.5px;color:var(--ink-soft);margin-top:2px;display:flex;gap:8px;align-items:center;}
+.site-row .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;color:var(--ink-faint);}
+.issue-flag{display:flex;align-items:center;gap:3px;color:var(--obs-issue);font-size:11px;font-weight:700;}
+
+/* Site profile */
+#site-profile-screen{position:fixed;inset:0;background:var(--cream);z-index:30;display:flex;flex-direction:column;overflow-y:auto;}
+.sp-top{background:linear-gradient(155deg,var(--forest) 0%, var(--forest-dark) 100%);color:#fff;padding:16px 18px calc(20px + env(safe-area-inset-top,0px));padding-top:calc(16px + env(safe-area-inset-top,0px));}
+.sp-back{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.85);font-size:13px;font-weight:650;margin-bottom:14px;}
+.sp-name{font-size:22px;font-weight:750;}
+.sp-sub{font-size:12.5px;color:rgba(255,255,255,.7);margin-top:3px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.sp-body{padding:16px;margin-top:-14px;}
+.sp-card{background:#fff;border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:14px;box-shadow:var(--shadow-md);}
+.nm-row{display:flex;align-items:center;gap:12px;}
+.nm-avatar{width:44px;height:44px;border-radius:50%;background:var(--epa-chilaza-bg);color:var(--epa-chilaza-fg);display:flex;align-items:center;justify-content:center;font-weight:750;font-size:14px;flex-shrink:0;}
+.nm-info{flex:1;min-width:0;}
+.nm-name{font-size:14.5px;font-weight:700;}
+.nm-phone{font-size:12px;color:var(--ink-soft);margin-top:1px;}
+.call-btn{background:var(--forest);color:#fff;border-radius:99px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:var(--shadow-sm);}
+.call-btn:disabled{background:var(--line);color:var(--ink-faint);}
+.target-row{display:flex;justify-content:space-between;align-items:baseline;}
+.target-num{font-size:26px;font-weight:750;color:var(--forest-dark);letter-spacing:-.3px;}
+.target-label{font-size:11.5px;color:var(--ink-soft);font-weight:650;}
+.sp-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.sp-stat{background:#fff;border-radius:var(--radius-md);padding:13px 10px;text-align:center;box-shadow:var(--shadow-sm);}
+.sp-stat .num{font-size:19px;font-weight:750;color:var(--forest-dark);}
+.sp-stat .lbl{font-size:10px;color:var(--ink-soft);font-weight:650;margin-top:2px;text-transform:uppercase;}
+.history-item{background:#fff;border-radius:var(--radius-md);padding:13px 15px;margin-bottom:9px;box-shadow:var(--shadow-sm);}
+.history-head{display:flex;justify-content:space-between;align-items:center;}
+.history-head .when{font-size:13px;font-weight:700;}
+.history-head .purpose{font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
+
+/* Analytics */
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
 .stat-tile{background:#fff;border-radius:var(--radius-md);padding:16px 16px 14px;box-shadow:var(--shadow-sm);}
-.stat-tile .num{font-size:27px;font-weight:750;color:var(--forest-dark);letter-spacing:-.5px;font-variant-numeric:tabular-nums;}
-.stat-tile .label{font-size:11.5px;color:var(--ink-soft);margin-top:3px;font-weight:650;letter-spacing:.1px;}
+.stat-tile .num{font-size:27px;font-weight:750;color:var(--forest-dark);letter-spacing:-.5px;}
+.stat-tile .label{font-size:11.5px;color:var(--ink-soft);margin-top:3px;font-weight:650;}
 .dash-card{background:#fff;border-radius:var(--radius-lg);padding:18px 18px 16px;margin-bottom:14px;box-shadow:var(--shadow-sm);}
-.dash-card h2{font-size:13.5px;margin:0 0 14px;color:var(--forest-dark);font-weight:700;letter-spacing:.1px;
-  text-transform:uppercase;}
+.dash-card h2{font-size:13.5px;margin:0 0 14px;color:var(--forest-dark);font-weight:700;text-transform:uppercase;}
+.dist-bar{display:flex;height:14px;border-radius:99px;overflow:hidden;margin-bottom:10px;}
+.dist-legend{display:flex;flex-wrap:wrap;gap:10px;}
+.dist-legend .item{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ink-soft);font-weight:600;}
+.dist-legend .sw{width:9px;height:9px;border-radius:3px;}
 .epa-row{display:flex;align-items:center;gap:10px;padding:9px 0;}
-.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
 .epa-row .name{font-size:13.5px;font-weight:650;flex:0 0 84px;}
 .epa-row .bar-track{flex:1;background:#EFEDE4;border-radius:99px;height:8px;overflow:hidden;}
-.epa-row .bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--forest-soft),var(--forest-dark));
-  transition:width .4s var(--ease);}
+.epa-row .bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--forest-soft),var(--forest-dark));}
 .epa-row .count{font-size:12px;color:var(--ink-soft);font-weight:650;flex:0 0 54px;text-align:right;}
-.status-chip-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.status-chip{background:var(--cream);border-radius:var(--radius-sm);padding:12px 8px;text-align:center;}
-.status-chip .count{font-size:19px;font-weight:750;letter-spacing:-.3px;}
-.status-chip .label{font-size:10px;color:var(--ink-soft);font-weight:700;margin-top:3px;letter-spacing:.2px;text-transform:uppercase;}
 .assistant-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #F2F0E8;}
 .assistant-row:last-child{border-bottom:none;}
-.avatar{width:37px;height:37px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  font-size:12.5px;font-weight:750;flex-shrink:0;}
+.avatar{width:37px;height:37px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:750;flex-shrink:0;}
 .assistant-info{flex:1;min-width:0;}
-.assistant-name{font-size:13.5px;font-weight:650;color:var(--ink);}
+.assistant-name{font-size:13.5px;font-weight:650;}
 .assistant-epa{font-size:11px;color:var(--ink-soft);margin-top:1px;}
-.assistant-progress{width:64px;flex-shrink:0;text-align:right;}
-.assistant-pct{font-size:12px;font-weight:750;color:var(--forest-dark);}
 .mini-track{background:#EFEDE4;border-radius:99px;height:5px;overflow:hidden;margin-top:5px;}
-.mini-fill{height:100%;border-radius:99px;background:var(--forest-soft);transition:width .4s var(--ease);}
+.mini-fill{height:100%;border-radius:99px;background:var(--forest-soft);}
+.assistant-pct{font-size:12px;font-weight:750;color:var(--forest-dark);}
 
-/* ---------- FAB ---------- */
-#fab{
-  position:fixed;bottom:26px;right:calc(50% - 280px + 22px);
-  background:var(--gold);color:var(--forest-dark);border:none;border-radius:99px;
-  width:58px;height:58px;box-shadow:0 10px 24px -6px rgba(201,162,39,.55), var(--shadow-sm);
-  display:flex;align-items:center;justify-content:center;z-index:9;
-  transition:transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
-}
-#fab:active{transform:scale(.93);}
-@media (max-width:560px){ #fab{right:22px;} }
-
-.hidden{display:none !important;}
-.empty-state{padding:48px 20px;text-align:center;color:var(--ink-soft);font-size:14px;}
+#fab{position:fixed;bottom:calc(var(--navh) + 20px);right:calc(50% - 280px + 18px);background:var(--gold);color:var(--forest-dark);
+  border-radius:99px;width:56px;height:56px;box-shadow:0 10px 24px -6px rgba(201,162,39,.55), var(--shadow-sm);
+  display:flex;align-items:center;justify-content:center;z-index:9;}
+@media (max-width:560px){ #fab{right:18px;} }
 </style>
 </head>
 <body>
 <div id="app">
 
   <div id="auth-screen" class="hidden">
-    <div class="mark">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-    </div>
-    <h1>SFO Visit Tracker</h1>
+    <div class="mark"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#C9A227" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+    <h1 class="headline">SFO Field Tracker</h1>
     <p class="sub">Sign in with the account set up in Firebase for this tracker.</p>
-    <div class="field">
-      <label for="auth-email">Email</label>
-      <input id="auth-email" type="email" autocomplete="username" />
-    </div>
-    <div class="field">
-      <label for="auth-password">Password</label>
-      <input id="auth-password" type="password" autocomplete="current-password" />
-    </div>
+    <div class="field"><label for="auth-email">Email</label><input id="auth-email" type="email" autocomplete="username"></div>
+    <div class="field"><label for="auth-password">Password</label><input id="auth-password" type="password" autocomplete="current-password"></div>
     <div id="auth-error"></div>
     <button class="btn-primary" id="sign-in-btn">Sign in</button>
   </div>
 
   <div id="main-screen" class="hidden">
-    <div id="offline-banner">You're offline — changes are saved and will sync once you're back online.</div>
     <div id="top-bar">
-      <h1>SFO Visit Tracker</h1>
-      <div class="actions">
-        <button class="icon-btn" id="install-btn" title="Install app" style="display:none;">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 19h14"/></svg>
-        </button>
-        <button class="icon-btn" id="sign-out-btn" title="Sign out">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
-        </button>
+      <div class="row1">
+        <h1 class="headline" id="top-title">Schedule</h1>
+        <div class="actions">
+          <button class="icon-btn" id="install-btn" title="Install app" style="display:none;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3" /> <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /> <path d="m7 10 5 5 5-5" /></svg></button>
+          <button class="icon-btn" id="sign-out-btn" title="Sign out"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 17 5-5-5-5" /> <path d="M21 12H9" /> <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /></svg></button>
+        </div>
       </div>
+      <div id="sync-pill"><span class="dot"></span><span id="sync-text">Loading…</span></div>
     </div>
-    <div id="tabs">
-      <button class="tab-btn active" data-tab="schedule">Schedule</button>
-      <button class="tab-btn" data-tab="dashboard">Dashboard</button>
-      <div id="tab-indicator"></div>
+
+    <div id="screen-schedule" class="screen"></div>
+    <div id="screen-analytics" class="screen hidden"></div>
+    <div id="screen-sites" class="screen hidden"></div>
+
+    <button id="fab" title="Add check-in"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14" /> <path d="M12 5v14" /></svg></button>
+  </div>
+
+  <div id="site-profile-screen" class="hidden"></div>
+
+  <div id="bottom-nav" class="hidden">
+    <div id="bottom-nav-inner">
+      <button class="nav-btn active" data-tab="schedule"><svg class="ic" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v3" /> <path d="M16 2v3" /> <rect x="3" y="3" width="18" height="18" rx="2" /> <path d="M3 9h18" /></svg><span>Schedule</span></button>
+      <button class="nav-btn" data-tab="analytics"><svg class="ic" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16" /> <path d="M18 17V9" /> <path d="M13 17V5" /> <path d="M8 17v-3" /></svg><span>Analytics</span></button>
+      <button class="nav-btn" data-tab="sites"><svg class="ic" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /> <path d="M16 3.128a4 4 0 0 1 0 7.744" /> <path d="M22 21v-2a4 4 0 0 0-3-3.87" /> <circle cx="9" cy="7" r="4" /></svg><span>Sites &amp; Team</span></button>
     </div>
-    <div id="schedule-view"></div>
-    <div id="dashboard-view" class="hidden"></div>
-    <button id="fab" title="Add visit">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-    </button>
   </div>
 
   <div class="sheet-backdrop" id="sheet-backdrop">
@@ -293,22 +318,17 @@ input,select,textarea{font-family:inherit;font-size:15px;}
       <div class="sheet-list" id="sheet-list"></div>
     </div>
   </div>
-
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {
-  getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot,
-  query, orderBy, serverTimestamp, writeBatch, enableIndexedDbPersistence
+  getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, setDoc, onSnapshot,
+  query, orderBy, where, serverTimestamp, writeBatch, enableIndexedDbPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* =====================================================================
-   1) FIREBASE CONFIG
-   ===================================================================== */
+/* 1) FIREBASE CONFIG */
 const firebaseConfig = {
   apiKey: "AIzaSyBcy7mQsN3G-SsDuJ5Zh9SKrLPO7cL7H2M",
   authDomain: "sfo-tracker.firebaseapp.com",
@@ -317,45 +337,57 @@ const firebaseConfig = {
   messagingSenderId: "264081040783",
   appId: "1:264081040783:web:8b10dc5e9478d0a11bd7fa"
 };
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 try { await enableIndexedDbPersistence(db); } catch (err) { console.warn("Offline persistence unavailable:", err.code); }
 
-/* =====================================================================
-   2) REFERENCE DATA + SEED SCHEDULE
-   ===================================================================== */
-const REFERENCE = {"epas": ["Chilaza", "Ming'ongo", "Mpingu", "Office"], "faByEpa": {"Chilaza": ["Alfred Golowa", "Austin Bonongwe", "Davie James", "Honest Gondwe", "Richard Lipenga"], "Ming'ongo": ["Aubrey Kuyacha", "Tadala Mphwina"], "Mpingu": ["Martha Jacob", "Prince Mkumbwa"], "Office": ["N/A"]}, "sitesByFa": {"Alfred Golowa": ["Kango", "Mtolongo", "Kafunde", "Likanga", "Masula", "Palawo", "Sinumbe"], "Austin Bonongwe": ["Kanyoni", "Lundu", "Chamkondo", "Mpakiza", "Mwaza", "Kanyambwe", "Zambo", "Chamkondo (Re-visit)", "Mpakiza (Re-visit)"], "Davie James": ["Katakungwa", "Mngongonda", "Nkhwangwa", "Kanjawala", "Santhe", "Khanda", "Mpingo", "Muyala"], "Honest Gondwe": ["Chimwala", "Chisikwa Caleb", "Dambo", "Dzoole", "Ngalazuka", "Kadyaudzu", "Nyemba"], "Richard Lipenga": ["Chibungo", "Kabwana", "Phulamazira", "Mnjeza 2", "Mzungu", "Songole", "Zindo"], "Aubrey Kuyacha": ["Chilinda", "Chimsolo", "Chishasha", "Mkanda-Aloni", "Mniu", "Kalasang'anga", "Kombe", "Kudziwe"], "Tadala Mphwina": ["Mbwemba", "Mdondwe", "Madetsa", "Mandala", "Mchepa", "Mphunda"], "Martha Jacob": ["Bingu", "Chalenya", "Kanongona", "Ndelendele", "Ndoliro", "Mkanda"], "Prince Mkumbwa": ["Kamkundi", "Mkombe", "Ntandula", "Kuchata", "Mpombe", "Sinda"], "N/A": ["N/A"]}, "purposes": ["Routine Audit & Seedling Management", "Routine Audit & Nursery Management", "Data Integrity & Progress Check", "Data Integrity Follow-up", "Weekly Reporting & Office Admin"], "checklists": ["Potfilling count; Seedling health; NM attendance", "Physical pot count vs reported status", "Verify resolved potfilling gap & updated logs", "Submit weekly report to DS/Manager; Team check-ins"]};
-const SEED_VISITS = [{"order": 0, "week": 1, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Alfred Golowa", "site": "Kango", "purpose": "Routine Audit & Seedling Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 1, "week": 1, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Alfred Golowa", "site": "Mtolongo", "purpose": "Routine Audit & Seedling Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 2, "week": 1, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Alfred Golowa", "site": "Kafunde", "purpose": "Routine Audit & Seedling Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 3, "week": 1, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Alfred Golowa", "site": "Likanga", "purpose": "Routine Audit & Seedling Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 4, "week": 1, "day": "Tuesday", "date": "", "epa": "Chilaza", "assistant": "Alfred Golowa", "site": "Masula", "purpose": "Routine Audit & Seedling Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 5, "week": 1, "day": "Tuesday", "date": "", "epa": "Chilaza", "assistant": "Alfred Golowa", "site": "Palawo", "purpose": "Routine Audit & Seedling Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 6, "week": 1, "day": "Tuesday", "date": "", "epa": "Chilaza", "assistant": "Alfred Golowa", "site": "Sinumbe", "purpose": "Routine Audit & Seedling Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 7, "week": 1, "day": "Tuesday", "date": "", "epa": "Chilaza", "assistant": "Austin Bonongwe", "site": "Kanyoni", "purpose": "Data Integrity & Progress Check", "checklist": "Physical pot count vs reported status", "status": "Pending", "notes": ""}, {"order": 8, "week": 1, "day": "Wednesday", "date": "", "epa": "Ming'ongo", "assistant": "Aubrey Kuyacha", "site": "Chilinda", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 9, "week": 1, "day": "Wednesday", "date": "", "epa": "Ming'ongo", "assistant": "Aubrey Kuyacha", "site": "Chimsolo", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 10, "week": 1, "day": "Wednesday", "date": "", "epa": "Ming'ongo", "assistant": "Aubrey Kuyacha", "site": "Chishasha", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 11, "week": 1, "day": "Wednesday", "date": "", "epa": "Ming'ongo", "assistant": "Aubrey Kuyacha", "site": "Mkanda-Aloni", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 12, "week": 1, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Austin Bonongwe", "site": "Lundu", "purpose": "Data Integrity & Progress Check", "checklist": "Physical pot count vs reported status", "status": "Pending", "notes": ""}, {"order": 13, "week": 1, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Austin Bonongwe", "site": "Chamkondo", "purpose": "Data Integrity & Progress Check", "checklist": "Physical pot count vs reported status", "status": "Pending", "notes": ""}, {"order": 14, "week": 1, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Austin Bonongwe", "site": "Mpakiza", "purpose": "Data Integrity & Progress Check", "checklist": "Physical pot count vs reported status", "status": "Pending", "notes": ""}, {"order": 15, "week": 1, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Austin Bonongwe", "site": "Mwaza", "purpose": "Data Integrity & Progress Check", "checklist": "Physical pot count vs reported status", "status": "Pending", "notes": ""}, {"order": 16, "week": 1, "day": "Friday", "date": "", "epa": "Office", "assistant": "N/A", "site": "N/A", "purpose": "Weekly Reporting & Office Admin", "checklist": "Submit weekly report to DS/Manager; Team check-ins", "status": "Pending", "notes": ""}, {"order": 17, "week": 2, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Austin Bonongwe", "site": "Kanyambwe", "purpose": "Data Integrity & Progress Check", "checklist": "Physical pot count vs reported status", "status": "Pending", "notes": ""}, {"order": 18, "week": 2, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Austin Bonongwe", "site": "Zambo", "purpose": "Data Integrity & Progress Check", "checklist": "Physical pot count vs reported status", "status": "Pending", "notes": ""}, {"order": 19, "week": 2, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Davie James", "site": "Katakungwa", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 20, "week": 2, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Davie James", "site": "Mngongonda", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 21, "week": 2, "day": "Tuesday", "date": "", "epa": "Mpingu", "assistant": "Martha Jacob", "site": "Bingu", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 22, "week": 2, "day": "Tuesday", "date": "", "epa": "Mpingu", "assistant": "Martha Jacob", "site": "Chalenya", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 23, "week": 2, "day": "Tuesday", "date": "", "epa": "Mpingu", "assistant": "Martha Jacob", "site": "Kanongona", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 24, "week": 2, "day": "Tuesday", "date": "", "epa": "Mpingu", "assistant": "Martha Jacob", "site": "Ndelendele", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 25, "week": 2, "day": "Wednesday", "date": "", "epa": "Chilaza", "assistant": "Davie James", "site": "Nkhwangwa", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 26, "week": 2, "day": "Wednesday", "date": "", "epa": "Chilaza", "assistant": "Davie James", "site": "Kanjawala", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 27, "week": 2, "day": "Wednesday", "date": "", "epa": "Chilaza", "assistant": "Davie James", "site": "Santhe", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 28, "week": 2, "day": "Wednesday", "date": "", "epa": "Chilaza", "assistant": "Davie James", "site": "Khanda", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 29, "week": 2, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Davie James", "site": "Mpingo", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 30, "week": 2, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Davie James", "site": "Muyala", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 31, "week": 2, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Honest Gondwe", "site": "Chimwala", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 32, "week": 2, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Honest Gondwe", "site": "Chisikwa Caleb", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 33, "week": 2, "day": "Friday", "date": "", "epa": "Office", "assistant": "N/A", "site": "N/A", "purpose": "Weekly Reporting & Office Admin", "checklist": "Submit weekly report to DS/Manager; Team check-ins", "status": "Pending", "notes": ""}, {"order": 34, "week": 3, "day": "Monday", "date": "", "epa": "Ming'ongo", "assistant": "Aubrey Kuyacha", "site": "Mniu", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 35, "week": 3, "day": "Monday", "date": "", "epa": "Ming'ongo", "assistant": "Aubrey Kuyacha", "site": "Kalasang'anga", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 36, "week": 3, "day": "Monday", "date": "", "epa": "Ming'ongo", "assistant": "Aubrey Kuyacha", "site": "Kombe", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 37, "week": 3, "day": "Monday", "date": "", "epa": "Ming'ongo", "assistant": "Aubrey Kuyacha", "site": "Kudziwe", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 38, "week": 3, "day": "Tuesday", "date": "", "epa": "Chilaza", "assistant": "Honest Gondwe", "site": "Dambo", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 39, "week": 3, "day": "Tuesday", "date": "", "epa": "Chilaza", "assistant": "Honest Gondwe", "site": "Dzoole", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 40, "week": 3, "day": "Tuesday", "date": "", "epa": "Chilaza", "assistant": "Honest Gondwe", "site": "Ngalazuka", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 41, "week": 3, "day": "Tuesday", "date": "", "epa": "Chilaza", "assistant": "Honest Gondwe", "site": "Kadyaudzu", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 42, "week": 3, "day": "Wednesday", "date": "", "epa": "Mpingu", "assistant": "Martha Jacob", "site": "Ndoliro", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 43, "week": 3, "day": "Wednesday", "date": "", "epa": "Mpingu", "assistant": "Martha Jacob", "site": "Mkanda", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 44, "week": 3, "day": "Wednesday", "date": "", "epa": "Mpingu", "assistant": "Prince Mkumbwa", "site": "Kamkundi", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 45, "week": 3, "day": "Wednesday", "date": "", "epa": "Mpingu", "assistant": "Prince Mkumbwa", "site": "Mkombe", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 46, "week": 3, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Honest Gondwe", "site": "Nyemba", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 47, "week": 3, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Richard Lipenga", "site": "Chibungo", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 48, "week": 3, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Richard Lipenga", "site": "Kabwana", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 49, "week": 3, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Richard Lipenga", "site": "Phulamazira", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 50, "week": 3, "day": "Friday", "date": "", "epa": "Office", "assistant": "N/A", "site": "N/A", "purpose": "Weekly Reporting & Office Admin", "checklist": "Submit weekly report to DS/Manager; Team check-ins", "status": "Pending", "notes": ""}, {"order": 51, "week": 4, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Richard Lipenga", "site": "Mnjeza 2", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 52, "week": 4, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Richard Lipenga", "site": "Mzungu", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 53, "week": 4, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Richard Lipenga", "site": "Songole", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 54, "week": 4, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Richard Lipenga", "site": "Zindo", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 55, "week": 4, "day": "Tuesday", "date": "", "epa": "Ming'ongo", "assistant": "Tadala Mphwina", "site": "Mbwemba", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 56, "week": 4, "day": "Tuesday", "date": "", "epa": "Ming'ongo", "assistant": "Tadala Mphwina", "site": "Mdondwe", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 57, "week": 4, "day": "Tuesday", "date": "", "epa": "Ming'ongo", "assistant": "Tadala Mphwina", "site": "Madetsa", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 58, "week": 4, "day": "Tuesday", "date": "", "epa": "Ming'ongo", "assistant": "Tadala Mphwina", "site": "Mandala", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 59, "week": 4, "day": "Wednesday", "date": "", "epa": "Mpingu", "assistant": "Prince Mkumbwa", "site": "Ntandula", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 60, "week": 4, "day": "Wednesday", "date": "", "epa": "Mpingu", "assistant": "Prince Mkumbwa", "site": "Kuchata", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 61, "week": 4, "day": "Wednesday", "date": "", "epa": "Mpingu", "assistant": "Prince Mkumbwa", "site": "Mpombe", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 62, "week": 4, "day": "Wednesday", "date": "", "epa": "Mpingu", "assistant": "Prince Mkumbwa", "site": "Sinda", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 63, "week": 4, "day": "Thursday", "date": "", "epa": "Ming'ongo", "assistant": "Tadala Mphwina", "site": "Mchepa", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 64, "week": 4, "day": "Thursday", "date": "", "epa": "Ming'ongo", "assistant": "Tadala Mphwina", "site": "Mphunda", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 65, "week": 4, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Austin Bonongwe", "site": "Chamkondo (Re-visit)", "purpose": "Data Integrity Follow-up", "checklist": "Verify resolved potfilling gap & updated logs", "status": "Pending", "notes": ""}, {"order": 66, "week": 4, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Austin Bonongwe", "site": "Mpakiza (Re-visit)", "purpose": "Data Integrity Follow-up", "checklist": "Verify resolved potfilling gap & updated logs", "status": "Pending", "notes": ""}, {"order": 67, "week": 4, "day": "Friday", "date": "", "epa": "Office", "assistant": "N/A", "site": "N/A", "purpose": "Weekly Reporting & Office Admin", "checklist": "Submit weekly report to DS/Manager; Team check-ins", "status": "Pending", "notes": ""}];
+/* 2) ICONS */
+const ICONS = {"check": "<path d=\"M20 6 9 17l-5-5\" />", "x": "<path d=\"M18 6 6 18\" /> <path d=\"m6 6 12 12\" />", "chevron-right": "<path d=\"m9 18 6-6-6-6\" />", "chevron-down": "<path d=\"m6 9 6 6 6-6\" />", "chevron-left": "<path d=\"m15 18-6-6 6-6\" />", "phone": "<path d=\"M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384\" />", "map-pin": "<path d=\"M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0\" /> <circle cx=\"12\" cy=\"10\" r=\"3\" />", "users": "<path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\" /> <path d=\"M16 3.128a4 4 0 0 1 0 7.744\" /> <path d=\"M22 21v-2a4 4 0 0 0-3-3.87\" /> <circle cx=\"9\" cy=\"7\" r=\"4\" />", "layout-grid": "<rect width=\"7\" height=\"7\" x=\"3\" y=\"3\" rx=\"1\" /> <rect width=\"7\" height=\"7\" x=\"14\" y=\"3\" rx=\"1\" /> <rect width=\"7\" height=\"7\" x=\"14\" y=\"14\" rx=\"1\" /> <rect width=\"7\" height=\"7\" x=\"3\" y=\"14\" rx=\"1\" />", "bar-chart-3": "<path d=\"M3 3v16a2 2 0 0 0 2 2h16\" /> <path d=\"M18 17V9\" /> <path d=\"M13 17V5\" /> <path d=\"M8 17v-3\" />", "calendar": "<path d=\"M8 2v3\" /> <path d=\"M16 2v3\" /> <rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\" /> <path d=\"M3 9h18\" />", "calendar-check": "<path d=\"M8 2v3\" /> <path d=\"M16 2v3\" /> <rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\" /> <path d=\"M3 9h18\" /> <path d=\"m9 15 2 2 4-4\" />", "plus": "<path d=\"M5 12h14\" /> <path d=\"M12 5v14\" />", "pencil": "<path d=\"M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z\" /> <path d=\"m15 5 4 4\" />", "trash-2": "<path d=\"M10 11v6\" /> <path d=\"M14 11v6\" /> <path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6\" /> <path d=\"M3 6h18\" /> <path d=\"M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\" />", "cloud": "<path d=\"M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z\" />", "cloud-off": "<path d=\"M10.94 5.274A7 7 0 0 1 15.71 10h1.79a4.5 4.5 0 0 1 4.222 6.057\" /> <path d=\"M18.796 18.81A4.5 4.5 0 0 1 17.5 19H9A7 7 0 0 1 5.79 5.78\" /> <path d=\"m2 2 20 20\" />", "wifi-off": "<path d=\"M12 20h.01\" /> <path d=\"M8.5 16.429a5 5 0 0 1 7 0\" /> <path d=\"M5 12.859a10 10 0 0 1 5.17-2.69\" /> <path d=\"M19 12.859a10 10 0 0 0-2.007-1.523\" /> <path d=\"M2 8.82a15 15 0 0 1 4.177-2.643\" /> <path d=\"M22 8.82a15 15 0 0 0-11.288-3.764\" /> <path d=\"m2 2 20 20\" />", "clock": "<circle cx=\"12\" cy=\"12\" r=\"10\" /> <path d=\"M12 6v6l4 2\" />", "circle-check": "<circle cx=\"12\" cy=\"12\" r=\"10\" /> <path d=\"m16 9-5.5 5.5L8 12\" />", "circle-alert": "<circle cx=\"12\" cy=\"12\" r=\"10\" /> <line x1=\"12\" x2=\"12\" y1=\"8\" y2=\"12\" /> <line x1=\"12\" x2=\"12.01\" y1=\"16\" y2=\"16\" />", "list-checks": "<path d=\"M13 5h8\" /> <path d=\"M13 12h8\" /> <path d=\"M13 19h8\" /> <path d=\"m3 17 2 2 4-4\" /> <path d=\"m3 7 2 2 4-4\" />", "sprout": "<path d=\"M14 9.536V7a4 4 0 0 1 4-4h1.5a.5.5 0 0 1 .5.5V5a4 4 0 0 1-4 4 4 4 0 0 0-4 4c0 2 1 3 1 5a5 5 0 0 1-1 3\" /> <path d=\"M4 9a5 5 0 0 1 8 4 5 5 0 0 1-8-4\" /> <path d=\"M5 21h14\" />", "building-2": "<path d=\"M10 12h4\" /> <path d=\"M10 8h4\" /> <path d=\"M14 21v-3a2 2 0 0 0-4 0v3\" /> <path d=\"M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2\" /> <path d=\"M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16\" />", "search": "<path d=\"m21 21-4.34-4.34\" /> <circle cx=\"11\" cy=\"11\" r=\"8\" />", "sliders-horizontal": "<path d=\"M10 5H3\" /> <path d=\"M12 19H3\" /> <path d=\"M14 3v4\" /> <path d=\"M16 17v4\" /> <path d=\"M21 12h-9\" /> <path d=\"M21 19h-5\" /> <path d=\"M21 5h-7\" /> <path d=\"M8 10v4\" /> <path d=\"M8 12H3\" />", "log-out": "<path d=\"m16 17 5-5-5-5\" /> <path d=\"M21 12H9\" /> <path d=\"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4\" />", "user": "<path d=\"M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2\" /> <circle cx=\"12\" cy=\"7\" r=\"4\" />", "folder": "<path d=\"M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z\" />", "file-text": "<path d=\"M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z\" /> <path d=\"M14 2v5a1 1 0 0 0 1 1h5\" /> <path d=\"M10 9H8\" /> <path d=\"M16 13H8\" /> <path d=\"M16 17H8\" />", "download": "<path d=\"M12 15V3\" /> <path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\" /> <path d=\"m7 10 5 5 5-5\" />", "arrow-up": "<path d=\"m5 12 7-7 7 7\" /> <path d=\"M12 19V5\" />", "arrow-down": "<path d=\"M12 5v14\" /> <path d=\"m19 12-7 7-7-7\" />", "send": "<path d=\"M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z\" /> <path d=\"m21.854 2.147-10.94 10.939\" />", "trees": "<path d=\"M10 10v.2A3 3 0 0 1 8.9 16H5a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z\" /> <path d=\"M7 16v6\" /> <path d=\"M13 19v3\" /> <path d=\"M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.5\" />", "clipboard-list": "<rect width=\"8\" height=\"4\" x=\"8\" y=\"2\" rx=\"1\" ry=\"1\" /> <path d=\"M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2\" /> <path d=\"M12 11h4\" /> <path d=\"M12 16h4\" /> <path d=\"M8 11h.01\" /> <path d=\"M8 16h.01\" />", "message-square": "<path d=\"M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z\" />", "camera": "<path d=\"M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z\" /> <circle cx=\"12\" cy=\"13\" r=\"3\" />", "image": "<rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\" ry=\"2\" /> <circle cx=\"9\" cy=\"9\" r=\"2\" /> <path d=\"m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21\" />", "badge-check": "<path d=\"M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z\" /> <path d=\"m16 9-5.5 5.5L8 12\" />", "activity": "<path d=\"M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2\" />", "more-vertical": "<circle cx=\"12\" cy=\"12\" r=\"1\" /> <circle cx=\"12\" cy=\"5\" r=\"1\" /> <circle cx=\"12\" cy=\"19\" r=\"1\" />", "info": "<circle cx=\"12\" cy=\"12\" r=\"10\" /> <path d=\"M12 16v-4\" /> <path d=\"M12 8h.01\" />", "triangle-alert": "<path d=\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3\" /> <path d=\"M12 9v4\" /> <path d=\"M12 17h.01\" />", "loader-circle": "<path d=\"M21 12a9 9 0 1 1-6.219-8.56\" />", "leaf": "<path d=\"M11 20a10 10 0 0010-10 25.9 25.9 0 00-1.04-7.281 1 1 0 00-1.755-.325C15.833 5.5 13 5.5 9.8 6.1A7 7 0 0011 20\" /> <path d=\"M2 21a5 5 0 012.911-4.544C7.613 15.212 8.351 15.24 11 13\" />"};
+function icon(name, size) {
+  size = size || 18;
+  return '<svg class="ic" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || "") + '</svg>';
+}
+
+/* 3) REFERENCE + CHECKLISTS + REAL SITE SEED */
+const REFERENCE = {"epas": ["Chilaza", "Ming'ongo", "Mpingu", "Office"], "faByEpa": {"Chilaza": ["Alfred Golowa", "Austin Bonongwe", "Davie James", "Honest Gondwe", "Richard Lipenga"], "Ming'ongo": ["Aubrey Kuyacha", "Tadala Mphwina"], "Mpingu": ["Martha Jacob", "Prince Mkumbwa"], "Office": ["N/A"]}, "sitesByFa": {"Alfred Golowa": ["Kango", "Mtolongo", "Kafunde", "Likanga", "Masula", "Palawo", "Sinumbe"], "Austin Bonongwe": ["Kanyoni", "Lundu", "Chamkondo", "Mpakiza", "Mwaza", "Kanyambwe", "Zambo"], "Davie James": ["Katakungwa", "Mngongonda", "Nkhwangwa", "Kanjawala", "Santhe", "Khanda", "Mpingo", "Muyala"], "Honest Gondwe": ["Chimwala", "Chisikwa Caleb", "Dambo", "Dzoole", "Ngalazuka", "Kadyaudzu", "Nyemba"], "Richard Lipenga": ["Chibungo", "Kabwana", "Phulamazira", "Mnjeza 2", "Mzungu", "Songole", "Zindo"], "Aubrey Kuyacha": ["Chilinda", "Chimsolo", "Chishasha", "Mkanda-Aloni", "Mniu", "Kalasang'anga", "Kombe", "Kudziwe"], "Tadala Mphwina": ["Mbwemba", "Mdondwe", "Madetsa", "Mandala", "Mchepa", "Mphunda"], "Martha Jacob": ["Bingu", "Chalenya", "Kanongona", "Ndelendele", "Ndoliro", "Mkanda"], "Prince Mkumbwa": ["Kamkundi", "Mkombe", "Ntandula", "Kuchata", "Mpombe", "Sinda"], "N/A": ["N/A"]}, "purposes": ["Routine Audit & Seedling Management", "Routine Audit & Nursery Management", "Data Integrity & Progress Check", "Data Integrity Follow-up", "Weekly Reporting & Office Admin"]};
+const PURPOSE_CHECKLIST = {"Routine Audit & Seedling Management": ["Potfilling count", "Seedling health", "NM attendance"], "Routine Audit & Nursery Management": ["Potfilling count", "Seedling health", "NM attendance"], "Data Integrity & Progress Check": ["Physical pot count vs reported status"], "Data Integrity Follow-up": ["Verify resolved potfilling gap", "Updated logs"], "Weekly Reporting & Office Admin": ["Submit weekly report to DS/Manager", "Team check-ins"]};
+const SITES_SEED = {"kango":{"id":"kango","name":"Kango","epa":"Chilaza","assistant":"Alfred Golowa","nurseryId":"LLCH15401","potfillingTarget":5850,"nmName":"Lucy Gibison","nmPhone":"+265886020547"},"mtolongo":{"id":"mtolongo","name":"Mtolongo","epa":"Chilaza","assistant":"Alfred Golowa","nurseryId":"LLCH15402","potfillingTarget":12350,"nmName":"Sosten Mashatira","nmPhone":"+265891564987"},"kafunde":{"id":"kafunde","name":"Kafunde","epa":"Chilaza","assistant":"Alfred Golowa","nurseryId":"LLCH15403","potfillingTarget":9000,"nmName":"Numeri Lundu","nmPhone":"+265880821189"},"likanga":{"id":"likanga","name":"Likanga","epa":"Chilaza","assistant":"Alfred Golowa","nurseryId":"LLCH15404","potfillingTarget":7100,"nmName":"Difficult Sunduza","nmPhone":"+265885456247"},"masula":{"id":"masula","name":"Masula","epa":"Chilaza","assistant":"Alfred Golowa","nurseryId":"LLCH15405","potfillingTarget":8000,"nmName":"Malijani James","nmPhone":"+265980726728"},"palawo":{"id":"palawo","name":"Palawo","epa":"Chilaza","assistant":"Alfred Golowa","nurseryId":"LLCH15406","potfillingTarget":9100,"nmName":"Suzana Nefitale","nmPhone":"+265889452704"},"sinumbe":{"id":"sinumbe","name":"Sinumbe","epa":"Chilaza","assistant":"Alfred Golowa","nurseryId":"LLCH15407","potfillingTarget":7850,"nmName":"Loice Bakili","nmPhone":"+265881949938"},"kanyoni":{"id":"kanyoni","name":"Kanyoni","epa":"Chilaza","assistant":"Austin Bonongwe","nurseryId":"LLCH15501","potfillingTarget":5850,"nmName":"Chifundo Aaron","nmPhone":"+265880093462"},"lundu":{"id":"lundu","name":"Lundu","epa":"Chilaza","assistant":"Austin Bonongwe","nurseryId":"LLCH15502","potfillingTarget":9250,"nmName":"Dikilani Visimba","nmPhone":"+265883848128"},"chamkondo":{"id":"chamkondo","name":"Chamkondo","epa":"Chilaza","assistant":"Austin Bonongwe","nurseryId":"LLCH15503","potfillingTarget":8350,"nmName":"Grey Manda","nmPhone":"+265896976117"},"mpakiza":{"id":"mpakiza","name":"Mpakiza","epa":"Chilaza","assistant":"Austin Bonongwe","nurseryId":"LLCH15504","potfillingTarget":11750,"nmName":"Jazele Kabanco","nmPhone":"+265880899324"},"mwaza":{"id":"mwaza","name":"Mwaza","epa":"Chilaza","assistant":"Austin Bonongwe","nurseryId":"LLCH15505","potfillingTarget":6850,"nmName":"Elemia Chionetselo","nmPhone":"+265889438313"},"kanyambwe":{"id":"kanyambwe","name":"Kanyambwe","epa":"Chilaza","assistant":"Austin Bonongwe","nurseryId":"LLCH15506","potfillingTarget":7350,"nmName":"Mateyo Kamphambe","nmPhone":"+265890562243"},"zambo":{"id":"zambo","name":"Zambo","epa":"Chilaza","assistant":"Austin Bonongwe","nurseryId":"LLCH15507","potfillingTarget":7600,"nmName":"Nelson Potaziyo","nmPhone":"+265884805894"},"katakungwa":{"id":"katakungwa","name":"Katakungwa","epa":"Chilaza","assistant":"Davie James","nurseryId":"LLCH15601","potfillingTarget":9850,"nmName":"Steve Kazembe","nmPhone":"+265896539861"},"mngongonda":{"id":"mngongonda","name":"Mngongonda","epa":"Chilaza","assistant":"Davie James","nurseryId":"LLCH15602","potfillingTarget":11100,"nmName":"Bautala Masiteni","nmPhone":"+265886925801"},"nkhwangwa":{"id":"nkhwangwa","name":"Nkhwangwa","epa":"Chilaza","assistant":"Davie James","nurseryId":"LLCH15603","potfillingTarget":5850,"nmName":"Chisomo Njiwa","nmPhone":"+265891582918"},"kanjawala":{"id":"kanjawala","name":"Kanjawala","epa":"Chilaza","assistant":"Davie James","nurseryId":"LLCH15604","potfillingTarget":7100,"nmName":"Esawu Goster","nmPhone":"+265891564986"},"santhe":{"id":"santhe","name":"Santhe","epa":"Chilaza","assistant":"Davie James","nurseryId":"LLCH15605","potfillingTarget":12250,"nmName":"Chikaonga Kadengo","nmPhone":"+265891564983"},"khanda":{"id":"khanda","name":"Khanda","epa":"Chilaza","assistant":"Davie James","nurseryId":"LLCH15606","potfillingTarget":6500,"nmName":"Trouble Kachiwaya","nmPhone":"+265882443371"},"mpingo":{"id":"mpingo","name":"Mpingo","epa":"Chilaza","assistant":"Davie James","nurseryId":"LLCH15607","potfillingTarget":10100,"nmName":"Matias Felix","nmPhone":"+265891703678"},"muyala":{"id":"muyala","name":"Muyala","epa":"Chilaza","assistant":"Davie James","nurseryId":"LLCH15608","potfillingTarget":12850,"nmName":"Rose Chambathuza","nmPhone":"+265891582910"},"chimwala":{"id":"chimwala","name":"Chimwala","epa":"Chilaza","assistant":"Honest Gondwe","nurseryId":"LLCH15701","potfillingTarget":8850,"nmName":"Sidney Sauzande","nmPhone":"+265891565003"},"chisikwa-caleb":{"id":"chisikwa-caleb","name":"Chisikwa Caleb","epa":"Chilaza","assistant":"Honest Gondwe","nurseryId":"LLCH15702","potfillingTarget":5850,"nmName":"Gilbert Mvulayatera","nmPhone":"+265890890307"},"dambo":{"id":"dambo","name":"Dambo","epa":"Chilaza","assistant":"Honest Gondwe","nurseryId":"LLCH15703","potfillingTarget":11000,"nmName":"Tiyamike Abdah","nmPhone":"+265892541308"},"dzoole":{"id":"dzoole","name":"Dzoole","epa":"Chilaza","assistant":"Honest Gondwe","nurseryId":"LLCH15704","potfillingTarget":9600,"nmName":"Edison Kanthawi","nmPhone":"+265886167092"},"ngalazuka":{"id":"ngalazuka","name":"Ngalazuka","epa":"Chilaza","assistant":"Honest Gondwe","nurseryId":"LLCH15705","potfillingTarget":5600,"nmName":"Legias Kumsamila","nmPhone":"+265889499298"},"kadyaudzu":{"id":"kadyaudzu","name":"Kadyaudzu","epa":"Chilaza","assistant":"Honest Gondwe","nurseryId":"LLCH15706","potfillingTarget":5750,"nmName":"Felen Mbesa","nmPhone":"+265891583382"},"nyemba":{"id":"nyemba","name":"Nyemba","epa":"Chilaza","assistant":"Honest Gondwe","nurseryId":"LLCH15707","potfillingTarget":5850,"nmName":"Philimon Mthiko","nmPhone":"+265885352010"},"chibungo":{"id":"chibungo","name":"Chibungo","epa":"Chilaza","assistant":"Richard Lipenga","nurseryId":"LLCH15801","potfillingTarget":14000,"nmName":"Shadreck Kambaye","nmPhone":"+265891703658"},"kabwana":{"id":"kabwana","name":"Kabwana","epa":"Chilaza","assistant":"Richard Lipenga","nurseryId":"LLCH15802","potfillingTarget":7000,"nmName":"Kalebe Rexson","nmPhone":"+265897349901"},"phulamazira":{"id":"phulamazira","name":"Phulamazira","epa":"Chilaza","assistant":"Richard Lipenga","nurseryId":"LLCH15803","potfillingTarget":9250,"nmName":"Alick Null","nmPhone":"+265891564994"},"mnjeza-2":{"id":"mnjeza-2","name":"Mnjeza 2","epa":"Chilaza","assistant":"Richard Lipenga","nurseryId":"LLCH15804","potfillingTarget":9250,"nmName":"Lutele Mazuzo","nmPhone":"+265896548361"},"mzungu":{"id":"mzungu","name":"Mzungu","epa":"Chilaza","assistant":"Richard Lipenga","nurseryId":"LLCH15805","potfillingTarget":15250,"nmName":"Bisiasi Gelevaziyo","nmPhone":"+265891564988"},"songole":{"id":"songole","name":"Songole","epa":"Chilaza","assistant":"Richard Lipenga","nurseryId":"LLCH15806","potfillingTarget":6500,"nmName":"Salah Redson","nmPhone":"+265891255837"},"zindo":{"id":"zindo","name":"Zindo","epa":"Chilaza","assistant":"Richard Lipenga","nurseryId":"LLCH15807","potfillingTarget":17500,"nmName":"Zikiel Josofati","nmPhone":"+265889700577"},"chilinda":{"id":"chilinda","name":"Chilinda","epa":"Ming'ongo","assistant":"Aubrey Kuyacha","nurseryId":"LLMI17701","potfillingTarget":7250,"nmName":"Peter Josephy","nmPhone":"+265884182476"},"chimsolo":{"id":"chimsolo","name":"Chimsolo","epa":"Ming'ongo","assistant":"Aubrey Kuyacha","nurseryId":"LLMI17702","potfillingTarget":6600,"nmName":"Smith Chishindo","nmPhone":"+265884400293"},"chishasha":{"id":"chishasha","name":"Chishasha","epa":"Ming'ongo","assistant":"Aubrey Kuyacha","nurseryId":"LLMI17703","potfillingTarget":7100,"nmName":"Masautso Shawa","nmPhone":"+265997917742"},"mkanda-aloni":{"id":"mkanda-aloni","name":"Mkanda-Aloni","epa":"Ming'ongo","assistant":"Aubrey Kuyacha","nurseryId":"LLMI17704","potfillingTarget":14350,"nmName":"Lezinati Joza","nmPhone":"+265984730419"},"mniu":{"id":"mniu","name":"Mniu","epa":"Ming'ongo","assistant":"Aubrey Kuyacha","nurseryId":"LLMI17705","potfillingTarget":6350,"nmName":"Steven Alfred","nmPhone":"+265888158366"},"kalasang-anga":{"id":"kalasang-anga","name":"Kalasang'anga","epa":"Ming'ongo","assistant":"Aubrey Kuyacha","nurseryId":"LLMI17706","potfillingTarget":6100,"nmName":"Silence Paliat","nmPhone":"+265890668672"},"kombe":{"id":"kombe","name":"Kombe","epa":"Ming'ongo","assistant":"Aubrey Kuyacha","nurseryId":"LLMI17707","potfillingTarget":11750,"nmName":"Kayeseni Black","nmPhone":"+265889733967"},"kudziwe":{"id":"kudziwe","name":"Kudziwe","epa":"Ming'ongo","assistant":"Aubrey Kuyacha","nurseryId":"LLMI17708","potfillingTarget":10600,"nmName":"Dziwemi Chikhasu","nmPhone":"+265886268075"},"mbwemba":{"id":"mbwemba","name":"Mbwemba","epa":"Ming'ongo","assistant":"Tadala Mphwina","nurseryId":"LLMI18001","potfillingTarget":7850,"nmName":"Jeusi Joshua","nmPhone":"+265888653371"},"mdondwe":{"id":"mdondwe","name":"Mdondwe","epa":"Ming'ongo","assistant":"Tadala Mphwina","nurseryId":"LLMI18002","potfillingTarget":6850,"nmName":"Maxwell Kalamizu","nmPhone":"+265891583495"},"madetsa":{"id":"madetsa","name":"Madetsa","epa":"Ming'ongo","assistant":"Tadala Mphwina","nurseryId":"LLMI18003","potfillingTarget":7000,"nmName":"Egelesoni Chilemba","nmPhone":"+265891255371"},"mandala":{"id":"mandala","name":"Mandala","epa":"Ming'ongo","assistant":"Tadala Mphwina","nurseryId":"LLMI18004","potfillingTarget":7000,"nmName":"Aliness Nason","nmPhone":"+265882849580"},"mchepa":{"id":"mchepa","name":"Mchepa","epa":"Ming'ongo","assistant":"Tadala Mphwina","nurseryId":"LLMI18005","potfillingTarget":7000,"nmName":"Lonjezo Kasalika","nmPhone":"+265890652126"},"mphunda":{"id":"mphunda","name":"Mphunda","epa":"Ming'ongo","assistant":"Tadala Mphwina","nurseryId":"LLMI18006","potfillingTarget":14000,"nmName":"Masautso Eliya","nmPhone":"+265889428981"},"bingu":{"id":"bingu","name":"Bingu","epa":"Mpingu","assistant":"Martha Jacob","nurseryId":"LLMP19501","potfillingTarget":16250,"nmName":"Elisa Banda","nmPhone":"+265886327301"},"chalenya":{"id":"chalenya","name":"Chalenya","epa":"Mpingu","assistant":"Martha Jacob","nurseryId":"LLMP19502","potfillingTarget":11350,"nmName":"Lesson Kapuza","nmPhone":"+265890657288"},"kanongona":{"id":"kanongona","name":"Kanongona","epa":"Mpingu","assistant":"Martha Jacob","nurseryId":"LLMP19503","potfillingTarget":9600,"nmName":"Philipina Mikayere","nmPhone":"+265887260287"},"ndelendele":{"id":"ndelendele","name":"Ndelendele","epa":"Mpingu","assistant":"Martha Jacob","nurseryId":"LLMP19504","potfillingTarget":10250,"nmName":"Killiness Lingisoni","nmPhone":"+265882335512"},"ndoliro":{"id":"ndoliro","name":"Ndoliro","epa":"Mpingu","assistant":"Martha Jacob","nurseryId":"LLMP19505","potfillingTarget":11350,"nmName":"Cosmas Gevinala","nmPhone":"+265891251982"},"mkanda":{"id":"mkanda","name":"Mkanda","epa":"Mpingu","assistant":"Martha Jacob","nurseryId":"LLMP19506","potfillingTarget":8350,"nmName":"Lucia Sinoya","nmPhone":"+265896561614"},"kamkundi":{"id":"kamkundi","name":"Kamkundi","epa":"Mpingu","assistant":"Prince Mkumbwa","nurseryId":"LLMP19701","potfillingTarget":7500,"nmName":"Harrykis Helebati","nmPhone":"+265888469925"},"mkombe":{"id":"mkombe","name":"Mkombe","epa":"Mpingu","assistant":"Prince Mkumbwa","nurseryId":"LLMP19702","potfillingTarget":8100,"nmName":"Bezayi Ndelema","nmPhone":"+265884835530"},"ntandula":{"id":"ntandula","name":"Ntandula","epa":"Mpingu","assistant":"Prince Mkumbwa","nurseryId":"LLMP19703","potfillingTarget":11750,"nmName":"Paulo Dena","nmPhone":"+265886923227"},"kuchata":{"id":"kuchata","name":"Kuchata","epa":"Mpingu","assistant":"Prince Mkumbwa","nurseryId":"LLMP19704","potfillingTarget":8750,"nmName":"Gaven Simbi","nmPhone":"+265896535295"},"mpombe":{"id":"mpombe","name":"Mpombe","epa":"Mpingu","assistant":"Prince Mkumbwa","nurseryId":"LLMP19705","potfillingTarget":13250,"nmName":"Kazimu Molosi","nmPhone":"+265885295479"},"sinda":{"id":"sinda","name":"Sinda","epa":"Mpingu","assistant":"Prince Mkumbwa","nurseryId":"LLMP19706","potfillingTarget":8350,"nmName":"Davie Chipanthenga","nmPhone":"+265892129092"},"n-a":{"id":"n-a","name":"N/A","epa":"Office","assistant":"N/A","nurseryId":"","potfillingTarget":null,"nmName":"","nmPhone":""}};
+const LEGACY_SEED_VISITS = [{"order": 0, "week": 1, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Alfred Golowa", "site": "Kango", "purpose": "Routine Audit & Seedling Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 1, "week": 1, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Alfred Golowa", "site": "Mtolongo", "purpose": "Routine Audit & Seedling Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 2, "week": 1, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Alfred Golowa", "site": "Kafunde", "purpose": "Routine Audit & Seedling Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 3, "week": 1, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Alfred Golowa", "site": "Likanga", "purpose": "Routine Audit & Seedling Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 4, "week": 1, "day": "Tuesday", "date": "", "epa": "Chilaza", "assistant": "Alfred Golowa", "site": "Masula", "purpose": "Routine Audit & Seedling Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 5, "week": 1, "day": "Tuesday", "date": "", "epa": "Chilaza", "assistant": "Alfred Golowa", "site": "Palawo", "purpose": "Routine Audit & Seedling Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 6, "week": 1, "day": "Tuesday", "date": "", "epa": "Chilaza", "assistant": "Alfred Golowa", "site": "Sinumbe", "purpose": "Routine Audit & Seedling Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 7, "week": 1, "day": "Tuesday", "date": "", "epa": "Chilaza", "assistant": "Austin Bonongwe", "site": "Kanyoni", "purpose": "Data Integrity & Progress Check", "checklist": "Physical pot count vs reported status", "status": "Pending", "notes": ""}, {"order": 8, "week": 1, "day": "Wednesday", "date": "", "epa": "Ming'ongo", "assistant": "Aubrey Kuyacha", "site": "Chilinda", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 9, "week": 1, "day": "Wednesday", "date": "", "epa": "Ming'ongo", "assistant": "Aubrey Kuyacha", "site": "Chimsolo", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 10, "week": 1, "day": "Wednesday", "date": "", "epa": "Ming'ongo", "assistant": "Aubrey Kuyacha", "site": "Chishasha", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 11, "week": 1, "day": "Wednesday", "date": "", "epa": "Ming'ongo", "assistant": "Aubrey Kuyacha", "site": "Mkanda-Aloni", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 12, "week": 1, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Austin Bonongwe", "site": "Lundu", "purpose": "Data Integrity & Progress Check", "checklist": "Physical pot count vs reported status", "status": "Pending", "notes": ""}, {"order": 13, "week": 1, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Austin Bonongwe", "site": "Chamkondo", "purpose": "Data Integrity & Progress Check", "checklist": "Physical pot count vs reported status", "status": "Pending", "notes": ""}, {"order": 14, "week": 1, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Austin Bonongwe", "site": "Mpakiza", "purpose": "Data Integrity & Progress Check", "checklist": "Physical pot count vs reported status", "status": "Pending", "notes": ""}, {"order": 15, "week": 1, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Austin Bonongwe", "site": "Mwaza", "purpose": "Data Integrity & Progress Check", "checklist": "Physical pot count vs reported status", "status": "Pending", "notes": ""}, {"order": 16, "week": 1, "day": "Friday", "date": "", "epa": "Office", "assistant": "N/A", "site": "N/A", "purpose": "Weekly Reporting & Office Admin", "checklist": "Submit weekly report to DS/Manager; Team check-ins", "status": "Pending", "notes": ""}, {"order": 17, "week": 2, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Austin Bonongwe", "site": "Kanyambwe", "purpose": "Data Integrity & Progress Check", "checklist": "Physical pot count vs reported status", "status": "Pending", "notes": ""}, {"order": 18, "week": 2, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Austin Bonongwe", "site": "Zambo", "purpose": "Data Integrity & Progress Check", "checklist": "Physical pot count vs reported status", "status": "Pending", "notes": ""}, {"order": 19, "week": 2, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Davie James", "site": "Katakungwa", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 20, "week": 2, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Davie James", "site": "Mngongonda", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 21, "week": 2, "day": "Tuesday", "date": "", "epa": "Mpingu", "assistant": "Martha Jacob", "site": "Bingu", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 22, "week": 2, "day": "Tuesday", "date": "", "epa": "Mpingu", "assistant": "Martha Jacob", "site": "Chalenya", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 23, "week": 2, "day": "Tuesday", "date": "", "epa": "Mpingu", "assistant": "Martha Jacob", "site": "Kanongona", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 24, "week": 2, "day": "Tuesday", "date": "", "epa": "Mpingu", "assistant": "Martha Jacob", "site": "Ndelendele", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 25, "week": 2, "day": "Wednesday", "date": "", "epa": "Chilaza", "assistant": "Davie James", "site": "Nkhwangwa", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 26, "week": 2, "day": "Wednesday", "date": "", "epa": "Chilaza", "assistant": "Davie James", "site": "Kanjawala", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 27, "week": 2, "day": "Wednesday", "date": "", "epa": "Chilaza", "assistant": "Davie James", "site": "Santhe", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 28, "week": 2, "day": "Wednesday", "date": "", "epa": "Chilaza", "assistant": "Davie James", "site": "Khanda", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 29, "week": 2, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Davie James", "site": "Mpingo", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 30, "week": 2, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Davie James", "site": "Muyala", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 31, "week": 2, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Honest Gondwe", "site": "Chimwala", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 32, "week": 2, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Honest Gondwe", "site": "Chisikwa Caleb", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 33, "week": 2, "day": "Friday", "date": "", "epa": "Office", "assistant": "N/A", "site": "N/A", "purpose": "Weekly Reporting & Office Admin", "checklist": "Submit weekly report to DS/Manager; Team check-ins", "status": "Pending", "notes": ""}, {"order": 34, "week": 3, "day": "Monday", "date": "", "epa": "Ming'ongo", "assistant": "Aubrey Kuyacha", "site": "Mniu", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 35, "week": 3, "day": "Monday", "date": "", "epa": "Ming'ongo", "assistant": "Aubrey Kuyacha", "site": "Kalasang'anga", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 36, "week": 3, "day": "Monday", "date": "", "epa": "Ming'ongo", "assistant": "Aubrey Kuyacha", "site": "Kombe", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 37, "week": 3, "day": "Monday", "date": "", "epa": "Ming'ongo", "assistant": "Aubrey Kuyacha", "site": "Kudziwe", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 38, "week": 3, "day": "Tuesday", "date": "", "epa": "Chilaza", "assistant": "Honest Gondwe", "site": "Dambo", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 39, "week": 3, "day": "Tuesday", "date": "", "epa": "Chilaza", "assistant": "Honest Gondwe", "site": "Dzoole", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 40, "week": 3, "day": "Tuesday", "date": "", "epa": "Chilaza", "assistant": "Honest Gondwe", "site": "Ngalazuka", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 41, "week": 3, "day": "Tuesday", "date": "", "epa": "Chilaza", "assistant": "Honest Gondwe", "site": "Kadyaudzu", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 42, "week": 3, "day": "Wednesday", "date": "", "epa": "Mpingu", "assistant": "Martha Jacob", "site": "Ndoliro", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 43, "week": 3, "day": "Wednesday", "date": "", "epa": "Mpingu", "assistant": "Martha Jacob", "site": "Mkanda", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 44, "week": 3, "day": "Wednesday", "date": "", "epa": "Mpingu", "assistant": "Prince Mkumbwa", "site": "Kamkundi", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 45, "week": 3, "day": "Wednesday", "date": "", "epa": "Mpingu", "assistant": "Prince Mkumbwa", "site": "Mkombe", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 46, "week": 3, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Honest Gondwe", "site": "Nyemba", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 47, "week": 3, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Richard Lipenga", "site": "Chibungo", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 48, "week": 3, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Richard Lipenga", "site": "Kabwana", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 49, "week": 3, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Richard Lipenga", "site": "Phulamazira", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 50, "week": 3, "day": "Friday", "date": "", "epa": "Office", "assistant": "N/A", "site": "N/A", "purpose": "Weekly Reporting & Office Admin", "checklist": "Submit weekly report to DS/Manager; Team check-ins", "status": "Pending", "notes": ""}, {"order": 51, "week": 4, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Richard Lipenga", "site": "Mnjeza 2", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 52, "week": 4, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Richard Lipenga", "site": "Mzungu", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 53, "week": 4, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Richard Lipenga", "site": "Songole", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 54, "week": 4, "day": "Monday", "date": "", "epa": "Chilaza", "assistant": "Richard Lipenga", "site": "Zindo", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 55, "week": 4, "day": "Tuesday", "date": "", "epa": "Ming'ongo", "assistant": "Tadala Mphwina", "site": "Mbwemba", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 56, "week": 4, "day": "Tuesday", "date": "", "epa": "Ming'ongo", "assistant": "Tadala Mphwina", "site": "Mdondwe", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 57, "week": 4, "day": "Tuesday", "date": "", "epa": "Ming'ongo", "assistant": "Tadala Mphwina", "site": "Madetsa", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 58, "week": 4, "day": "Tuesday", "date": "", "epa": "Ming'ongo", "assistant": "Tadala Mphwina", "site": "Mandala", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 59, "week": 4, "day": "Wednesday", "date": "", "epa": "Mpingu", "assistant": "Prince Mkumbwa", "site": "Ntandula", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 60, "week": 4, "day": "Wednesday", "date": "", "epa": "Mpingu", "assistant": "Prince Mkumbwa", "site": "Kuchata", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 61, "week": 4, "day": "Wednesday", "date": "", "epa": "Mpingu", "assistant": "Prince Mkumbwa", "site": "Mpombe", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 62, "week": 4, "day": "Wednesday", "date": "", "epa": "Mpingu", "assistant": "Prince Mkumbwa", "site": "Sinda", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 63, "week": 4, "day": "Thursday", "date": "", "epa": "Ming'ongo", "assistant": "Tadala Mphwina", "site": "Mchepa", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 64, "week": 4, "day": "Thursday", "date": "", "epa": "Ming'ongo", "assistant": "Tadala Mphwina", "site": "Mphunda", "purpose": "Routine Audit & Nursery Management", "checklist": "Potfilling count; Seedling health; NM attendance", "status": "Pending", "notes": ""}, {"order": 65, "week": 4, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Austin Bonongwe", "site": "Chamkondo (Re-visit)", "purpose": "Data Integrity Follow-up", "checklist": "Verify resolved potfilling gap & updated logs", "status": "Pending", "notes": ""}, {"order": 66, "week": 4, "day": "Thursday", "date": "", "epa": "Chilaza", "assistant": "Austin Bonongwe", "site": "Mpakiza (Re-visit)", "purpose": "Data Integrity Follow-up", "checklist": "Verify resolved potfilling gap & updated logs", "status": "Pending", "notes": ""}, {"order": 67, "week": 4, "day": "Friday", "date": "", "epa": "Office", "assistant": "N/A", "site": "N/A", "purpose": "Weekly Reporting & Office Admin", "checklist": "Submit weekly report to DS/Manager; Team check-ins", "status": "Pending", "notes": ""}];
 const STATUSES = ["Pending", "Completed", "Rescheduled", "Skipped"];
 const DAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-const DAY_SHORT = { "Monday": "Mon", "Tuesday": "Tue", "Wednesday": "Wed", "Thursday": "Thu", "Friday": "Fri" };
 const EPA_CLASS = { "Chilaza": "chilaza", "Ming'ongo": "mingongo", "Mpingu": "mpingu", "Office": "office" };
+const OBS_TYPES = ["observation", "issue", "action", "followUp"];
+const OBS_LABEL = { observation: "Observation", issue: "Issue", action: "Action", followUp: "Follow-up" };
 const STATUS_ICON = {
-  Pending: '<path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="9"/>',
-  Completed: '<path d="M20 6 9 17l-5-5"/>',
-  Rescheduled: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/>',
-  Skipped: '<path d="M18 6 6 18M6 6l12 12"/>',
+  Pending: "clock", Completed: "check", Rescheduled: "calendar-check", Skipped: "x",
 };
 
-/* =====================================================================
-   3) STATE
-   ===================================================================== */
-let visits = [];
-let unsubscribeVisits = null;
-let seeding = false;
+function slugify(name) { return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""); }
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function initials(name) { if (!name || name === "N/A") return "–"; return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase(); }
+function fmtNum(n) { return typeof n === "number" ? n.toLocaleString() : "–"; }
+
+/* 4) STATE */
+let sites = [];
+let checkins = [];
+let observations = [];
+let unsubs = [];
 let activeTab = "schedule";
-let openWeeks = new Set([1]);
+let selectedWeek = 1;
+let openDrawerId = null;
 let openEditId = null;
 let editDraft = null;
+let noteComposerFor = null;
+let noteDraftType = "observation";
+let selectedSiteId = null;
 let deferredInstallPrompt = null;
+let migrationDone = false;
 
-/* =====================================================================
-   4) AUTH
-   ===================================================================== */
+/* 5) AUTH */
 const authScreen = document.getElementById("auth-screen");
 const mainScreen = document.getElementById("main-screen");
+const bottomNav = document.getElementById("bottom-nav");
 const authError = document.getElementById("auth-error");
 
 document.getElementById("sign-in-btn").addEventListener("click", async () => {
@@ -363,255 +395,328 @@ document.getElementById("sign-in-btn").addEventListener("click", async () => {
   const email = document.getElementById("auth-email").value.trim();
   const password = document.getElementById("auth-password").value;
   if (!email || !password) { authError.textContent = "Enter your email and password."; return; }
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-  } catch (err) {
-    authError.textContent = "Sign-in error (" + (err.code || "unknown") + ") — " + err.message;
-    console.error(err);
-  }
+  try { await signInWithEmailAndPassword(auth, email, password); }
+  catch (err) { authError.textContent = "Sign-in error (" + (err.code || "unknown") + ") — " + err.message; }
 });
-
 document.getElementById("sign-out-btn").addEventListener("click", () => signOut(auth));
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   if (user) {
     authScreen.classList.add("hidden");
     mainScreen.classList.remove("hidden");
-    startVisitsListener();
-    positionTabIndicator();
+    bottomNav.classList.remove("hidden");
+    await runMigrationIfNeeded(user);
+    startListeners();
   } else {
     mainScreen.classList.add("hidden");
+    bottomNav.classList.add("hidden");
     authScreen.classList.remove("hidden");
-    if (unsubscribeVisits) { unsubscribeVisits(); unsubscribeVisits = null; }
-    visits = [];
+    unsubs.forEach((u) => u()); unsubs = [];
+    sites = []; checkins = []; observations = [];
   }
 });
 
-/* =====================================================================
-   5) FIRESTORE — live sync + first-run seed
-   ===================================================================== */
-function startVisitsListener() {
-  const visitsRef = collection(db, "visits");
-  const q = query(visitsRef, orderBy("order"));
-  unsubscribeVisits = onSnapshot(q, (snap) => {
-    if (snap.empty && !seeding) {
-      seedInitialSchedule();
-      return;
+/* 6) MIGRATION (one-time, idempotent, non-destructive) */
+async function runMigrationIfNeeded(user) {
+  const metaRef = doc(db, "meta", "schemaV2");
+  const metaSnap = await getDoc(metaRef);
+  if (metaSnap.exists() && metaSnap.data().done) { migrationDone = true; return; }
+
+  setSyncText("Setting up your data…");
+
+  // Always upsert the canonical site list first (safe to re-run; matched by deterministic id).
+  const siteBatch = writeBatch(db);
+  Object.values(SITES_SEED).forEach((s) => {
+    siteBatch.set(doc(db, "sites", s.id), { ...s, updatedAt: serverTimestamp() }, { merge: true });
+  });
+  await siteBatch.commit();
+
+  // Migrate legacy `visits` docs if they exist; else fresh-seed from the known schedule.
+  const legacySnap = await getDocs(collection(db, "visits"));
+  const sourceRows = legacySnap.empty
+    ? LEGACY_SEED_VISITS.map((v, i) => ({ id: "seed" + i, ...v }))
+    : legacySnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+  let batch = writeBatch(db);
+  let opCount = 0;
+  let migratedNotes = 0;
+  for (const oldDoc of sourceRows) {
+    const baseSiteName = (oldDoc.site || "").replace(/\s*\(Re-visit\)\s*$/, "");
+    const siteId = slugify(baseSiteName || "N/A");
+    const isRevisit = /\(Re-visit\)/.test(oldDoc.site || "");
+    const items = PURPOSE_CHECKLIST[oldDoc.purpose] || (oldDoc.checklist ? [oldDoc.checklist] : []);
+
+    const checkinRef = doc(db, "checkins", oldDoc.id);
+    batch.set(checkinRef, {
+      siteId, isRevisit,
+      week: oldDoc.week, day: oldDoc.day, date: oldDoc.date || "",
+      epa: oldDoc.epa, assistant: oldDoc.assistant, purpose: oldDoc.purpose,
+      checklistItems: items, checkedItems: items.map(() => false),
+      status: oldDoc.status || "Pending", order: oldDoc.order ?? 0,
+      updatedAt: serverTimestamp(),
+    });
+    opCount++;
+
+    if (oldDoc.notes && oldDoc.notes.trim()) {
+      const obsRef = doc(collection(db, "observations"));
+      batch.set(obsRef, {
+        siteId, checkinId: oldDoc.id, type: "observation",
+        text: oldDoc.notes.trim(), author: "Imported from previous version",
+        createdAt: serverTimestamp(),
+      });
+      opCount++; migratedNotes++;
     }
-    visits = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    render();
-  }, (err) => {
-    console.error("Visits listener error:", err);
-  });
+    if (opCount >= 400) { await batch.commit(); batch = writeBatch(db); opCount = 0; }
+  }
+  if (opCount > 0) await batch.commit();
+
+  await setDoc(metaRef, { done: true, migratedAt: serverTimestamp(), count: sourceRows.length, migratedNotes });
+  migrationDone = true;
 }
 
-async function seedInitialSchedule() {
-  seeding = true;
-  const visitsRef = collection(db, "visits");
-  const batch = writeBatch(db);
-  SEED_VISITS.forEach((v) => {
-    const ref = doc(visitsRef);
-    batch.set(ref, { ...v, updatedAt: serverTimestamp() });
-  });
-  await batch.commit();
-  seeding = false;
-}
+/* 7) FIRESTORE LISTENERS */
+function startListeners() {
+  let pendingFlags = { sites: false, checkins: false, observations: false };
 
-function nextOrderValue() {
-  return visits.reduce((max, v) => Math.max(max, v.order ?? 0), -1) + 1;
-}
-
-async function saveVisit(id, patch) {
-  await updateDoc(doc(db, "visits", id), { ...patch, updatedAt: serverTimestamp() });
-}
-async function createVisit(data) {
-  await addDoc(collection(db, "visits"), { ...data, order: nextOrderValue(), updatedAt: serverTimestamp() });
-}
-async function removeVisit(id) {
-  await deleteDoc(doc(db, "visits", id));
-}
-
-/* =====================================================================
-   6) TABS
-   ===================================================================== */
-function positionTabIndicator() {
-  const active = document.querySelector(".tab-btn.active");
-  const indicator = document.getElementById("tab-indicator");
-  if (!active || !indicator) return;
-  indicator.style.left = active.offsetLeft + "px";
-  indicator.style.width = active.offsetWidth + "px";
-}
-window.addEventListener("resize", positionTabIndicator);
-
-document.querySelectorAll(".tab-btn").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    activeTab = btn.dataset.tab;
-    document.querySelectorAll(".tab-btn").forEach((b) => b.classList.toggle("active", b === btn));
-    positionTabIndicator();
-    document.getElementById("schedule-view").classList.toggle("hidden", activeTab !== "schedule");
-    document.getElementById("dashboard-view").classList.toggle("hidden", activeTab !== "dashboard");
-    document.getElementById("fab").style.display = "flex";
+  const u1 = onSnapshot(collection(db, "sites"), (snap) => {
+    sites = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    pendingFlags.sites = snap.metadata.hasPendingWrites;
+    updateSyncPill(snap, pendingFlags);
     render();
   });
-});
+  const u2 = onSnapshot(query(collection(db, "checkins"), orderBy("order")), (snap) => {
+    checkins = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    pendingFlags.checkins = snap.metadata.hasPendingWrites;
+    updateSyncPill(snap, pendingFlags);
+    render();
+  });
+  const u3 = onSnapshot(collection(db, "observations"), (snap) => {
+    observations = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    pendingFlags.observations = snap.metadata.hasPendingWrites;
+    updateSyncPill(snap, pendingFlags);
+    render();
+  });
+  unsubs = [u1, u2, u3];
+}
 
-/* =====================================================================
-   7) BOTTOM SHEET PICKER
-   ===================================================================== */
+function setSyncText(text, cls) {
+  const pill = document.getElementById("sync-pill");
+  document.getElementById("sync-text").textContent = text;
+  pill.className = cls || "";
+}
+function updateSyncPill(snap, flags) {
+  if (!navigator.onLine) { setSyncText("Offline — changes queued", "offline"); return; }
+  const anyPending = flags.sites || flags.checkins || flags.observations;
+  const anyFromCache = snap.metadata.fromCache;
+  if (anyPending) setSyncText("Saving…", "");
+  else if (anyFromCache) setSyncText("Loaded from cache", "");
+  else setSyncText("Synced", "synced");
+}
+window.addEventListener("online", () => setSyncText("Reconnecting…", ""));
+window.addEventListener("offline", () => setSyncText("Offline — changes queued", "offline"));
+
+/* 8) DATA HELPERS */
+function siteById(id) { return sites.find((s) => s.id === id) || { id, name: id, epa: "", assistant: "", nurseryId: "", potfillingTarget: null, nmName: "", nmPhone: "" }; }
+function checkinsForSite(siteId) { return checkins.filter((c) => c.siteId === siteId).sort((a, b) => (b.week - a.week) || DAY_ORDER.indexOf(b.day) - DAY_ORDER.indexOf(a.day)); }
+function observationsForCheckin(checkinId) { return observations.filter((o) => o.checkinId === checkinId).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)); }
+function observationsForSite(siteId) { return observations.filter((o) => o.siteId === siteId).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)); }
+function fmtWhen(ts) { if (!ts || !ts.seconds) return "Just now"; return new Date(ts.seconds * 1000).toLocaleDateString(undefined, { month: "short", day: "numeric" }); }
+
+/* 9) MUTATIONS */
+async function saveCheckin(id, patch) { await updateDoc(doc(db, "checkins", id), { ...patch, updatedAt: serverTimestamp() }); }
+async function createCheckin(data) {
+  const maxOrder = checkins.reduce((m, c) => Math.max(m, c.order ?? 0), -1);
+  await addDoc(collection(db, "checkins"), { ...data, order: maxOrder + 1, updatedAt: serverTimestamp() });
+}
+async function removeCheckin(id) { await deleteDoc(doc(db, "checkins", id)); }
+async function addObservation(siteId, checkinId, type, text) {
+  await addDoc(collection(db, "observations"), {
+    siteId, checkinId: checkinId || null, type, text,
+    author: auth.currentUser?.email || "Unknown", createdAt: serverTimestamp(),
+  });
+}
+
+/* 10) BOTTOM SHEET */
 function openSheet(title, options, currentValue, onSelect) {
   const backdrop = document.getElementById("sheet-backdrop");
   document.getElementById("sheet-title").textContent = title;
   const listEl = document.getElementById("sheet-list");
   listEl.innerHTML = options.map((opt) => `
     <button class="sheet-option ${opt === currentValue ? "selected" : ""}" data-value="${esc(opt)}">
-      <span>${esc(opt)}</span>
-      <svg class="check-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-    </button>
-  `).join("");
-  listEl.querySelectorAll(".sheet-option").forEach((btn) => {
-    btn.addEventListener("click", () => { onSelect(btn.dataset.value); closeSheet(); });
-  });
+      <span>${esc(opt)}</span>${icon("check").replace('class="ic"', 'class="ic check-icon"')}
+    </button>`).join("");
+  listEl.querySelectorAll(".sheet-option").forEach((btn) => btn.addEventListener("click", () => { onSelect(btn.dataset.value); closeSheet(); }));
   backdrop.classList.add("open");
 }
 function closeSheet() { document.getElementById("sheet-backdrop").classList.remove("open"); }
-document.getElementById("sheet-backdrop").addEventListener("click", (e) => {
-  if (e.target.id === "sheet-backdrop") closeSheet();
+document.getElementById("sheet-backdrop").addEventListener("click", (e) => { if (e.target.id === "sheet-backdrop") closeSheet(); });
+
+/* 11) NAV */
+document.querySelectorAll(".nav-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    activeTab = btn.dataset.tab;
+    selectedSiteId = null;
+    document.querySelectorAll(".nav-btn").forEach((b) => b.classList.toggle("active", b === btn));
+    document.getElementById("screen-schedule").classList.toggle("hidden", activeTab !== "schedule");
+    document.getElementById("screen-analytics").classList.toggle("hidden", activeTab !== "analytics");
+    document.getElementById("screen-sites").classList.toggle("hidden", activeTab !== "sites");
+    document.getElementById("site-profile-screen").classList.add("hidden");
+    document.getElementById("top-title").textContent = { schedule: "Schedule", analytics: "Analytics", sites: "Sites & Team" }[activeTab];
+    document.getElementById("fab").style.display = activeTab === "schedule" ? "flex" : "none";
+    render();
+  });
 });
 
-/* =====================================================================
-   8) RENDER — Schedule
-   ===================================================================== */
-function esc(s) {
-  return String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function openSiteProfile(siteId) {
+  selectedSiteId = siteId;
+  document.getElementById("site-profile-screen").classList.remove("hidden");
+  document.getElementById("fab").style.display = "none";
+  renderSiteProfile();
 }
-function statusClass(status) { return "active-" + (status || "Pending").toLowerCase(); }
-function initials(name) {
-  if (!name || name === "N/A") return "–";
-  return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+function closeSiteProfile() {
+  selectedSiteId = null;
+  document.getElementById("site-profile-screen").classList.add("hidden");
+  document.getElementById("fab").style.display = activeTab === "schedule" ? "flex" : "none";
 }
-function render() { if (activeTab === "schedule") renderSchedule(); else renderDashboard(); }
 
+function render() {
+  if (activeTab === "schedule") renderSchedule();
+  else if (activeTab === "analytics") renderAnalytics();
+  else renderSitesTeam();
+  if (selectedSiteId) renderSiteProfile();
+}
+
+/* 12) SCHEDULE SCREEN */
 function renderSchedule() {
-  const el = document.getElementById("schedule-view");
-  if (!visits.length) { el.innerHTML = '<div class="empty-state">No visits yet. Tap + to add one.</div>'; return; }
+  const el = document.getElementById("screen-schedule");
+  if (!checkins.length) { el.innerHTML = '<div class="empty-state">No check-ins yet. Tap + to add one.</div>'; return; }
 
-  const weeks = {};
-  visits.forEach((v) => { (weeks[v.week] = weeks[v.week] || []).push(v); });
-  const weekNums = Object.keys(weeks).map(Number).sort((a, b) => a - b);
+  const weeks = [...new Set(checkins.map((c) => c.week))].sort((a, b) => a - b);
+  if (!weeks.includes(selectedWeek)) selectedWeek = weeks[0];
 
-  el.innerHTML = weekNums.map((w) => {
-    const items = weeks[w];
-    const done = items.filter((v) => v.status === "Completed").length;
-    const isOpen = openWeeks.has(w);
-    const byDay = {};
-    items.forEach((v) => { (byDay[v.day] = byDay[v.day] || []).push(v); });
-    const dayNames = Object.keys(byDay).sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
-
-    const dayHtml = dayNames.map((d) => `
-      <div class="day-group">
-        <div class="day-label">${esc(d)}</div>
-        ${byDay[d].map(renderCard).join("")}
-      </div>
-    `).join("");
-
+  const stripHtml = weeks.map((w) => {
+    const items = checkins.filter((c) => c.week === w);
+    const done = items.filter((c) => c.status === "Completed").length;
+    const pct = items.length ? Math.round((done / items.length) * 100) : 0;
     return `
-      <div class="week-section">
-        <div class="week-header ${isOpen ? "open" : ""}" data-week="${w}">
-          <span class="title">Week ${w}</span>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span class="meta">${done}/${items.length} completed</span>
-            <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-          </div>
-        </div>
-        <div class="week-body-outer ${isOpen ? "open" : ""}"><div class="week-body">${dayHtml}</div></div>
-      </div>
-    `;
+      <button class="week-chip ${w === selectedWeek ? "active" : ""}" data-week="${w}">
+        <div class="wk-label">WEEK ${w}</div>
+        <div class="wk-count">${done}/${items.length}</div>
+        <div class="wk-track"><div class="wk-fill" style="width:${pct}%"></div></div>
+      </button>`;
   }).join("");
 
-  document.querySelectorAll(".week-header").forEach((h) => {
-    h.addEventListener("click", () => {
-      const w = Number(h.dataset.week);
-      openWeeks.has(w) ? openWeeks.delete(w) : openWeeks.add(w);
-      renderSchedule();
-    });
-  });
-  wireCardEvents();
-  document.getElementById("fab").style.display = openEditId ? "none" : "flex";
+  const weekItems = checkins.filter((c) => c.week === selectedWeek);
+  const byDay = {};
+  weekItems.forEach((c) => { (byDay[c.day] = byDay[c.day] || []).push(c); });
+  const dayNames = Object.keys(byDay).sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
+
+  el.innerHTML = `
+    <div id="week-strip">${stripHtml}</div>
+    ${dayNames.map((d) => `
+      <div class="day-label">${esc(d)}</div>
+      ${byDay[d].map(renderCheckinCard).join("")}
+    `).join("")}
+  `;
+  el.querySelectorAll(".week-chip").forEach((c) => c.addEventListener("click", () => { selectedWeek = Number(c.dataset.week); renderSchedule(); }));
+  wireCardEvents(el);
 }
 
-function renderCard(v) {
-  const epaClass = EPA_CLASS[v.epa] || "office";
-  const isOpen = openEditId === v.id;
+function renderCheckinCard(c) {
+  const site = siteById(c.siteId);
+  const epaClass = EPA_CLASS[c.epa] || "office";
+  const items = c.checklistItems || [];
+  const checkedCount = (c.checkedItems || []).filter(Boolean).length;
+  const isDrawerOpen = openDrawerId === c.id;
+  const isEditOpen = openEditId === c.id;
+  const obsForThis = observationsForCheckin(c.id);
+
   return `
-    <div class="visit-card" data-id="${v.id}" style="--accent:var(--epa-${epaClass}-dot)">
+    <div class="visit-card" data-id="${c.id}" style="--accent:var(--epa-${epaClass}-dot)">
       <div class="card-top">
         <div class="badge-row">
-          <span class="badge" style="background:var(--epa-${epaClass}-bg);color:var(--epa-${epaClass}-fg);">${esc(v.epa)}</span>
-          ${v.date ? `<span class="date-tag">${esc(v.date)}</span>` : ""}
+          <span class="badge" style="background:var(--epa-${epaClass}-bg);color:var(--epa-${epaClass}-fg);">${esc(c.epa)}</span>
+          ${c.date ? `<span class="date-tag">${esc(c.date)}</span>` : ""}
         </div>
-        <p class="card-title">${esc(v.site)}</p>
-        <p class="card-sub">${esc(v.assistant)} · ${esc(v.purpose)}</p>
-        <div class="status-row" data-role="status-row">
+        <button class="site-link" data-role="open-site" data-site="${site.id}">${esc(site.name)}${icon("chevron-right", 15)}</button>
+        <p class="card-sub">${esc(c.assistant)} · ${esc(c.purpose)}</p>
+
+        ${items.length ? `
+        <div class="checklist">
+          <div class="chk-head"><span class="lbl">Checklist</span><span class="tally">${checkedCount} of ${items.length} done</span></div>
+          ${items.map((it, i) => `
+            <button class="chk-item" data-role="chk-toggle" data-idx="${i}">
+              <span class="chk-box ${c.checkedItems && c.checkedItems[i] ? "checked" : ""}">${c.checkedItems && c.checkedItems[i] ? icon("check", 13) : ""}</span>
+              <span class="chk-text">${esc(it)}</span>
+            </button>`).join("")}
+        </div>` : ""}
+
+        <div class="status-row">
           ${STATUSES.map((s) => `
-            <button class="status-pill ${v.status === s ? statusClass(s) : ""}" data-status="${s}">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${STATUS_ICON[s]}</svg>
-              ${s}
+            <button class="status-pill ${c.status === s ? "active-" + s.toLowerCase() : ""}" data-status="${s}">
+              ${icon(STATUS_ICON[s], 12)}${s}
             </button>`).join("")}
         </div>
       </div>
-      <div class="card-footer">
-        <button class="edit-toggle" data-role="edit-toggle">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-          ${isOpen ? "Close" : "Edit details"}
-        </button>
+      <div class="card-actions">
+        <button data-role="toggle-edit">${icon("pencil", 14)} Edit Details</button>
+        <button data-role="toggle-drawer">${icon("message-square", 14)} Log Note${obsForThis.length ? `<span class="badge-count">${obsForThis.length}</span>` : ""}</button>
       </div>
-      <div class="edit-panel-outer ${isOpen ? "open" : ""}"><div class="edit-panel"><div class="edit-panel-inner" data-role="edit-panel-inner">
-        ${isOpen ? renderEditFormBody(editDraft) : ""}
+      <div class="drawer-outer ${isEditOpen ? "open" : ""}"><div class="drawer"><div class="drawer-inner" data-role="edit-panel">
+        ${isEditOpen ? renderEditFormBody(editDraft) : ""}
+      </div></div></div>
+      <div class="drawer-outer ${isDrawerOpen ? "open" : ""}"><div class="drawer"><div class="drawer-inner" data-role="notes-panel">
+        ${isDrawerOpen ? renderNotesPanel(c, obsForThis) : ""}
       </div></div></div>
     </div>
   `;
 }
 
-function renderEditFormBody(d) {
+function renderNotesPanel(c, obsList) {
+  const composerOpen = noteComposerFor === c.id;
   return `
-    <div class="edit-grid" data-role="edit-grid">
-      <div class="field"><label>Day</label>
-        <div class="segmented" data-role="day-seg">
-          ${DAY_ORDER.map((day) => `<button data-value="${day}" class="${d.day === day ? "active" : ""}">${DAY_SHORT[day]}</button>`).join("")}
+    ${obsList.length ? obsList.map((o) => `
+      <div class="obs-entry">
+        <span class="obs-dot" style="background:var(--obs-${o.type})"></span>
+        <div class="obs-body">
+          <div class="obs-type" style="color:var(--obs-${o.type})">${OBS_LABEL[o.type] || o.type}</div>
+          <div class="obs-text">${esc(o.text)}</div>
+          <div class="obs-meta">${esc(o.author || "")} · ${fmtWhen(o.createdAt)}</div>
         </div>
+      </div>`).join("") : '<p style="font-size:12.5px;color:var(--ink-faint);margin:0 0 8px;">No notes logged for this check-in yet.</p>'}
+    ${composerOpen ? `
+      <div class="note-composer">
+        <div class="type-chips" data-role="type-chips">
+          ${OBS_TYPES.map((t) => `<button class="type-chip ${noteDraftType === t ? "active" : ""}" data-type="${t}" style="${noteDraftType === t ? `background:var(--obs-${t})` : ""}">${OBS_LABEL[t]}</button>`).join("")}
+        </div>
+        <textarea data-role="note-text" placeholder="What did you observe?"></textarea>
+        <button class="save-note" data-role="save-note">Save note</button>
+      </div>
+    ` : `<button class="picker-btn" data-role="open-composer" style="margin-top:8px;"><span>${icon("plus", 15)} Add a note</span></button>`}
+  `;
+}
+
+function renderEditFormBody(d) {
+  const site = siteById(d.siteId);
+  return `
+    <div class="edit-grid">
+      <div class="field"><label>Day</label>
+        <div class="segmented" data-role="day-seg">${DAY_ORDER.map((day) => `<button data-value="${day}" class="${d.day === day ? "active" : ""}">${day.slice(0,3)}</button>`).join("")}</div>
       </div>
       <div class="field"><label>Week</label><input type="number" min="1" data-field="week" value="${d.week}"></div>
       <div class="field"><label>Date</label><input type="date" data-field="date" value="${esc(d.date)}"></div>
       <div class="field"><label>EPA</label>
-        <div class="segmented" data-role="epa-seg">
-          ${REFERENCE.epas.map((e) => `<button data-value="${esc(e)}" class="${d.epa === e ? "active" : ""}">${esc(e)}</button>`).join("")}
-        </div>
+        <div class="segmented" data-role="epa-seg">${REFERENCE.epas.map((e) => `<button data-value="${esc(e)}" class="${d.epa === e ? "active" : ""}">${esc(e)}</button>`).join("")}</div>
       </div>
       <div class="field"><label>Field Assistant</label>
-        <button class="picker-btn" data-role="fa-picker" type="button">
-          <span>${esc(d.assistant)}</span>
-          <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
+        <button class="picker-btn" data-role="fa-picker" type="button"><span>${esc(d.assistant)}</span>${icon("chevron-right", 16)}</button>
       </div>
       <div class="field"><label>Site</label>
-        <button class="picker-btn" data-role="site-picker" type="button">
-          <span>${esc(d.site)}</span>
-          <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
+        <button class="picker-btn" data-role="site-picker" type="button"><span>${esc(site.name)}</span>${icon("chevron-right", 16)}</button>
       </div>
       <div class="field"><label>Visit Purpose</label>
-        <button class="picker-btn" data-role="purpose-picker" type="button">
-          <span>${esc(d.purpose)}</span>
-          <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
+        <button class="picker-btn" data-role="purpose-picker" type="button"><span>${esc(d.purpose)}</span>${icon("chevron-right", 16)}</button>
       </div>
-      <div class="field"><label>Verification Checklist</label>
-        <button class="picker-btn" data-role="checklist-picker" type="button">
-          <span>${esc(d.checklist)}</span>
-          <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
-      </div>
-      <div class="field"><label>Physical Count / Field Notes</label><textarea data-field="notes">${esc(d.notes)}</textarea></div>
       <div class="edit-actions">
         <button class="btn-primary" data-role="save-btn" type="button">Save changes</button>
         <button class="btn-delete" data-role="delete-btn" type="button">Delete</button>
@@ -620,159 +725,307 @@ function renderEditFormBody(d) {
   `;
 }
 
-function wireCardEvents() {
-  document.querySelectorAll(".visit-card").forEach((card) => {
+function wireCardEvents(scope) {
+  scope.querySelectorAll(".visit-card").forEach((card) => {
     const id = card.dataset.id;
-    const visit = visits.find((v) => v.id === id);
-    if (!visit) return;
+    const c = checkins.find((x) => x.id === id);
+    if (!c) return;
+
+    card.querySelector('[data-role="open-site"]').addEventListener("click", () => openSiteProfile(c.siteId));
+
+    card.querySelectorAll('[data-role="chk-toggle"]').forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const idx = Number(btn.dataset.idx);
+        const arr = [...(c.checkedItems || c.checklistItems.map(() => false))];
+        arr[idx] = !arr[idx];
+        await saveCheckin(id, { checkedItems: arr });
+      });
+    });
 
     card.querySelectorAll(".status-pill").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const newStatus = btn.dataset.status;
-        if (newStatus !== "Pending" && (!visit.epa || !visit.assistant || !visit.site)) {
-          alert("Fill in EPA, Field Assistant and Site before marking this " + newStatus + ".");
+        if (newStatus !== "Pending" && (!c.epa || !c.assistant || !c.siteId)) {
+          alert("This check-in is missing EPA, Field Assistant or Site.");
           return;
         }
-        await saveVisit(id, { status: newStatus });
+        await saveCheckin(id, { status: newStatus });
       });
     });
 
-    const toggle = card.querySelector('[data-role="edit-toggle"]');
-    toggle.addEventListener("click", () => {
+    card.querySelector('[data-role="toggle-edit"]').addEventListener("click", () => {
       if (openEditId === id) { openEditId = null; editDraft = null; }
-      else { openEditId = id; editDraft = { ...visit }; }
-      renderSchedule();
+      else { openEditId = id; editDraft = { ...c }; openDrawerId = null; }
+      render();
+    });
+    card.querySelector('[data-role="toggle-drawer"]').addEventListener("click", () => {
+      if (openDrawerId === id) { openDrawerId = null; noteComposerFor = null; }
+      else { openDrawerId = id; openEditId = null; editDraft = null; }
+      render();
     });
 
-    if (openEditId !== id) return;
-    const panelInner = card.querySelector('[data-role="edit-panel-inner"]');
-    wireEditForm(panelInner, id, visit);
+    if (openDrawerId === id) {
+      const notesPanel = card.querySelector('[data-role="notes-panel"]');
+      const openBtn = notesPanel.querySelector('[data-role="open-composer"]');
+      if (openBtn) openBtn.addEventListener("click", () => { noteComposerFor = id; noteDraftType = "observation"; render(); });
+      const chips = notesPanel.querySelector('[data-role="type-chips"]');
+      if (chips) chips.querySelectorAll(".type-chip").forEach((chip) => chip.addEventListener("click", () => { noteDraftType = chip.dataset.type; render(); }));
+      const saveNoteBtn = notesPanel.querySelector('[data-role="save-note"]');
+      if (saveNoteBtn) saveNoteBtn.addEventListener("click", async () => {
+        const text = notesPanel.querySelector('[data-role="note-text"]').value.trim();
+        if (!text) return;
+        await addObservation(c.siteId, c.id, noteDraftType, text);
+        noteComposerFor = null;
+        render();
+      });
+    }
+
+    if (openEditId === id) wireEditForm(card.querySelector('[data-role="edit-panel"]'), id, c);
   });
 }
 
-function wireEditForm(panelInner, id, visit) {
-  function refresh() {
-    panelInner.innerHTML = renderEditFormBody(editDraft);
-    wireEditForm(panelInner, id, visit);
-  }
+function wireEditForm(panelInner, id, checkin) {
+  function refresh() { panelInner.innerHTML = renderEditFormBody(editDraft); wireEditForm(panelInner, id, checkin); }
 
-  const daySeg = panelInner.querySelector('[data-role="day-seg"]');
-  daySeg.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
-    editDraft.day = b.dataset.value; refresh();
-  }));
+  panelInner.querySelector('[data-role="day-seg"]').querySelectorAll("button").forEach((b) =>
+    b.addEventListener("click", () => { editDraft.day = b.dataset.value; refresh(); }));
 
-  const epaSeg = panelInner.querySelector('[data-role="epa-seg"]');
-  epaSeg.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
-    editDraft.epa = b.dataset.value;
-    const faList = REFERENCE.faByEpa[editDraft.epa] || [];
-    if (!faList.includes(editDraft.assistant)) editDraft.assistant = faList[0];
-    const siteList = REFERENCE.sitesByFa[editDraft.assistant] || [];
-    if (!siteList.includes(editDraft.site)) editDraft.site = siteList[0];
-    refresh();
-  }));
+  panelInner.querySelector('[data-role="epa-seg"]').querySelectorAll("button").forEach((b) =>
+    b.addEventListener("click", () => {
+      editDraft.epa = b.dataset.value;
+      const faList = REFERENCE.faByEpa[editDraft.epa] || [];
+      if (!faList.includes(editDraft.assistant)) editDraft.assistant = faList[0];
+      const siteList = REFERENCE.sitesByFa[editDraft.assistant] || [];
+      editDraft.siteId = slugify(siteList[0] || "N/A");
+      refresh();
+    }));
 
   panelInner.querySelector('[data-role="fa-picker"]').addEventListener("click", () => {
     const faList = REFERENCE.faByEpa[editDraft.epa] || [];
     openSheet("Field Assistant", faList, editDraft.assistant, (val) => {
       editDraft.assistant = val;
       const siteList = REFERENCE.sitesByFa[val] || [];
-      editDraft.site = siteList[0];
+      editDraft.siteId = slugify(siteList[0] || "N/A");
       refresh();
     });
   });
-
   panelInner.querySelector('[data-role="site-picker"]').addEventListener("click", () => {
     const siteList = REFERENCE.sitesByFa[editDraft.assistant] || [];
-    openSheet("Site", siteList, editDraft.site, (val) => { editDraft.site = val; refresh(); });
+    const currentName = siteById(editDraft.siteId).name;
+    openSheet("Site", siteList, currentName, (val) => { editDraft.siteId = slugify(val); refresh(); });
   });
-
   panelInner.querySelector('[data-role="purpose-picker"]').addEventListener("click", () => {
-    openSheet("Visit Purpose", REFERENCE.purposes, editDraft.purpose, (val) => { editDraft.purpose = val; refresh(); });
-  });
-
-  panelInner.querySelector('[data-role="checklist-picker"]').addEventListener("click", () => {
-    openSheet("Verification Checklist", REFERENCE.checklists, editDraft.checklist, (val) => { editDraft.checklist = val; refresh(); });
-  });
-
-  panelInner.querySelectorAll("[data-field]").forEach((f) => {
-    f.addEventListener("input", () => {
-      editDraft[f.dataset.field] = f.dataset.field === "week" ? Number(f.value) : f.value;
+    openSheet("Visit Purpose", REFERENCE.purposes, editDraft.purpose, (val) => {
+      editDraft.purpose = val;
+      const items = PURPOSE_CHECKLIST[val] || [];
+      editDraft.checklistItems = items; editDraft.checkedItems = items.map(() => false);
+      refresh();
     });
   });
+  panelInner.querySelectorAll("[data-field]").forEach((f) =>
+    f.addEventListener("input", () => { editDraft[f.dataset.field] = f.dataset.field === "week" ? Number(f.value) : f.value; }));
 
   panelInner.querySelector('[data-role="save-btn"]').addEventListener("click", async () => {
-    const patch = { ...editDraft };
-    delete patch.id;
-    await saveVisit(id, patch);
-    openEditId = null; editDraft = null;
-    renderSchedule();
+    const patch = { ...editDraft }; delete patch.id;
+    await saveCheckin(id, patch);
+    openEditId = null; editDraft = null; render();
   });
-
   panelInner.querySelector('[data-role="delete-btn"]').addEventListener("click", async () => {
-    if (!confirm("Delete this visit?")) return;
-    await removeVisit(id);
+    if (!confirm("Delete this check-in? Its logged notes will remain in the site's history.")) return;
+    await removeCheckin(id);
     openEditId = null; editDraft = null;
   });
 }
 
-/* =====================================================================
-   9) RENDER — Dashboard
-   ===================================================================== */
-function renderDashboard() {
-  const el = document.getElementById("dashboard-view");
-  if (!visits.length) { el.innerHTML = '<div class="empty-state">Nothing to summarize yet.</div>'; return; }
+/* 13) SITE PROFILE */
+function renderSiteProfile() {
+  const el = document.getElementById("site-profile-screen");
+  const site = siteById(selectedSiteId);
+  const epaClass = EPA_CLASS[site.epa] || "office";
+  const history = checkinsForSite(site.id);
+  const openIssues = observationsForSite(site.id).filter((o) => o.type === "issue").length;
+  const completedCount = history.filter((c) => c.status === "Completed").length;
+  const hasPhone = !!site.nmPhone;
 
-  const total = visits.length;
-  const completed = visits.filter((v) => v.status === "Completed").length;
-  const pending = visits.filter((v) => v.status === "Pending").length;
+  el.innerHTML = `
+    <div class="sp-top">
+      <button class="sp-back" data-role="sp-back">${icon("chevron-left", 16)} Back</button>
+      <div class="sp-name headline">${esc(site.name)}</div>
+      <div class="sp-sub">
+        <span class="badge" style="background:var(--epa-${epaClass}-bg);color:var(--epa-${epaClass}-fg);">${esc(site.epa)}</span>
+        <span>${esc(site.assistant)}</span>
+        ${site.nurseryId ? `<span class="mono" style="font-family:ui-monospace,monospace;">${esc(site.nurseryId)}</span>` : ""}
+      </div>
+    </div>
+    <div class="sp-body">
+      <div class="sp-card">
+        <div class="nm-row">
+          <div class="nm-avatar">${initials(site.nmName)}</div>
+          <div class="nm-info">
+            <div class="nm-name">${site.nmName ? esc(site.nmName) : "No manager on file"}</div>
+            <div class="nm-phone">${hasPhone ? esc(site.nmPhone) : "No phone number yet"}</div>
+          </div>
+          ${hasPhone
+            ? `<a class="call-btn" href="tel:${esc(site.nmPhone)}">${icon("phone", 18)}</a>`
+            : `<button class="call-btn" disabled>${icon("phone", 18)}</button>`}
+        </div>
+      </div>
+
+      ${site.potfillingTarget ? `
+      <div class="sp-card">
+        <div class="target-row">
+          <div><div class="target-num">${fmtNum(site.potfillingTarget)}</div><div class="target-label">Potfilling target</div></div>
+          ${icon("sprout", 30)}
+        </div>
+      </div>` : ""}
+
+      <div class="sp-stats">
+        <div class="sp-stat"><div class="num">${history.length}</div><div class="lbl">Check-ins</div></div>
+        <div class="sp-stat"><div class="num">${completedCount}</div><div class="lbl">Completed</div></div>
+        <div class="sp-stat"><div class="num" style="${openIssues ? "color:var(--obs-issue)" : ""}">${openIssues}</div><div class="lbl">Open issues</div></div>
+      </div>
+
+      <div class="sec-title">Check-in history</div>
+      ${history.length ? history.map((c) => renderHistoryItem(c)).join("") : '<div class="empty-state">No check-ins recorded at this site yet.</div>'}
+    </div>
+  `;
+  el.querySelector('[data-role="sp-back"]').addEventListener("click", closeSiteProfile);
+  el.querySelectorAll(".history-item").forEach((item) => {
+    const cid = item.dataset.id;
+    item.querySelector('[data-role="hist-toggle"]').addEventListener("click", () => {
+      openDrawerId = openDrawerId === cid ? null : cid;
+      renderSiteProfile();
+    });
+    if (openDrawerId === cid) {
+      const c = checkins.find((x) => x.id === cid);
+      const notesPanel = item.querySelector('[data-role="notes-panel"]');
+      const obsForThis = observationsForCheckin(cid);
+      const openBtn = notesPanel.querySelector('[data-role="open-composer"]');
+      if (openBtn) openBtn.addEventListener("click", () => { noteComposerFor = cid; noteDraftType = "observation"; renderSiteProfile(); });
+      const chips = notesPanel.querySelector('[data-role="type-chips"]');
+      if (chips) chips.querySelectorAll(".type-chip").forEach((chip) => chip.addEventListener("click", () => { noteDraftType = chip.dataset.type; renderSiteProfile(); }));
+      const saveNoteBtn = notesPanel.querySelector('[data-role="save-note"]');
+      if (saveNoteBtn) saveNoteBtn.addEventListener("click", async () => {
+        const text = notesPanel.querySelector('[data-role="note-text"]').value.trim();
+        if (!text) return;
+        await addObservation(c.siteId, cid, noteDraftType, text);
+        noteComposerFor = null; renderSiteProfile();
+      });
+    }
+  });
+}
+
+function renderHistoryItem(c) {
+  const isOpen = openDrawerId === c.id;
+  const obsForThis = observationsForCheckin(c.id);
+  return `
+    <div class="history-item" data-id="${c.id}">
+      <div class="history-head">
+        <div>
+          <div class="when">Week ${c.week} · ${esc(c.day)}${c.date ? " · " + esc(c.date) : ""}</div>
+          <div class="purpose">${esc(c.purpose)}</div>
+        </div>
+        <span class="status-pill active-${(c.status||"Pending").toLowerCase()}" style="min-width:0;">${icon(STATUS_ICON[c.status]||"clock", 12)} ${esc(c.status||"Pending")}</span>
+      </div>
+      <div class="card-actions" style="margin-top:10px;border-top:1px solid var(--line);">
+        <button data-role="hist-toggle" style="flex:1;">${icon("message-square", 14)} Notes${obsForThis.length ? `<span class="badge-count">${obsForThis.length}</span>` : ""}</button>
+      </div>
+      <div class="drawer-outer ${isOpen ? "open" : ""}"><div class="drawer"><div class="drawer-inner" data-role="notes-panel" style="background:var(--cream);border-radius:0 0 12px 12px;">
+        ${isOpen ? renderNotesPanel(c, obsForThis) : ""}
+      </div></div></div>
+    </div>
+  `;
+}
+
+/* 14) SITES & TEAM SCREEN */
+let siteSearch = "";
+let siteFilterEpa = "All";
+function renderSitesTeam() {
+  const el = document.getElementById("screen-sites");
+  const epaOptions = ["All", ...REFERENCE.epas.filter((e) => e !== "Office")];
+  let filtered = sites.filter((s) => s.id !== "n-a");
+  if (siteFilterEpa !== "All") filtered = filtered.filter((s) => s.epa === siteFilterEpa);
+  if (siteSearch.trim()) {
+    const q = siteSearch.trim().toLowerCase();
+    filtered = filtered.filter((s) => s.name.toLowerCase().includes(q) || (s.nurseryId || "").toLowerCase().includes(q) || (s.assistant||"").toLowerCase().includes(q));
+  }
+  filtered.sort((a, b) => a.name.localeCompare(b.name));
+
+  el.innerHTML = `
+    <div class="search-bar">${icon("search", 16)}<input id="site-search-input" placeholder="Search sites, nursery ID, staff…" value="${esc(siteSearch)}"></div>
+    <div class="pill-row">${epaOptions.map((e) => `<button class="filter-pill ${siteFilterEpa === e ? "active" : ""}" data-epa="${esc(e)}">${esc(e)}</button>`).join("")}</div>
+    <div class="sec-title">${filtered.length} site${filtered.length === 1 ? "" : "s"}</div>
+    ${filtered.map((s) => {
+      const epaClass = EPA_CLASS[s.epa] || "office";
+      const issues = observationsForSite(s.id).filter((o) => o.type === "issue").length;
+      return `
+        <button class="site-row" data-site="${s.id}">
+          <span class="dot" style="background:var(--epa-${epaClass}-dot)"></span>
+          <div class="info">
+            <div class="name">${esc(s.name)}</div>
+            <div class="meta">
+              <span>${esc(s.assistant)}</span>
+              ${s.nurseryId ? `<span class="mono">${esc(s.nurseryId)}</span>` : ""}
+              ${issues ? `<span class="issue-flag">${icon("triangle-alert", 12)} ${issues}</span>` : ""}
+            </div>
+          </div>
+          ${icon("chevron-right", 17)}
+        </button>`;
+    }).join("")}
+  `;
+  el.querySelector("#site-search-input").addEventListener("input", (e) => { siteSearch = e.target.value; renderSitesTeam(); });
+  el.querySelectorAll(".filter-pill").forEach((p) => p.addEventListener("click", () => { siteFilterEpa = p.dataset.epa; renderSitesTeam(); }));
+  el.querySelectorAll(".site-row").forEach((r) => r.addEventListener("click", () => openSiteProfile(r.dataset.site)));
+}
+
+/* 15) ANALYTICS SCREEN */
+function renderAnalytics() {
+  const el = document.getElementById("screen-analytics");
+  if (!checkins.length) { el.innerHTML = '<div class="empty-state">Nothing to summarize yet.</div>'; return; }
+
+  const total = checkins.length;
+  const completed = checkins.filter((c) => c.status === "Completed").length;
   const pct = total ? Math.round((completed / total) * 100) : 0;
+  const openIssues = observations.filter((o) => o.type === "issue").length;
 
   const epaRows = REFERENCE.epas.map((epa) => {
-    const items = visits.filter((v) => v.epa === epa);
+    const items = checkins.filter((c) => c.epa === epa);
     const c = items.filter((v) => v.status === "Completed").length;
-    const p = items.length ? Math.round((c / items.length) * 100) : 0;
-    return { epa, total: items.length, completed: c, pct: p, cls: EPA_CLASS[epa] };
+    return { epa, total: items.length, completed: c, pct: items.length ? Math.round((c / items.length) * 100) : 0, cls: EPA_CLASS[epa] };
   }).filter((r) => r.total > 0);
 
-  const statusRows = STATUSES.map((s) => ({ status: s, count: visits.filter((v) => v.status === s).length }));
+  const statusCounts = STATUSES.map((s) => ({ status: s, count: checkins.filter((c) => c.status === s).length }));
+  const statusColorVar = { Pending: "--status-pending-fg", Completed: "--status-completed-fg", Rescheduled: "--status-rescheduled-fg", Skipped: "--status-skipped-fg" };
 
-  const assistants = [...new Set(visits.map((v) => v.assistant).filter((a) => a && a !== "N/A"))];
+  const assistants = [...new Set(checkins.map((c) => c.assistant).filter((a) => a && a !== "N/A"))];
   const faRows = assistants.map((fa) => {
-    const items = visits.filter((v) => v.assistant === fa);
+    const items = checkins.filter((c) => c.assistant === fa);
     const c = items.filter((v) => v.status === "Completed").length;
-    const p = items.length ? Math.round((c / items.length) * 100) : 0;
     const epa = items[0]?.epa || "";
-    return { fa, epa, cls: EPA_CLASS[epa], total: items.length, completed: c, pct: p };
+    return { fa, epa, cls: EPA_CLASS[epa], total: items.length, pct: items.length ? Math.round((c / items.length) * 100) : 0 };
   });
 
   el.innerHTML = `
     <div class="stat-grid">
-      <div class="stat-tile"><div class="num">${total}</div><div class="label">Total visits</div></div>
+      <div class="stat-tile"><div class="num">${total}</div><div class="label">Total check-ins</div></div>
       <div class="stat-tile"><div class="num">${pct}%</div><div class="label">Completed</div></div>
-      <div class="stat-tile"><div class="num">${completed}</div><div class="label">Done</div></div>
-      <div class="stat-tile"><div class="num">${pending}</div><div class="label">Pending</div></div>
+      <div class="stat-tile"><div class="num" style="${openIssues ? "color:var(--obs-issue)" : ""}">${openIssues}</div><div class="label">Open issues</div></div>
+      <div class="stat-tile"><div class="num">${sites.filter(s=>s.id!=="n-a").length}</div><div class="label">Sites tracked</div></div>
     </div>
     <div class="dash-card">
-      <h2>EPA balance</h2>
+      <h2>Status distribution</h2>
+      <div class="dist-bar">${statusCounts.map((r) => r.count ? `<div style="width:${(r.count/total*100)}%;background:var(${{Pending:"--status-pending-fg",Completed:"--status-completed-fg",Rescheduled:"--status-rescheduled-fg",Skipped:"--status-skipped-fg"}[r.status]})"></div>` : "").join("")}</div>
+      <div class="dist-legend">${statusCounts.map((r) => `<span class="item"><span class="sw" style="background:var(${statusColorVar[r.status]})"></span>${r.status} (${r.count})</span>`).join("")}</div>
+    </div>
+    <div class="dash-card">
+      <h2>EPA coverage</h2>
       ${epaRows.map((r) => `
         <div class="epa-row">
           <span class="dot" style="background:var(--epa-${r.cls}-dot)"></span>
           <span class="name">${esc(r.epa)}</span>
           <div class="bar-track"><div class="bar-fill" style="width:${r.pct}%"></div></div>
           <span class="count">${r.completed}/${r.total}</span>
-        </div>
-      `).join("")}
-    </div>
-    <div class="dash-card">
-      <h2>Status summary</h2>
-      <div class="status-chip-row">
-        ${statusRows.map((r) => `
-          <div class="status-chip">
-            <div class="count" style="color:var(--status-${r.status.toLowerCase()}-fg)">${r.count}</div>
-            <div class="label">${esc(r.status)}</div>
-          </div>
-        `).join("")}
-      </div>
+        </div>`).join("")}
     </div>
     <div class="dash-card">
       <h2>Per-assistant progress</h2>
@@ -784,61 +1037,34 @@ function renderDashboard() {
             <div class="assistant-epa">${esc(r.epa)}</div>
             <div class="mini-track"><div class="mini-fill" style="width:${r.pct}%"></div></div>
           </div>
-          <div class="assistant-progress"><span class="assistant-pct">${r.pct}%</span></div>
-        </div>
-      `).join("")}
+          <span class="assistant-pct">${r.pct}%</span>
+        </div>`).join("")}
     </div>
   `;
 }
 
-/* =====================================================================
-   10) ADD VISIT (floating action button)
-   ===================================================================== */
+/* 16) FAB — add check-in */
 document.getElementById("fab").addEventListener("click", async () => {
   const firstEpa = REFERENCE.epas[0];
   const firstFa = REFERENCE.faByEpa[firstEpa][0];
-  const firstSite = REFERENCE.sitesByFa[firstFa][0];
-  await createVisit({
-    week: Math.max(1, ...visits.map((v) => v.week || 1)),
-    day: "Monday", date: "", epa: firstEpa, assistant: firstFa, site: firstSite,
-    purpose: REFERENCE.purposes[0], checklist: REFERENCE.checklists[0],
-    status: "Pending", notes: "",
+  const firstSiteName = REFERENCE.sitesByFa[firstFa][0];
+  const purpose = REFERENCE.purposes[0];
+  await createCheckin({
+    week: selectedWeek || 1, day: "Monday", date: "", epa: firstEpa, assistant: firstFa,
+    siteId: slugify(firstSiteName), purpose, checklistItems: PURPOSE_CHECKLIST[purpose] || [],
+    checkedItems: (PURPOSE_CHECKLIST[purpose] || []).map(() => false), status: "Pending",
   });
-  activeTab = "schedule";
-  document.querySelectorAll(".tab-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === "schedule"));
-  positionTabIndicator();
-  document.getElementById("schedule-view").classList.remove("hidden");
-  document.getElementById("dashboard-view").classList.add("hidden");
 });
 
-/* =====================================================================
-   11) OFFLINE BANNER
-   ===================================================================== */
-function updateOfflineBanner() { document.getElementById("offline-banner").classList.toggle("show", !navigator.onLine); }
-window.addEventListener("online", updateOfflineBanner);
-window.addEventListener("offline", updateOfflineBanner);
-updateOfflineBanner();
-
-/* =====================================================================
-   12) INSTALL PROMPT + SERVICE WORKER
-   ===================================================================== */
-window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault();
-  deferredInstallPrompt = e;
-  document.getElementById("install-btn").style.display = "flex";
-});
+/* 17) INSTALL PROMPT + SERVICE WORKER */
+window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferredInstallPrompt = e; document.getElementById("install-btn").style.display = "flex"; });
 document.getElementById("install-btn").addEventListener("click", async () => {
   if (!deferredInstallPrompt) return;
-  deferredInstallPrompt.prompt();
-  await deferredInstallPrompt.userChoice;
-  deferredInstallPrompt = null;
-  document.getElementById("install-btn").style.display = "none";
+  deferredInstallPrompt.prompt(); await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null; document.getElementById("install-btn").style.display = "none";
 });
-
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("service-worker.js").catch((err) => console.warn("SW registration failed:", err));
-  });
+  window.addEventListener("load", () => { navigator.serviceWorker.register("service-worker.js").catch((err) => console.warn("SW registration failed:", err)); });
 }
 </script>
 </body>
