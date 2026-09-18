@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SFO Tracker — Admin: Sync Coordinates</title>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#F7F5EF;color:#1F231C;
+    max-width:480px;margin:0 auto;padding:28px 22px;}
+  h1{font-size:19px;color:#153A2C;margin:0 0 6px;}
+  p.sub{color:#6C7268;font-size:14px;line-height:1.5;margin:0 0 24px;}
+  .field{margin-bottom:14px;}
+  label{display:block;font-size:12.5px;color:#6C7268;font-weight:600;margin-bottom:6px;}
+  input{width:100%;box-sizing:border-box;border:1px solid #EAE6DA;border-radius:10px;padding:12px 13px;font-size:15px;}
+  button{width:100%;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:650;color:#fff;
+    background:#1F4E3D;cursor:pointer;margin-top:6px;}
+  button:disabled{opacity:.5;}
+  #status{margin-top:16px;font-size:13.5px;line-height:1.6;white-space:pre-wrap;}
+  #status.error{color:#9C3B26;}
+  #status.ok{color:#1F4E3D;}
+  #sync-screen{display:none;}
+</style>
+</head>
+<body>
+
+<div id="signin-screen">
+  <h1>SFO Tracker — Admin</h1>
+  <p class="sub">Sign in with the same account you use for the main app.</p>
+  <div class="field"><label>Email</label><input id="email" type="email" autocomplete="username"></div>
+  <div class="field"><label>Password</label><input id="password" type="password" autocomplete="current-password"></div>
+  <button id="signin-btn">Sign in</button>
+  <div id="signin-status"></div>
+</div>
+
+<div id="sync-screen">
+  <h1>Sync GPS Coordinates</h1>
+  <p class="sub">This only writes <code>lat</code> / <code>lng</code> onto existing site records. It never touches names, phone numbers, targets, check-ins, or notes.</p>
+  <button id="sync-btn">Sync coordinates now</button>
+  <div id="status"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, getDocs, doc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBcy7mQsN3G-SsDuJ5Zh9SKrLPO7cL7H2M",
+  authDomain: "sfo-tracker.firebaseapp.com",
+  projectId: "sfo-tracker",
+  storageBucket: "sfo-tracker.firebasestorage.app",
+  messagingSenderId: "264081040783",
+  appId: "1:264081040783:web:8b10dc5e9478d0a11bd7fa"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Coordinates only — no names, no phone numbers. Just siteId -> [lat, lng].
+// Sites not listed here (Richard Lipenga's 7, plus the Office placeholder)
+// simply aren't touched; add them here once that survey gap is filled.
+const COORDS = {
+  kango: [-13.8752932, 33.3877595], mtolongo: [-13.939834, 33.4252024], kafunde: [-13.9156981, 33.3984962],
+  likanga: [-13.8850737, 33.3960315], masula: [-13.9278391, 33.4125803], palawo: [-13.9179251, 33.4475833],
+  sinumbe: [-13.9066679, 33.378192], kanyoni: [-13.947862, 33.4885421], lundu: [-13.942201, 33.5003918],
+  chamkondo: [-13.9190944, 33.5214496], mpakiza: [-13.9331073, 33.4814792], mwaza: [-13.9123526, 33.491147],
+  kanyambwe: [-13.908375, 33.5142418], zambo: [-13.9332459, 33.5076623], katakungwa: [-13.9986829, 33.4664075],
+  mngongonda: [-13.9854982, 33.4654847], nkhwangwa: [-13.9625402, 33.4925357], kanjawala: [-13.9479731, 33.4353492],
+  santhe: [-13.92966, 33.4262729], khanda: [-14.0098179, 33.4551184], mpingo: [-13.9785918, 33.4372583],
+  muyala: [-13.9865021, 33.4482668], chimwala: [-13.9934512, 33.4869409], "chisikwa-caleb": [-14.0078714, 33.4759225],
+  dambo: [-13.9594077, 33.5148948], dzoole: [-13.9743744, 33.5130869], ngalazuka: [-14.0090377, 33.5011014],
+  kadyaudzu: [-14.0163787, 33.4959256], nyemba: [-14.0187318, 33.4889754], chilinda: [-14.0971139, 33.5644776],
+  chimsolo: [-14.113679, 33.5421773], chishasha: [-14.0894798, 33.5699248], "mkanda-aloni": [-14.0957976, 33.5251341],
+  mniu: [-14.1118833, 33.5482167], "kalasang-anga": [-14.0064487, 33.5194619], kombe: [-14.0141277, 33.5080625],
+  kudziwe: [-14.0268788, 33.5480204], mbwemba: [-14.0487405, 33.4763549], mdondwe: [-14.0421297, 33.4894281],
+  madetsa: [-14.0815036, 33.4686433], mandala: [-14.0568585, 33.4622867], mchepa: [-14.0614579, 33.4797268],
+  mphunda: [-14.0739522, 33.4581188], bingu: [-14.0289106, 33.5860903], chalenya: [-14.0493617, 33.613395],
+  kanongona: [-14.0251383, 33.6268133], ndelendele: [-14.0337083, 33.6064133], ndoliro: [-14.0120783, 33.5734967],
+  mkanda: [-14.0052967, 33.60416], kamkundi: [-14.0076017, 33.5397983], mkombe: [-14.0081467, 33.5325117],
+  ntandula: [-14.0171917, 33.5319633], kuchata: [-14.0101724, 33.6125814], mpombe: [-13.9670593, 33.5929222],
+  sinda: [-13.9709217, 33.5804817],
+};
+
+document.getElementById("signin-btn").addEventListener("click", async () => {
+  const statusEl = document.getElementById("signin-status");
+  statusEl.textContent = "";
+  try {
+    await signInWithEmailAndPassword(auth, document.getElementById("email").value.trim(), document.getElementById("password").value);
+  } catch (err) {
+    statusEl.textContent = "Sign-in error: " + err.message;
+  }
+});
+
+onAuthStateChanged(auth, (user) => {
+  document.getElementById("signin-screen").style.display = user ? "none" : "block";
+  document.getElementById("sync-screen").style.display = user ? "block" : "none";
+});
+
+document.getElementById("sync-btn").addEventListener("click", async () => {
+  const btn = document.getElementById("sync-btn");
+  const statusEl = document.getElementById("status");
+  btn.disabled = true;
+  statusEl.className = "";
+  statusEl.textContent = "Reading current site records…";
+  try {
+    const snap = await getDocs(collection(db, "sites"));
+    const existingIds = new Set(snap.docs.map((d) => d.id));
+    const batch = writeBatch(db);
+    let updated = 0;
+    const missing = [];
+    for (const [id, [lat, lng]] of Object.entries(COORDS)) {
+      if (!existingIds.has(id)) { missing.push(id); continue; }
+      batch.set(doc(db, "sites", id), { lat, lng, updatedAt: serverTimestamp() }, { merge: true });
+      updated++;
+    }
+    await batch.commit();
+    statusEl.className = "ok";
+    statusEl.textContent = `Done. Updated ${updated} site${updated === 1 ? "" : "s"} with coordinates.`
+      + (missing.length ? `\n\nNote: these IDs weren't found in Firestore, so they were skipped: ${missing.join(", ")}` : "");
+  } catch (err) {
+    statusEl.className = "error";
+    statusEl.textContent = "Sync failed: " + err.message;
+  } finally {
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
