@@ -389,10 +389,41 @@ mark{background:var(--gold-soft);color:var(--ink);border-radius:3px;padding:0 2p
 .rep-row .rep-row-val{font-weight:700;color:var(--forest-dark);}
 .rep-note{padding:9px 0;border-bottom:1px solid #F2F0E8;}
 .rep-note:last-child{border-bottom:none;}
-.rep-note .rn-head{display:flex;gap:7px;align-items:center;font-size:11.5px;font-weight:700;}
+.rep-note .rn-head, .promo-item .rn-head{display:flex;gap:7px;align-items:center;font-size:11.5px;font-weight:700;}
 .rep-note .rn-type{text-transform:uppercase;letter-spacing:.3px;font-size:9.5px;}
-.rep-note .rn-text{font-size:12.5px;color:var(--ink-soft);margin-top:3px;line-height:1.4;}
+.rep-note .rn-text, .promo-item .rn-text{font-size:12.5px;color:var(--ink-soft);margin-top:3px;line-height:1.4;}
 .rep-empty{font-size:12.5px;color:var(--ink-soft);padding:4px 0;}
+.rep-hint{font-size:11.5px;color:var(--ink-soft);margin:-4px 0 10px;line-height:1.4;}
+.ps-score-row{display:flex;gap:8px;margin-bottom:12px;}
+.ps-score-row button,.promo-seg button,.ps-yn button{flex:1;border:1px solid var(--line);border-radius:var(--radius-sm);padding:9px 6px;font-size:12.5px;font-weight:650;color:var(--ink-soft);background:#fff;}
+.ps-score-row button.active,.promo-seg button.active,.ps-yn button.active{background:var(--forest);color:#fff;border-color:transparent;}
+.promo-seg button.active.seg-update{background:var(--obs-observation);}
+.promo-seg button.active.seg-signoff{background:var(--gold);color:var(--forest-dark);}
+.ps-label{font-size:12px;color:var(--ink-soft);font-weight:600;margin:10px 0 5px;display:block;}
+.ps-yn{display:flex;gap:8px;}
+.rep-card input[type="text"],.rep-card input[type="number"],.rep-card textarea{width:100%;border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;background:#fff;color:var(--ink);}
+.rep-card input:focus,.rep-card textarea:focus{outline:none;border-color:var(--forest-soft);box-shadow:0 0 0 3px rgba(46,107,82,.12);}
+.priority-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+.priority-row input{flex:1;}
+.priority-row button{color:var(--ink-faint);padding:6px;}
+.fa-perf-row{padding:10px 0;border-bottom:1px solid #F2F0E8;}
+.fa-perf-row:last-child{border-bottom:none;}
+.fa-perf-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px;font-weight:700;}
+.fa-perf-head .fa-visits{font-size:11.5px;color:var(--ink-soft);font-weight:600;}
+.fa-perf-target{font-size:12px;color:var(--ink-soft);margin:3px 0 8px;}
+.fa-perf-inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.fa-perf-input label{display:block;font-size:11px;color:var(--ink-soft);font-weight:600;margin-bottom:4px;}
+.promo-item{padding:11px 0;border-bottom:1px solid #F2F0E8;}
+.promo-item:last-of-type{border-bottom:none;}
+.promo-seg{display:flex;gap:6px;margin-top:8px;}
+.promo-seg button{padding:7px 4px;font-size:11.5px;}
+.add-item-btn{width:100%;margin-top:12px;border:1px dashed var(--forest-soft);color:var(--forest);border-radius:var(--radius-sm);padding:11px;font-size:13px;font-weight:650;}
+.add-item-box{margin-top:12px;padding-top:12px;border-top:1px solid #F2F0E8;}
+.add-item-box .pick-site{width:100%;text-align:left;border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;background:#fff;margin-bottom:9px;font-size:14px;}
+.add-item-actions{display:flex;gap:8px;margin-top:10px;}
+.add-item-actions .btn-primary{flex:1;padding:11px;}
+.add-item-actions .cancel{border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px 14px;font-weight:650;color:var(--ink-soft);}
+@media print{.promo-seg,.add-item-btn,.add-item-box,.priority-row button{display:none !important;}}
 
 @media print{
   body *{visibility:hidden;}
@@ -436,7 +467,7 @@ mark{background:var(--gold-soft);color:var(--ink);border-radius:3px;padding:0 2p
     <div id="screen-analytics" class="screen hidden"></div>
     <div id="screen-sites" class="screen hidden"></div>
 
-    <button id="fab" title="Add check-in"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14" /> <path d="M12 5v14" /></svg></button>
+    <button id="fab" title="Add site visit"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14" /> <path d="M12 5v14" /></svg></button>
   </div>
 
   <div id="site-profile-screen" class="hidden"></div>
@@ -465,7 +496,7 @@ mark{background:var(--gold-soft);color:var(--ink);border-radius:3px;padding:0 2p
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getFirestore, collection, doc, getDoc, addDoc, updateDoc, deleteDoc, onSnapshot,
+  getFirestore, collection, doc, getDoc, addDoc, updateDoc, setDoc, deleteDoc, onSnapshot,
   query, orderBy, serverTimestamp, enableIndexedDbPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -542,6 +573,7 @@ function fmtNum(n) { return typeof n === "number" ? n.toLocaleString() : "–"; 
 let sites = [];
 let checkins = [];
 let observations = [];
+let weeklyCheckins = [];
 let unsubs = [];
 let activeTab = "today";
 let selectedWeek = 1;
@@ -557,6 +589,7 @@ let selectedSiteId = null;
 let addDraft = null;
 let addFormError = "";
 let reportWeek = null;
+let addItemDraft = null;
 let deferredInstallPrompt = null;
 let migrationDone = false;
 
@@ -588,7 +621,7 @@ onAuthStateChanged(auth, async (user) => {
     bottomNav.classList.add("hidden");
     authScreen.classList.remove("hidden");
     unsubs.forEach((u) => u()); unsubs = [];
-    sites = []; checkins = []; observations = [];
+    sites = []; checkins = []; observations = []; weeklyCheckins = []; addItemDraft = null;
   }
 });
 
@@ -625,7 +658,11 @@ function startListeners() {
     updateSyncPill(snap, pendingFlags);
     render();
   });
-  unsubs = [u1, u2, u3];
+  const u4 = onSnapshot(collection(db, "weeklyCheckins"), (snap) => {
+    weeklyCheckins = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    render();
+  });
+  unsubs = [u1, u2, u3, u4];
 }
 
 function setSyncText(text, cls) {
@@ -767,8 +804,11 @@ async function createCheckin(data) {
 }
 async function removeCheckin(id) { await deleteDoc(doc(db, "checkins", id)); }
 async function addObservation(siteId, checkinId, type, text, meta) {
+  const linkedCheckin = checkinId ? checkins.find((c) => c.id === checkinId) : null;
   const record = {
     siteId, checkinId: checkinId || null, type, text,
+    week: (meta && meta.week) ?? linkedCheckin?.week ?? null,
+    bucket: null,
     author: auth.currentUser?.email || "Unknown", createdAt: serverTimestamp(),
   };
   /* Only issues and follow-ups get a lifecycle. Attaching a status to a plain
@@ -781,6 +821,16 @@ async function addObservation(siteId, checkinId, type, text, meta) {
     record.resolvedBy = "";
   }
   await addDoc(collection(db, "observations"), record);
+}
+/* An item an FA relayed to the SFO: no visit attached, so the week is explicit. */
+async function addStandaloneObservation(siteId, week, type, text) {
+  await addObservation(siteId, null, type, text, { week });
+}
+async function setObservationBucket(id, bucket) {
+  await updateDoc(doc(db, "observations", id), { bucket, updatedAt: serverTimestamp() });
+}
+async function saveWeeklyCheckin(week, patch) {
+  await setDoc(doc(db, "weeklyCheckins", String(week)), { ...patch, week, updatedAt: serverTimestamp() }, { merge: true });
 }
 async function setObservationStatus(id, status) {
   const patch = { status, updatedAt: serverTimestamp() };
@@ -1407,7 +1457,7 @@ function renderSiteProfile() {
       </div>` : ""}
 
       <div class="sp-stats">
-        <div class="sp-stat"><div class="num">${history.length}</div><div class="lbl">Check-ins</div></div>
+        <div class="sp-stat"><div class="num">${history.length}</div><div class="lbl">Visits</div></div>
         <div class="sp-stat"><div class="num">${completedCount}</div><div class="lbl">Completed</div></div>
         <div class="sp-stat"><div class="num" style="${openIssues ? "color:var(--obs-issue)" : ""}">${openIssues}</div><div class="lbl">Open issues</div></div>
       </div>
@@ -1417,7 +1467,7 @@ function renderSiteProfile() {
         <div class="sp-stat"><div class="num">${observationsForSite(site.id).length}</div><div class="lbl">Total notes</div></div>
       </div>
 
-      <div class="sec-title">Check-in history</div>
+      <div class="sec-title">Visit history</div>
       ${history.length ? history.map((c) => renderHistoryItem(c)).join("") : '<div class="empty-state">No check-ins recorded at this site yet.</div>'}
     </div>
   `;
@@ -1624,9 +1674,9 @@ function renderAnalytics() {
   const riskBadgeIcon = { issue: "circle-alert", followup: "clock", stale: "calendar", never: "map-pin", repeat: "repeat" };
 
   el.innerHTML = `
-    <button class="report-btn" data-role="open-report">${icon("file-text", 17)} Generate weekly report</button>
+    <button class="report-btn" data-role="open-report">${icon("file-text", 17)} Open weekly check-in</button>
     <div class="stat-grid">
-      <div class="stat-tile"><div class="num">${total}</div><div class="label">Total check-ins</div></div>
+      <div class="stat-tile"><div class="num">${total}</div><div class="label">Total visits</div></div>
       <div class="stat-tile"><div class="num">${pct}%</div><div class="label">Completed</div></div>
       <div class="stat-tile"><div class="num" style="${openIssues ? "color:var(--obs-issue)" : ""}">${openIssues}</div><div class="label">Open issues</div></div>
       <div class="stat-tile"><div class="num">${sites.filter(s=>s.id!=="n-a").length}</div><div class="label">Sites tracked</div></div>
@@ -1725,7 +1775,7 @@ function renderAddCheckin() {
   el.innerHTML = `
     <div class="ac-top">
       <button class="ac-back" data-role="ac-back">${icon("chevron-left", 16)} Cancel</button>
-      <div class="ac-title headline">Add check-in</div>
+      <div class="ac-title headline">Add site visit</div>
       <div class="ac-sub">Prefilled for ${esc(fmtLongDate(addDraft.date || todayISO()))}</div>
     </div>
     <div class="ac-body">
@@ -1760,93 +1810,147 @@ function renderAddCheckin() {
 }
 document.getElementById("fab").addEventListener("click", openAddCheckin);
 
-/* 16b) WEEKLY REPORT
-   Builds a report scoped to check-ins whose `week` field matches the chosen
-   week, plus the observations logged against those specific check-ins. Notes
-   are bucketed by which week's visit they were logged during, not by
-   calendar date, because `date` is often blank and `week` is the one field
-   every check-in reliably has. */
+/* 16b) WEEKLY CHECK-IN
+   One doc per week in `weeklyCheckins` (id = String(week)). Mon–Thu the SFO
+   fills it in; Friday's call with the DS just reads what's there.
+   - Seedlings target is derived (sum of the FA's site potfilling targets).
+   - Potfilling % and Planting % come from the tech team's KoBo dashboard and
+     are typed in by hand — never computed here.
+   - Report items are curated: each of the week's observations can be left out,
+     or promoted to bucket "update" (FYI) or "signoff" (needs a decision). */
 function weeksWithData() {
   return [...new Set(checkins.map((c) => c.week).filter((w) => typeof w === "number"))].sort((a, b) => a - b);
 }
+/* Merge saved doc over defaults so a partial save (e.g. only the sustainability
+   score) can never leave faPercents / topPriorities undefined. */
+function weeklyCheckinFor(week) {
+  const base = {
+    week, personalSustainability: { score: null, vacations: "", lastReportSubmitted: null },
+    topPriorities: [], faPercents: {},
+  };
+  const found = weeklyCheckins.find((w) => w.week === week);
+  if (!found) return base;
+  return {
+    ...base, ...found,
+    personalSustainability: { ...base.personalSustainability, ...(found.personalSustainability || {}) },
+    faPercents: found.faPercents || base.faPercents,
+    topPriorities: found.topPriorities || base.topPriorities,
+  };
+}
+function faSeedlingsTarget(assistant) {
+  return sites.filter((s) => s.assistant === assistant && typeof s.potfillingTarget === "number")
+    .reduce((sum, s) => sum + s.potfillingTarget, 0);
+}
+/* Notes logged before the `week` field existed fall back to their visit's week. */
+function obsWeek(o) {
+  if (typeof o.week === "number") return o.week;
+  const c = o.checkinId ? checkins.find((x) => x.id === o.checkinId) : null;
+  return c ? c.week : null;
+}
+function observationsForWeek(week) {
+  return observations.filter((o) => obsWeek(o) === week)
+    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+}
+function allReportWeeks() {
+  const fromDrafts = weeklyCheckins.map((w) => w.week).filter((w) => typeof w === "number");
+  const candidates = [...weeksWithData(), ...fromDrafts, selectedWeek, selectedWeek + 1];
+  return [...new Set(candidates)].sort((a, b) => a - b);
+}
+const BUCKET_LABEL = { update: "Update", signoff: "Discussion & sign-off" };
+
 function buildReportData(week) {
   const weekCheckins = checkins.filter((c) => c.week === week);
-  const weekIds = new Set(weekCheckins.map((c) => c.id));
-  const weekObs = observations.filter((o) => weekIds.has(o.checkinId));
-
   const visitsPlanned = weekCheckins.length;
   const visitsCompleted = weekCheckins.filter((c) => c.status === "Completed").length;
   const visitsMissed = weekCheckins.filter((c) => c.status === "Skipped" || c.status === "Rescheduled").length;
   const sitesInvolved = [...new Set(weekCheckins.map((c) => c.siteId).filter((id) => id !== "n-a"))];
   const sitesCompleted = [...new Set(weekCheckins.filter((c) => c.status === "Completed").map((c) => c.siteId).filter((id) => id !== "n-a"))];
 
-  const weekIssues = weekObs.filter((o) => o.type === "issue");
-  const weekFollowUps = weekObs.filter((o) => o.type === "followUp");
+  const items = observationsForWeek(week);
+  const weekIssues = items.filter((o) => o.type === "issue");
+  const weekFollowUps = items.filter((o) => o.type === "followUp");
 
-  const byAssistant = {};
+  const visitsByFa = {};
   weekCheckins.forEach((c) => {
     if (!c.assistant || c.assistant === "N/A") return;
-    (byAssistant[c.assistant] ||= []).push(c);
+    (visitsByFa[c.assistant] ||= []).push(c);
   });
-  const faRows = Object.entries(byAssistant).map(([fa, items]) => {
-    const done = items.filter((c) => c.status === "Completed").length;
-    return { fa, total: items.length, done, pct: items.length ? Math.round((done / items.length) * 100) : 0 };
-  }).sort((a, b) => b.pct - a.pct);
+  /* Every FA with assigned sites gets a row, even with no visits yet — 0% is
+     still worth showing. */
+  const faNames = [...new Set([
+    ...sites.map((s) => s.assistant),
+    ...Object.keys(visitsByFa),
+  ].filter((a) => a && a !== "N/A"))].sort();
+  const wc = weeklyCheckinFor(week);
+  const faRows = faNames.map((fa) => {
+    const v = visitsByFa[fa] || [];
+    const done = v.filter((c) => c.status === "Completed").length;
+    const pcts = wc.faPercents[fa] || {};
+    return {
+      fa, total: v.length, done,
+      target: faSeedlingsTarget(fa),
+      potfillingPct: pcts.potfillingPct ?? null,
+      plantingPct: pcts.plantingPct ?? null,
+    };
+  });
 
   const byEpa = {};
   weekCheckins.forEach((c) => { (byEpa[c.epa] ||= []).push(c); });
-  const epaRows = Object.entries(byEpa).map(([epa, items]) => {
-    const done = items.filter((c) => c.status === "Completed").length;
-    return { epa, total: items.length, done };
-  });
-
-  const notable = weekObs.filter((o) => o.type !== "observation")
-    .sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+  const epaRows = Object.entries(byEpa).map(([epa, list]) => ({
+    epa, total: list.length, done: list.filter((c) => c.status === "Completed").length,
+  }));
 
   return {
-    week, visitsPlanned, visitsCompleted, visitsMissed,
+    week, wc, visitsPlanned, visitsCompleted, visitsMissed,
     sitesCovered: sitesCompleted.length, sitesInvolved: sitesInvolved.length,
     issuesLogged: weekIssues.length, issuesNowResolved: weekIssues.filter((o) => obsStatus(o) === "Resolved").length,
     followUpsLogged: weekFollowUps.length, followUpsOpen: weekFollowUps.filter(isUnresolved).length,
-    faRows, epaRows, notable,
+    faRows, epaRows, items,
+    updates: items.filter((o) => o.bucket === "update"),
+    signoffs: items.filter((o) => o.bucket === "signoff"),
   };
 }
+function fmtPct(v) { return typeof v === "number" ? `${v}%` : "—"; }
 function buildReportText(d) {
+  const ps = d.wc.personalSustainability;
   const lines = [];
-  lines.push(`SFO FIELD TRACKER — WEEK ${d.week} REPORT`);
+  lines.push(`WEEKLY CHECK-IN — WEEK ${d.week}`);
   lines.push(`Generated ${fmtLongDate(todayISO())}`);
+  lines.push("");
+  lines.push("PERSONAL SUSTAINABILITY");
+  lines.push(`  Score: ${ps.score ?? "—"}/3`);
+  lines.push(`  Upcoming vacations: ${ps.vacations || "None noted"}`);
+  lines.push(`  Last week's report submitted: ${ps.lastReportSubmitted === true ? "Yes" : ps.lastReportSubmitted === false ? "No" : "—"}`);
+  lines.push("");
+  lines.push("TOP PRIORITIES");
+  if (d.wc.topPriorities.length) d.wc.topPriorities.forEach((t, i) => lines.push(`  ${i + 1}. ${t}`));
+  else lines.push("  (none set)");
+  lines.push("");
+  lines.push("FA PERFORMANCE");
+  d.faRows.forEach((r) => lines.push(`  ${r.fa}: target ${r.target.toLocaleString("en-US")} | potfilling ${fmtPct(r.potfillingPct)} | planting ${fmtPct(r.plantingPct)} | visits ${r.done}/${r.total}`));
   lines.push("");
   lines.push(`Visits: ${d.visitsCompleted}/${d.visitsPlanned} completed${d.visitsMissed ? `, ${d.visitsMissed} missed/rescheduled` : ""}`);
   lines.push(`Sites covered: ${d.sitesCovered}/${d.sitesInvolved}`);
-  lines.push(`Issues: ${d.issuesLogged} logged, ${d.issuesNowResolved} now resolved`);
-  lines.push(`Follow-ups: ${d.followUpsLogged} logged, ${d.followUpsOpen} still open`);
-  if (d.faRows.length) {
-    lines.push("");
-    lines.push("FIELD ASSISTANT PERFORMANCE");
-    d.faRows.forEach((r) => lines.push(`  ${r.fa}: ${r.done}/${r.total} (${r.pct}%)`));
-  }
-  if (d.epaRows.length) {
-    lines.push("");
-    lines.push("EPA COVERAGE");
-    d.epaRows.forEach((r) => lines.push(`  ${r.epa}: ${r.done}/${r.total}`));
-  }
-  if (d.notable.length) {
-    lines.push("");
-    lines.push("KEY OBSERVATIONS");
-    d.notable.forEach((o) => lines.push(`  [${OBS_LABEL[o.type]}] ${siteById(o.siteId).name}: ${o.text}`));
-  }
+  const fmtItem = (o) => `  - [${OBS_LABEL[o.type]}] ${siteById(o.siteId).name}: ${o.text}`;
+  lines.push("");
+  lines.push("UPDATES");
+  if (d.updates.length) d.updates.forEach((o) => lines.push(fmtItem(o))); else lines.push("  (none)");
+  lines.push("");
+  lines.push("DISCUSSION & SIGN-OFF");
+  if (d.signoffs.length) d.signoffs.forEach((o) => lines.push(fmtItem(o))); else lines.push("  (none)");
   return lines.join("\n");
 }
 
 function openReport() {
-  const weeks = weeksWithData();
+  const weeks = allReportWeeks();
   reportWeek = weeks.includes(selectedWeek) ? selectedWeek : (weeks[weeks.length - 1] ?? 1);
+  addItemDraft = null;
   document.getElementById("report-screen").classList.remove("hidden");
   updateFab();
   renderReport();
 }
 function closeReport() {
-  reportWeek = null;
+  reportWeek = null; addItemDraft = null;
   document.getElementById("report-screen").classList.add("hidden");
   updateFab();
 }
@@ -1854,13 +1958,39 @@ function renderReport() {
   const el = document.getElementById("report-screen");
   if (reportWeek === null) return;
   const d = buildReportData(reportWeek);
-  const weeks = weeksWithData();
+  const weeks = allReportWeeks();
+  const ps = d.wc.personalSustainability;
+  const prios = [...d.wc.topPriorities, "", "", ""].slice(0, 3);
+
+  const promoHtml = d.items.length ? d.items.map((o) => `
+    <div class="promo-item" data-obs="${esc(o.id)}">
+      <div class="rn-head"><span class="rn-type" style="color:var(--obs-${o.type})">${OBS_LABEL[o.type]}</span><span>${esc(siteById(o.siteId).name)}</span></div>
+      <div class="rn-text">${esc(o.text)}</div>
+      <div class="promo-seg no-print">
+        <button data-bucket="" class="${!o.bucket ? "active" : ""}">Not included</button>
+        <button data-bucket="update" class="seg-update ${o.bucket === "update" ? "active" : ""}">Update</button>
+        <button data-bucket="signoff" class="seg-signoff ${o.bucket === "signoff" ? "active" : ""}">Sign-off</button>
+      </div>
+    </div>`).join("") : `<div class="rep-empty">Nothing logged for week ${d.week} yet.</div>`;
+
+  const composerHtml = addItemDraft ? `
+    <div class="add-item-box no-print">
+      <button class="pick-site" data-role="item-site">${addItemDraft.siteId ? esc(siteById(addItemDraft.siteId).name) : "Choose a site…"}</button>
+      <div class="type-chips" data-role="item-types">
+        ${OBS_TYPES.map((t) => `<button class="type-chip ${addItemDraft.type === t ? "active" : ""}" data-type="${t}" style="${addItemDraft.type === t ? `background:var(--obs-${t})` : ""}">${OBS_LABEL[t]}</button>`).join("")}
+      </div>
+      <textarea data-role="item-text" rows="3" placeholder="What did the FA tell you?">${esc(addItemDraft.text)}</textarea>
+      <div class="add-item-actions">
+        <button class="cancel" data-role="item-cancel">Cancel</button>
+        <button class="btn-primary" data-role="item-save">Save item</button>
+      </div>
+    </div>` : `<button class="add-item-btn no-print" data-role="item-new">${icon("plus", 14)} Add an item an FA relayed to you</button>`;
 
   el.innerHTML = `
     <div class="rep-top">
       <button class="rep-back no-print" data-role="rep-back">${icon("chevron-left", 16)} Back</button>
       <div class="rep-title-row">
-        <div class="rep-title headline">Weekly Report</div>
+        <div class="rep-title headline">Weekly Check-in</div>
         <button class="rep-week-btn no-print" data-role="rep-week">Week ${d.week} ${icon("chevron-down", 13)}</button>
       </div>
       <div class="rep-actions no-print">
@@ -1869,6 +1999,41 @@ function renderReport() {
       </div>
     </div>
     <div class="rep-body">
+      <div class="rep-card">
+        <h3>Personal sustainability</h3>
+        <div class="rep-hint">How are you feeling this week? 1 is low, 3 is great.</div>
+        <div class="ps-score-row" data-role="ps-score">
+          ${[1, 2, 3].map((n) => `<button data-score="${n}" class="${ps.score === n ? "active" : ""}">${n}</button>`).join("")}
+        </div>
+        <label class="ps-label" for="ps-vac">Upcoming vacations</label>
+        <input type="text" id="ps-vac" data-role="ps-vac" value="${esc(ps.vacations)}" placeholder="None planned">
+        <span class="ps-label">Last week's report submitted?</span>
+        <div class="ps-yn" data-role="ps-yn">
+          <button data-yn="yes" class="${ps.lastReportSubmitted === true ? "active" : ""}">Yes</button>
+          <button data-yn="no" class="${ps.lastReportSubmitted === false ? "active" : ""}">No</button>
+        </div>
+      </div>
+
+      <div class="rep-card">
+        <h3>Top priorities</h3>
+        <div class="rep-hint">Up to three, set at the start of the week.</div>
+        ${prios.map((t, i) => `<div class="priority-row"><input type="text" data-prio="${i}" value="${esc(t)}" placeholder="Priority ${i + 1}"></div>`).join("")}
+      </div>
+
+      <div class="rep-card">
+        <h3>FA performance</h3>
+        <div class="rep-hint">Potfilling and planting % come from the KoBo dashboard — type them in.</div>
+        ${d.faRows.length ? d.faRows.map((r) => `
+          <div class="fa-perf-row" data-fa="${esc(r.fa)}">
+            <div class="fa-perf-head"><span>${esc(r.fa)}</span><span class="fa-visits">${r.done}/${r.total} visits</span></div>
+            <div class="fa-perf-target">Seedlings target: <b>${r.target.toLocaleString("en-US")}</b></div>
+            <div class="fa-perf-inputs">
+              <div class="fa-perf-input"><label>Potfilling %</label><input type="number" inputmode="decimal" min="0" max="100" step="any" data-pct="potfillingPct" value="${r.potfillingPct ?? ""}"></div>
+              <div class="fa-perf-input"><label>Planting %</label><input type="number" inputmode="decimal" min="0" max="100" step="any" data-pct="plantingPct" value="${r.plantingPct ?? ""}"></div>
+            </div>
+          </div>`).join("") : `<div class="rep-empty">No field assistants found yet.</div>`}
+      </div>
+
       <div class="rep-card">
         <h3>Visits</h3>
         <div class="rep-stat-grid">
@@ -1885,31 +2050,27 @@ function renderReport() {
         <div class="rep-row"><span>Follow-ups logged</span><span class="rep-row-val">${d.followUpsLogged}</span></div>
         <div class="rep-row"><span>Follow-ups still open</span><span class="rep-row-val">${d.followUpsOpen}</span></div>
       </div>
-      ${d.faRows.length ? `
-      <div class="rep-card">
-        <h3>Field assistant performance</h3>
-        ${d.faRows.map((r) => `<div class="rep-row"><span>${esc(r.fa)}</span><span class="rep-row-val">${r.done}/${r.total} (${r.pct}%)</span></div>`).join("")}
-      </div>` : ""}
       ${d.epaRows.length ? `
       <div class="rep-card">
         <h3>EPA coverage</h3>
         ${d.epaRows.map((r) => `<div class="rep-row"><span>${esc(r.epa)}</span><span class="rep-row-val">${r.done}/${r.total}</span></div>`).join("")}
       </div>` : ""}
+
       <div class="rep-card">
-        <h3>Key observations</h3>
-        ${d.notable.length ? d.notable.map((o) => `
-          <div class="rep-note">
-            <div class="rn-head"><span class="rn-type" style="color:var(--obs-${o.type})">${OBS_LABEL[o.type]}</span><span>${esc(siteById(o.siteId).name)}</span></div>
-            <div class="rn-text">${esc(o.text)}</div>
-          </div>`).join("") : `<div class="rep-empty">No issues, actions, or follow-ups logged this week.</div>`}
+        <h3>This week's items</h3>
+        <div class="rep-hint">Choose what goes to your manager: an Update to note, or a Discussion &amp; sign-off that needs a decision.</div>
+        ${promoHtml}
+        ${composerHtml}
       </div>
     </div>
   `;
 
+  /* --- header --- */
   el.querySelector('[data-role="rep-back"]').addEventListener("click", closeReport);
   el.querySelector('[data-role="rep-week"]').addEventListener("click", () => {
     openSheet("Week", weeks.map((w) => `Week ${w}`), `Week ${d.week}`, (val) => {
       reportWeek = Number(val.replace("Week ", ""));
+      addItemDraft = null;
       renderReport();
     });
   });
@@ -1925,6 +2086,76 @@ function renderReport() {
     setTimeout(() => { btn.innerHTML = original; }, 1800);
   });
   el.querySelector('[data-role="rep-print"]').addEventListener("click", () => window.print());
+
+  /* --- personal sustainability (each control patches only its own field;
+         setDoc merge keeps the rest of the map) --- */
+  el.querySelectorAll('[data-role="ps-score"] button').forEach((b) => b.addEventListener("click", () => {
+    const n = Number(b.dataset.score);
+    saveWeeklyCheckin(d.week, { personalSustainability: { score: ps.score === n ? null : n } });
+  }));
+  el.querySelector('[data-role="ps-vac"]').addEventListener("change", (e) => {
+    saveWeeklyCheckin(d.week, { personalSustainability: { vacations: e.target.value.trim() } });
+  });
+  el.querySelectorAll('[data-role="ps-yn"] button').forEach((b) => b.addEventListener("click", () => {
+    const val = b.dataset.yn === "yes";
+    saveWeeklyCheckin(d.week, { personalSustainability: { lastReportSubmitted: ps.lastReportSubmitted === val ? null : val } });
+  }));
+
+  /* --- top priorities --- */
+  el.querySelectorAll("[data-prio]").forEach((inp) => inp.addEventListener("change", () => {
+    const vals = [...el.querySelectorAll("[data-prio]")].map((i) => i.value.trim()).filter(Boolean);
+    saveWeeklyCheckin(d.week, { topPriorities: vals });
+  }));
+
+  /* --- FA percents (hand-entered from KoBo) --- */
+  el.querySelectorAll(".fa-perf-row").forEach((row) => {
+    const fa = row.dataset.fa;
+    row.querySelectorAll("[data-pct]").forEach((inp) => inp.addEventListener("change", () => {
+      let v = inp.value === "" ? null : Number(inp.value);
+      if (v !== null && (!isFinite(v) || v < 0 || v > 100)) { inp.value = ""; v = null; }
+      saveWeeklyCheckin(d.week, { faPercents: { [fa]: { [inp.dataset.pct]: v } } });
+    }));
+  });
+
+  /* --- promotion buckets --- */
+  el.querySelectorAll(".promo-item").forEach((row) => {
+    row.querySelectorAll("[data-bucket]").forEach((b) => b.addEventListener("click", () => {
+      setObservationBucket(row.dataset.obs, b.dataset.bucket || null);
+    }));
+  });
+
+  /* --- FA-relayed item composer --- */
+  const newBtn = el.querySelector('[data-role="item-new"]');
+  if (newBtn) newBtn.addEventListener("click", () => {
+    addItemDraft = { siteId: "", type: "observation", text: "" };
+    renderReport();
+  });
+  if (addItemDraft) {
+    const ta = el.querySelector('[data-role="item-text"]');
+    ta.addEventListener("input", () => { addItemDraft.text = ta.value; });
+    el.querySelector('[data-role="item-site"]').addEventListener("click", () => {
+      const names = [...sites].filter((s) => s.id !== "n-a" && s.name !== "N/A")
+        .sort((a, b) => a.name.localeCompare(b.name));
+      openSheet("Site", names.map((s) => s.name), addItemDraft.siteId ? siteById(addItemDraft.siteId).name : "", (val) => {
+        const hit = names.find((s) => s.name === val);
+        if (hit) addItemDraft.siteId = hit.id;
+        renderReport();
+      });
+    });
+    el.querySelectorAll('[data-role="item-types"] .type-chip').forEach((chip) => chip.addEventListener("click", () => {
+      addItemDraft.type = chip.dataset.type;
+      renderReport();
+    }));
+    el.querySelector('[data-role="item-cancel"]').addEventListener("click", () => { addItemDraft = null; renderReport(); });
+    el.querySelector('[data-role="item-save"]').addEventListener("click", async () => {
+      const text = ta.value.trim();
+      if (!addItemDraft.siteId || !text) { alert("Choose a site and write the item before saving."); return; }
+      const { siteId, type } = addItemDraft;
+      addItemDraft = null;
+      await addStandaloneObservation(siteId, d.week, type, text);
+      renderReport();
+    });
+  }
 }
 
 /* 17) INSTALL PROMPT + SERVICE WORKER */
