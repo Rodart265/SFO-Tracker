@@ -618,6 +618,9 @@ let reportWeek = null;
 let addItemDraft = null;
 let deferredInstallPrompt = null;
 let migrationDone = false;
+/* Set when the seed check ran and found setup unfinished. updateSyncPill reads it
+   so the first data snapshot can't overwrite the message with "Synced". */
+let setupIncomplete = false;
 
 /* 5) AUTH */
 const authScreen = document.getElementById("auth-screen");
@@ -648,6 +651,7 @@ onAuthStateChanged(auth, async (user) => {
     authScreen.classList.remove("hidden");
     unsubs.forEach((u) => u()); unsubs = [];
     sites = []; checkins = []; observations = []; weeklyCheckins = []; addItemDraft = null;
+    setupIncomplete = false;
   }
 });
 
@@ -655,14 +659,35 @@ onAuthStateChanged(auth, async (user) => {
    Seeding now happens from a trusted machine via scripts/seed-firestore.js
    (see that file's header comment for setup and rationale). This just
    checks whether that's been run yet. */
+const SETUP_INCOMPLETE_TEXT = "Setup incomplete — ask an admin to run the seed script";
+const NO_ACCESS_TEXT = "No access — ask an admin to add your account";
+/* Never throws. If the check can't run (offline with nothing cached, a rules
+   denial, a network blip) the app still starts its listeners: they will either
+   load from cache, or report their own error through onListenError below. */
 async function runMigrationIfNeeded(user) {
-  const metaRef = doc(db, "meta", "schemaV2");
-  const metaSnap = await getDoc(metaRef);
-  if (metaSnap.exists() && metaSnap.data().done) { migrationDone = true; return; }
-  setSyncText("Setup incomplete — ask an admin to run the seed script", "offline");
+  try {
+    const metaSnap = await getDoc(doc(db, "meta", "schemaV2"));
+    if (metaSnap.exists() && metaSnap.data().done) { migrationDone = true; setupIncomplete = false; return; }
+    setupIncomplete = true;
+    setSyncText(SETUP_INCOMPLETE_TEXT, "offline");
+  } catch (err) {
+    console.warn("Setup check failed:", err.code || err);
+    setupIncomplete = false; // unknown, so don't claim setup is unfinished
+    if (err.code === "permission-denied") setSyncText(NO_ACCESS_TEXT, "offline");
+  }
 }
 
 /* 7) FIRESTORE LISTENERS */
+/* Without an error callback a denied or failed listener just goes quiet and the
+   screen sits on "Loading…" forever. */
+function onListenError(name) {
+  return (err) => {
+    console.error("Listener failed (" + name + "):", err);
+    if (err && err.code === "permission-denied") setSyncText(NO_ACCESS_TEXT, "offline");
+    else setSyncText("Connection problem — some data may be missing", "offline");
+  };
+}
+
 function startListeners() {
   let pendingFlags = { sites: false, checkins: false, observations: false };
 
@@ -671,23 +696,23 @@ function startListeners() {
     pendingFlags.sites = snap.metadata.hasPendingWrites;
     updateSyncPill(snap, pendingFlags);
     render();
-  });
+  }, onListenError("sites"));
   const u2 = onSnapshot(query(collection(db, "checkins"), orderBy("order")), (snap) => {
     checkins = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     pendingFlags.checkins = snap.metadata.hasPendingWrites;
     updateSyncPill(snap, pendingFlags);
     render();
-  });
+  }, onListenError("checkins"));
   const u3 = onSnapshot(collection(db, "observations"), (snap) => {
     observations = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     pendingFlags.observations = snap.metadata.hasPendingWrites;
     updateSyncPill(snap, pendingFlags);
     render();
-  });
+  }, onListenError("observations"));
   const u4 = onSnapshot(collection(db, "weeklyCheckins"), (snap) => {
     weeklyCheckins = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     render();
-  });
+  }, onListenError("weeklyCheckins"));
   unsubs = [u1, u2, u3, u4];
 }
 
@@ -697,6 +722,7 @@ function setSyncText(text, cls) {
   pill.className = cls || "";
 }
 function updateSyncPill(snap, flags) {
+  if (setupIncomplete) { setSyncText(SETUP_INCOMPLETE_TEXT, "offline"); return; }
   if (!navigator.onLine) { setSyncText("Offline — changes queued", "offline"); return; }
   const anyPending = flags.sites || flags.checkins || flags.observations;
   const anyFromCache = snap.metadata.fromCache;
@@ -822,14 +848,44 @@ function allAssistants() {
   return [...new Set([...fromSites, ...fromCheckins].filter((a) => a && a !== "N/A"))].sort();
 }
 
-/* 9) MUTATIONS */
-async function saveCheckin(id, patch) { await updateDoc(doc(db, "checkins", id), { ...patch, updatedAt: serverTimestamp() }); }
-async function createCheckin(data) {
-  const maxOrder = checkins.reduce((m, c) => Math.max(m, c.order ?? 0), -1);
-  await addDoc(collection(db, "checkins"), { ...data, order: maxOrder + 1, updatedAt: serverTimestamp() });
+/* 9) MUTATIONS
+   Every write goes through guardedWrite. A rejected write (no permission,
+   signed out, server unreachable) used to surface as an unhandled promise
+   rejection and the screen just carried on as if it had saved. Now the person
+   is told, and the helper returns false so the caller can keep what they typed
+   instead of clearing it. Each helper returns true when the write succeeded. */
+function writeErrorMessage(action, err) {
+  const code = err && err.code;
+  if (code === "permission-denied") return "You don't have permission to " + action + ". Ask an admin if you think you should.";
+  if (code === "unauthenticated") return "You've been signed out. Sign in again and retry.";
+  if (code === "unavailable" || code === "deadline-exceeded") return "Couldn't reach the server, so this wasn't saved. Check your connection and try again.";
+  return "Couldn't " + action + ". Please try again.";
 }
-async function removeCheckin(id) { await deleteDoc(doc(db, "checkins", id)); }
-async function addObservation(siteId, checkinId, type, text, meta) {
+async function guardedWrite(action, fn) {
+  try { await fn(); return true; }
+  catch (err) {
+    console.error("Write failed (" + action + "):", err);
+    alert(writeErrorMessage(action, err));
+    return false;
+  }
+}
+
+function saveCheckin(id, patch) {
+  return guardedWrite("save this check-in", () => updateDoc(doc(db, "checkins", id), { ...patch, updatedAt: serverTimestamp() }));
+}
+function createCheckin(data) {
+  return guardedWrite("create this check-in", () => {
+    const maxOrder = checkins.reduce((m, c) => Math.max(m, c.order ?? 0), -1);
+    return addDoc(collection(db, "checkins"), { ...data, order: maxOrder + 1, updatedAt: serverTimestamp() });
+  });
+}
+function removeCheckin(id) {
+  return guardedWrite("delete this check-in", () => deleteDoc(doc(db, "checkins", id)));
+}
+function addObservation(siteId, checkinId, type, text, meta) {
+  return guardedWrite("save this note", () => writeObservation(siteId, checkinId, type, text, meta));
+}
+async function writeObservation(siteId, checkinId, type, text, meta) {
   const linkedCheckin = checkinId ? checkins.find((c) => c.id === checkinId) : null;
   const record = {
     siteId, checkinId: checkinId || null, type, text,
@@ -849,25 +905,27 @@ async function addObservation(siteId, checkinId, type, text, meta) {
   await addDoc(collection(db, "observations"), record);
 }
 /* An item an FA relayed to the SFO: no visit attached, so the week is explicit. */
-async function addStandaloneObservation(siteId, week, type, text) {
-  await addObservation(siteId, null, type, text, { week });
+function addStandaloneObservation(siteId, week, type, text) {
+  return addObservation(siteId, null, type, text, { week });
 }
-async function setObservationBucket(id, bucket) {
-  await updateDoc(doc(db, "observations", id), { bucket, updatedAt: serverTimestamp() });
+function setObservationBucket(id, bucket) {
+  return guardedWrite("update this item", () => updateDoc(doc(db, "observations", id), { bucket, updatedAt: serverTimestamp() }));
 }
-async function saveWeeklyCheckin(week, patch) {
-  await setDoc(doc(db, "weeklyCheckins", String(week)), { ...patch, week, updatedAt: serverTimestamp() }, { merge: true });
+function saveWeeklyCheckin(week, patch) {
+  return guardedWrite("save the weekly check-in", () => setDoc(doc(db, "weeklyCheckins", String(week)), { ...patch, week, updatedAt: serverTimestamp() }, { merge: true }));
 }
-async function setObservationStatus(id, status) {
-  const patch = { status, updatedAt: serverTimestamp() };
-  if (status === "Resolved") {
-    patch.resolvedAt = serverTimestamp();
-    patch.resolvedBy = auth.currentUser?.email || "Unknown";
-  } else {
-    patch.resolvedAt = null;
-    patch.resolvedBy = "";
-  }
-  await updateDoc(doc(db, "observations", id), patch);
+function setObservationStatus(id, status) {
+  return guardedWrite("update this note's status", () => {
+    const patch = { status, updatedAt: serverTimestamp() };
+    if (status === "Resolved") {
+      patch.resolvedAt = serverTimestamp();
+      patch.resolvedBy = auth.currentUser?.email || "Unknown";
+    } else {
+      patch.resolvedAt = null;
+      patch.resolvedBy = "";
+    }
+    return updateDoc(doc(db, "observations", id), patch);
+  });
 }
 
 /* 10) BOTTOM SHEET */
@@ -1252,7 +1310,8 @@ function wireNotesPanel(notesPanel, c, rerender) {
   if (saveNoteBtn) saveNoteBtn.addEventListener("click", async () => {
     const text = (textarea ? textarea.value : "").trim();
     if (!text) return;
-    await addObservation(c.siteId, c.id, noteDraftType, text, noteDraftMeta);
+    /* If the save fails the composer stays open with the typed text intact. */
+    if (!(await addObservation(c.siteId, c.id, noteDraftType, text, noteDraftMeta))) return;
     noteComposerFor = null;
     noteDraftMeta = { assignedTo: "", dueDate: "", text: "" };
     rerender();
@@ -1422,12 +1481,12 @@ function wireEditForm(panelInner, id, checkin) {
     mode: "edit",
     onSave: async (draft) => {
       const patch = { ...draft }; delete patch.id;
-      await saveCheckin(id, patch);
+      if (!(await saveCheckin(id, patch))) return;
       openEditId = null; editDraft = null; render();
     },
     onSecondary: async () => {
       if (!confirm("Delete this check-in? Its logged notes will remain in the site's history.")) return;
-      await removeCheckin(id);
+      if (!(await removeCheckin(id))) return;
       openEditId = null; editDraft = null;
     },
   });
@@ -1828,7 +1887,7 @@ function renderAddCheckin() {
       }
       addFormError = "";
       const payload = { ...draft };
-      await createCheckin(payload);
+      if (!(await createCheckin(payload))) return;
       closeAddCheckin();
       render();
     },
@@ -2177,9 +2236,11 @@ function renderReport() {
     el.querySelector('[data-role="item-save"]').addEventListener("click", async () => {
       const text = ta.value.trim();
       if (!addItemDraft.siteId || !text) { alert("Choose a site and write the item before saving."); return; }
-      const { siteId, type } = addItemDraft;
+      const draft = addItemDraft;
+      const { siteId, type } = draft;
       addItemDraft = null;
-      await addStandaloneObservation(siteId, d.week, type, text);
+      /* On failure put the draft back so the typed item isn't lost. */
+      if (!(await addStandaloneObservation(siteId, d.week, type, text))) addItemDraft = draft;
       renderReport();
     });
   }
