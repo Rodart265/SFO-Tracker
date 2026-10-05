@@ -27,3 +27,29 @@ top of `scripts/seed-firestore.js` for details on what it does.
 Until that script has been run at least once, the app will show
 "Setup incomplete — ask an admin to run the seed script" instead of data.
  
+## Access control (Firestore rules and roles)
+
+`firestore.rules` decides who can read and write what. Access is role-based.
+Each person needs a document at `users/<their UID>` with a text field `role`:
+
+| role | can do |
+|------|--------|
+| `admin` | everything: also edit the site directory, `meta` and `users`, and delete check-ins |
+| `member` | read everything; create and edit check-ins, notes and weekly check-ins |
+
+A signed-in person with no `users` document, or any other role, sees
+"No access — ask an admin to add your account".
+
+**Setting it up (do this in order — publishing the rules first locks everyone out):**
+
+1. Firebase console → Authentication → Users: copy each person's **User UID**.
+2. Firestore Database → Start collection `users` (first time) → Document ID =
+   the UID → add field `role` (string) = `admin` or `member`. Do yours first,
+   as `admin`, then add the rest of the team.
+3. Firestore Database → Rules: copy the current rules somewhere safe, paste in
+   the contents of `firestore.rules`, and use the **Rules Playground** to check
+   a couple of reads and writes before pressing **Publish**.
+
+The seed script uses the Admin SDK, which ignores these rules, so it is
+unaffected. Site GPS coordinates are part of the seed script's `SITES_SEED`;
+re-run the script after editing them.
