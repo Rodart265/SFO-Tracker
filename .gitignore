@@ -1,0 +1,13 @@
+# Firebase / Google service-account keys: never commit these
+*-key.json
+*serviceAccount*.json
+*service-account*.json
+firebase-adminsdk*.json
+secrets/
+
+# Backups written by scripts/fix-day-week.js (contain real site and staff data)
+scripts/checkins-backup-*.json
+checkins-backup-*.json
+
+node_modules/
+.DS_Store
