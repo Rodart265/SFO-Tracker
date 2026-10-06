@@ -1,0 +1,95 @@
+rules_version = '2';
+
+/*
+  SFO Field Tracker: Firestore security rules (role-based).
+
+  HOW ROLES WORK
+  Each person has a document at  users/<their Firebase Auth UID>  with a
+  string field  role:
+    "admin"   everything a member can do, plus: change sites, meta and
+              users, and delete check-ins.
+    "member"  read everything; create and edit check-ins, notes (observations)
+              and weekly check-ins.
+  Anyone who is signed in but has no users/<uid> document (or a role that is
+  not one of the two above) gets NO access. The app shows
+  "No access, ask an admin to add your account".
+
+  The seed script uses the Firebase Admin SDK, which bypasses these rules, so
+  it keeps working no matter what is in here.
+
+  FIRST-TIME SETUP: create your own users/<your UID> document with
+  role = "admin" BEFORE you publish these rules, or you will lock yourself out.
+  See "Access control" in README.md.
+*/
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---- helpers -------------------------------------------------------
+    function signedIn() {
+      return request.auth != null;
+    }
+    function roleDocPath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+    function hasRole(allowed) {
+      return signedIn()
+        && exists(roleDocPath())
+        && get(roleDocPath()).data.role in allowed;
+    }
+    function isAdmin()  { return hasRole(['admin']); }
+    function isMember() { return hasRole(['member', 'admin']); }
+
+    // ---- users: who has which role ------------------------------------
+    // People can read their own role document; only admins can read others
+    // or change anything. Members can never grant themselves a role.
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // ---- site directory (names, phone numbers, GPS) --------------------
+    match /sites/{siteId} {
+      allow read: if isMember();
+      allow write: if isAdmin();
+    }
+
+    // ---- schedule ------------------------------------------------------
+    match /checkins/{checkinId} {
+      allow read: if isMember();
+      allow create, update: if isMember();
+      allow delete: if isAdmin();
+    }
+
+    // ---- notes / issues / follow-ups -----------------------------------
+    match /observations/{obsId} {
+      allow read: if isMember();
+      // The author field must be the signed-in person's own email, so a note
+      // cannot be posted under someone else's name.
+      allow create: if isMember()
+        && request.resource.data.author == request.auth.token.email;
+      // Any member can update a note (for example to mark an issue resolved),
+      // but nobody can change who wrote it. get(..., null) keeps older notes
+      // that have no author field updatable.
+      allow update: if isMember()
+        && request.resource.data.get('author', null) == resource.data.get('author', null);
+      allow delete: if isAdmin();
+    }
+
+    // ---- weekly check-in (one document per week) -----------------------
+    match /weeklyCheckins/{weekId} {
+      allow read: if isMember();
+      allow create, update: if isMember();
+      allow delete: if isAdmin();
+    }
+
+    // ---- setup marker written by the seed script -----------------------
+    match /meta/{docId} {
+      allow read: if isMember();
+      allow write: if isAdmin();
+    }
+
+    // Everything else (including the old "visits" collection) is closed to
+    // browsers. Firestore denies anything not matched above.
+  }
+}
