@@ -53,3 +53,19 @@ A signed-in person with no `users` document, or any other role, sees
 The seed script uses the Admin SDK, which ignores these rules, so it is
 unaffected. Site GPS coordinates are part of the seed script's `SITES_SEED`;
 re-run the script after editing them.
+
+## Fixing day/week on existing check-ins (one-off)
+
+The app now derives a check-in's day and week from its date. Records created
+before that change may disagree (e.g. dated Tuesday, filed under Monday). Run
+the cleanup from `scripts/` — it is a dry run unless you pass `--apply`, and it
+writes a backup JSON before changing anything:
+
+```
+cd scripts
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json node fix-day-week.js            # preview
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json node fix-day-week.js --apply    # write
+```
+
+Check the "Week 1 Monday used" line in the preview. If it is wrong, pass
+`--week1-monday=YYYY-MM-DD` (and set `PROGRAM_WEEK1_MONDAY` in `index.html` to match).
