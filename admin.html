@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1C211E">
+<meta name="robots" content="noindex">
+<title>SFO Tracker — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1C211E; --ink-soft:#4F574F; --ink-faint:#5F675F;
+  --paper:#F4F5F1; --line:#D5D9D1;
+  --leaf:#17653A; --leaf-soft:#2E8A55; --flag:#FF5A1F;
+  --issue:#C0442C; --warn:#A8740F;
+  --chip-ok-bg:#D8EEDD; --chip-ok-fg:#145A32; --chip-bad-bg:#F4D4CC; --chip-bad-fg:#9C3B26; --chip-mute-bg:#E9EAE6;
+  --chip-warn-bg:#F6E8C3; --chip-warn-fg:#6B4A00;
+  --radius-md:6px; --radius-sm:4px;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:"Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:16px;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;}
+#app{max-width:720px;margin:0 auto;min-height:100vh;padding-bottom:40px;}
+button{font-family:inherit;cursor:pointer;background:none;border:none;min-height:44px;color:inherit;}
+button:disabled{cursor:default;}
+input,textarea,select{font-family:inherit;font-size:15px;}
+:focus-visible{outline:2px solid var(--leaf);outline-offset:2px;}
+.ic{display:block;flex-shrink:0;}
+.hidden{display:none !important;}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+
+/* Headings and numbers use condensed Archivo, matching the main app. */
+.display,.gate-card h1,#signin-screen h1,#top-bar h1,.sec-title,.edit-card h2,.site-row .name,.visit-row .name,.ov-card .title,.counter .num,.modal h2{
+  font-stretch:72%;font-weight:800;letter-spacing:.01em;}
+
+/* Offline banner */
+.offline-banner{position:sticky;top:0;z-index:20;background:var(--chip-warn-bg);color:var(--chip-warn-fg);border-bottom:2px solid var(--warn);padding:10px 16px;font-size:14px;font-weight:600;line-height:1.4;}
+
+/* Sign in + gate */
+#signin-screen,#gate-screen{padding:48px 22px;max-width:420px;margin:0 auto;}
+#signin-screen h1,.gate-card h1{font-size:34px;line-height:1.05;margin:0 0 8px;}
+#signin-screen p,.gate-card p{color:var(--ink-soft);font-size:15px;margin:0 0 24px;line-height:1.5;}
+.gate-card .gate-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:13px;color:var(--ink-soft);font-weight:600;margin-bottom:6px;}
+input[type=text],input[type=email],input[type=password],input[type=number],input[type=tel],input[type=date],input[type=search],textarea,select{
+  width:100%;min-height:44px;border:1px solid var(--ink-faint);border-radius:var(--radius-sm);padding:12px 13px;background:#fff;color:var(--ink);}
+input:disabled,select:disabled{background:var(--chip-mute-bg);color:var(--ink-soft);}
+.btn-primary{width:100%;border-radius:var(--radius-md);padding:14px;font-size:16px;font-weight:700;color:#fff;background:var(--leaf);margin-top:4px;}
+.btn-primary:disabled{opacity:.6;}
+.btn-link{color:var(--leaf);font-weight:700;font-size:14px;text-decoration:underline;padding:0 4px;}
+#signin-status{margin-top:12px;font-size:14px;color:var(--issue);white-space:pre-wrap;}
+#signin-status.ok{color:var(--leaf);font-weight:600;}
+
+/* Top bar + tabs */
+#top-bar{background:var(--ink);color:#fff;padding:16px 18px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:4px solid var(--flag);}
+#top-bar h1{font-size:26px;line-height:1.05;margin:0 0 4px;}
+#top-bar .sub{font-size:13px;color:rgba(255,255,255,.8);overflow-wrap:anywhere;}
+#top-bar :focus-visible{outline-color:#fff;}
+#signout-btn,.btn-outline{color:#fff;border:1px solid rgba(255,255,255,.55);border-radius:var(--radius-sm);padding:9px 14px;font-size:14px;font-weight:600;flex-shrink:0;}
+.gate-card .btn-outline{color:var(--ink);border-color:var(--ink-faint);}
+#tabs{display:flex;gap:0;border-bottom:2px solid var(--ink);background:var(--paper);overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin;}
+.tab-btn{flex:0 0 auto;min-height:48px;padding:0 16px;font-size:15px;font-weight:700;color:var(--ink-soft);border-bottom:4px solid transparent;margin-bottom:-2px;white-space:nowrap;}
+.tab-btn.active{color:var(--ink);border-bottom-color:var(--flag);}
+.panel{background:var(--paper);padding:18px 16px;min-height:300px;}
+.sec-title{font-size:18px;color:var(--ink);border-top:3px solid var(--ink);padding-top:8px;margin:26px 0 12px;}
+.sec-title:first-child{margin-top:0;}
+.hint{font-size:14px;color:var(--ink-soft);line-height:1.5;margin:0 0 14px;}
+.loading{font-size:14px;color:var(--ink-soft);padding:14px 0;}
+.err-banner{background:var(--chip-bad-bg);color:var(--chip-bad-fg);border-left:6px solid var(--issue);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:12px;font-size:14px;line-height:1.5;}
+.err-banner .btn-link{color:var(--chip-bad-fg);}
+.empty{font-size:14px;color:var(--ink-soft);border:1px dashed var(--ink-faint);border-radius:var(--radius-md);padding:16px;text-align:center;background:#fff;}
+
+/* Search + list */
+.search-bar{display:flex;align-items:center;gap:8px;border:1px solid var(--ink-faint);background:#fff;border-radius:var(--radius-sm);padding:0 12px;min-height:44px;margin-bottom:12px;}
+.search-bar:focus-within{outline:2px solid var(--leaf);outline-offset:2px;}
+.search-bar input{border:none;outline:none;flex:1;font-size:15px;padding:10px 0;background:none;min-width:0;}
+.search-bar .ic{color:var(--ink-faint);}
+.toolbar{display:flex;gap:8px;margin-bottom:12px;}
+.btn-add{background:var(--ink);color:#fff;border-radius:var(--radius-md);padding:0 16px;font-size:15px;font-weight:700;}
+.site-row{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-left:6px solid var(--line);border-radius:var(--radius-md);padding:12px 13px;margin-bottom:8px;width:100%;text-align:left;background:#fff;min-height:44px;}
+.site-row.editing{border-left-color:var(--flag);border-color:var(--ink);}
+.site-row.closed{opacity:.75;}
+.site-row .name{font-size:19px;line-height:1.1;overflow-wrap:anywhere;}
+.site-row .meta{font-size:13px;color:var(--ink-soft);margin-top:3px;overflow-wrap:anywhere;}
+.site-row .flag{color:var(--issue);font-size:12px;font-weight:700;margin-left:8px;white-space:nowrap;}
+.sep{display:inline-block;width:1px;height:.85em;background:currentColor;opacity:.35;margin:0 .6em;vertical-align:-.1em;}
+
+/* Chips */
+.chip{display:inline-block;font-size:12px;font-weight:700;border-radius:var(--radius-sm);padding:3px 8px;line-height:1.3;}
+.chip-ok{background:var(--chip-ok-bg);color:var(--chip-ok-fg);}
+.chip-bad{background:var(--chip-bad-bg);color:var(--chip-bad-fg);}
+.chip-mute{background:var(--chip-mute-bg);color:var(--ink-soft);}
+.chip-warn{background:var(--chip-warn-bg);color:var(--chip-warn-fg);}
+
+/* Edit panel */
+.edit-card{background:#fff;border:2px solid var(--ink);border-radius:var(--radius-md);padding:16px;margin-bottom:18px;}
+.edit-card h2{font-size:24px;line-height:1.1;margin:0 0 14px;overflow-wrap:anywhere;}
+.edit-grid{display:flex;flex-direction:column;gap:2px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.field-note{font-size:13px;color:var(--ink-soft);margin-top:6px;line-height:1.4;overflow-wrap:anywhere;}
+.edit-actions{display:flex;gap:8px;margin-top:12px;}
+.btn-save{flex:1;background:var(--leaf);color:#fff;border-radius:var(--radius-md);padding:13px;font-size:15px;font-weight:700;}
+.btn-save:disabled{opacity:.5;}
+.btn-cancel{border:1px solid var(--ink-faint);border-radius:var(--radius-md);padding:13px 18px;font-size:15px;font-weight:600;color:var(--ink);background:#fff;}
+.btn-secondary{border:1px solid var(--ink);border-radius:var(--radius-md);padding:0 14px;font-size:14px;font-weight:700;color:var(--ink);background:#fff;}
+.btn-secondary:disabled{opacity:.6;}
+.btn-danger{background:var(--issue);color:#fff;border-radius:var(--radius-md);padding:0 18px;font-size:15px;font-weight:700;}
+.save-msg{font-size:14px;margin-top:10px;line-height:1.4;}
+.save-msg.ok{color:var(--leaf);font-weight:600;}
+.save-msg.err{color:var(--issue);font-weight:600;}
+
+/* Filters + visits */
+.filters{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px;}
+.filters .wide{grid-column:1 / -1;}
+.filters .field{margin-bottom:6px;}
+.toggle{display:flex;align-items:center;gap:10px;min-height:44px;font-size:15px;font-weight:600;cursor:pointer;}
+.toggle input{width:24px;height:24px;margin:0;accent-color:var(--leaf);flex-shrink:0;}
+.notice{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--chip-warn-bg);color:var(--chip-warn-fg);border-radius:var(--radius-md);padding:6px 6px 6px 12px;margin-bottom:10px;font-size:14px;font-weight:600;}
+.notice .btn-link{color:var(--chip-warn-fg);}
+.count-line{font-size:13px;color:var(--ink-soft);margin:6px 0 10px;}
+.visit-row{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--line);border-left:6px solid var(--line);border-radius:var(--radius-md);padding:12px 13px;margin-bottom:8px;background:#fff;}
+.visit-row.flagged{border-left-color:var(--issue);}
+.visit-row .v-main{flex:1;min-width:0;}
+.visit-row .name{font-size:19px;line-height:1.1;overflow-wrap:anywhere;}
+.visit-row .meta{font-size:13px;color:var(--ink-soft);margin-top:3px;overflow-wrap:anywhere;}
+.visit-row .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.btn-del{border:1px solid var(--issue);color:var(--issue);border-radius:var(--radius-sm);padding:0 12px;font-size:13px;font-weight:700;background:#fff;flex-shrink:0;}
+.more-btn{width:100%;margin-top:4px;}
+
+/* Team */
+details.add-card{background:#fff;border:1px solid var(--ink);border-radius:var(--radius-md);margin-top:18px;}
+details.add-card summary{min-height:44px;display:flex;align-items:center;padding:0 14px;font-weight:700;cursor:pointer;}
+details.add-card .inner{padding:0 14px 14px;}
+
+/* Import */
+textarea#import-text{min-height:160px;font-family:ui-monospace,Menlo,monospace;font-size:13px;white-space:pre;}
+.import-row{display:flex;align-items:flex-start;gap:10px;border-bottom:1px solid var(--line);padding:10px 0;font-size:15px;}
+.import-row .chip{flex-shrink:0;margin-top:2px;}
+.chip-update{background:var(--chip-ok-bg);color:var(--chip-ok-fg);}
+.chip-nochange{background:var(--chip-mute-bg);color:var(--ink-soft);}
+.chip-unmatched,.chip-invalid{background:var(--chip-bad-bg);color:var(--chip-bad-fg);}
+.import-row .cell{flex:1;min-width:0;overflow-wrap:anywhere;}
+.import-row .diffs{font-size:13px;color:var(--ink-soft);margin-top:2px;}
+
+/* Oversight */
+.ov-card{background:#fff;border:1px solid var(--line);border-left:6px solid var(--warn);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:9px;}
+.ov-card.ok{border-left-color:var(--leaf-soft);}
+.ov-card .head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+.ov-card .title{font-size:18px;line-height:1.15;}
+.ov-card .badge{font-size:13px;font-weight:700;color:var(--warn);flex-shrink:0;}
+.ov-card.ok .badge{color:var(--leaf);}
+.ov-card .sub{font-size:13px;color:var(--ink-soft);margin-top:3px;overflow-wrap:anywhere;}
+.ov-card ul{margin:8px 0 0;padding-left:18px;font-size:13px;color:var(--ink-soft);line-height:1.5;}
+.ov-card .card-actions{margin-top:4px;}
+.counters{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-bottom:12px;}
+.counter{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-height:64px;background:#fff;border:1px solid var(--line);border-radius:var(--radius-md);padding:8px 10px;text-align:left;width:100%;}
+button.counter{cursor:pointer;}
+.counter .num{font-size:28px;line-height:1;}
+.counter .lbl{font-size:12px;color:var(--ink-soft);font-weight:600;line-height:1.2;}
+.counter.alert .num{color:var(--issue);}
+
+/* Program */
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px;margin:8px 0 0;}
+.kv dt{color:var(--ink-soft);font-weight:600;}
+.kv dd{margin:0;overflow-wrap:anywhere;}
+
+/* Modal */
+.modal-backdrop{position:fixed;inset:0;background:rgba(28,33,30,.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50;}
+.modal{background:#fff;border:2px solid var(--ink);border-radius:var(--radius-md);max-width:420px;width:100%;padding:18px;}
+.modal h2{font-size:24px;line-height:1.1;margin:0 0 10px;}
+.modal p{margin:0 0 16px;font-size:15px;line-height:1.5;color:var(--ink-soft);overflow-wrap:anywhere;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;}
+
+@media (prefers-reduced-motion: reduce){ *{scroll-behavior:auto !important;} }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="offline-banner" class="offline-banner hidden" role="status">You're offline. Admin changes need a connection. Anything you save now will be sent when you're back online.</div>
+
+  <div id="gate-screen">
+    <div class="gate-card" id="gate-card" role="status" aria-live="polite"><h1>Checking your account…</h1></div>
+  </div>
+
+  <div id="signin-screen" class="hidden">
+    <h1>SFO Tracker — Admin</h1>
+    <p>Sign in with the same account you use for the main app.</p>
+    <form id="signin-form" novalidate>
+      <div class="field"><label for="email">Email</label><input id="email" type="email" autocomplete="username" inputmode="email"></div>
+      <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password"></div>
+      <button class="btn-primary" id="signin-btn" type="submit">Sign in</button>
+      <button class="btn-link" id="forgot-btn" type="button">Forgot password?</button>
+    </form>
+    <div id="signin-status" role="alert"></div>
+  </div>
+
+  <div id="main-screen" class="hidden">
+    <div id="top-bar">
+      <div>
+        <h1>SFO Tracker — Admin</h1>
+        <div class="sub" id="sync-status" role="status" aria-live="polite">Loading data…</div>
+        <div class="sub" id="who"></div>
+      </div>
+      <button id="signout-btn" type="button">Sign out</button>
+    </div>
+    <div id="tabs" role="tablist" aria-label="Admin sections">
+      <button class="tab-btn active" id="tab-sites" data-tab="sites" role="tab" aria-selected="true" aria-controls="panel-sites" type="button">Sites</button>
+      <button class="tab-btn" id="tab-import" data-tab="import" role="tab" aria-selected="false" aria-controls="panel-import" type="button">Import</button>
+      <button class="tab-btn" id="tab-visits" data-tab="visits" role="tab" aria-selected="false" aria-controls="panel-visits" type="button">Visits</button>
+      <button class="tab-btn" id="tab-team" data-tab="team" role="tab" aria-selected="false" aria-controls="panel-team" type="button">Team</button>
+      <button class="tab-btn" id="tab-program" data-tab="program" role="tab" aria-selected="false" aria-controls="panel-program" type="button">Program</button>
+      <button class="tab-btn" id="tab-oversight" data-tab="oversight" role="tab" aria-selected="false" aria-controls="panel-oversight" type="button">Oversight</button>
+    </div>
+    <div class="panel" id="panel-sites" role="tabpanel" aria-labelledby="tab-sites"></div>
+    <div class="panel hidden" id="panel-import" role="tabpanel" aria-labelledby="tab-import"></div>
+    <div class="panel hidden" id="panel-visits" role="tabpanel" aria-labelledby="tab-visits"></div>
+    <div class="panel hidden" id="panel-team" role="tabpanel" aria-labelledby="tab-team"></div>
+    <div class="panel hidden" id="panel-program" role="tabpanel" aria-labelledby="tab-program"></div>
+    <div class="panel hidden" id="panel-oversight" role="tabpanel" aria-labelledby="tab-oversight"></div>
+  </div>
+</div>
+
+<div id="modal-backdrop" class="modal-backdrop hidden">
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-body">
+    <h2 id="modal-title"></h2>
+    <p id="modal-body"></p>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="modal-cancel" type="button">Cancel</button>
+      <button class="btn-danger" id="modal-ok" type="button">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore, collection, doc, onSnapshot, writeBatch, serverTimestamp,
+  getDocFromServer, setDoc, updateDoc, deleteDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBcy7mQsN3G-SsDuJ5Zh9SKrLPO7cL7H2M",
+  authDomain: "sfo-tracker.firebaseapp.com",
+  projectId: "sfo-tracker",
+  storageBucket: "sfo-tracker.firebasestorage.app",
+  messagingSenderId: "264081040783",
+  appId: "1:264081040783:web:8b10dc5e9478d0a11bd7fa"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+/* Only the two icons this page uses. */
+const ICONS = {
+  "search": '<path d="m21 21-4.34-4.34" /> <circle cx="11" cy="11" r="8" />',
+  "chevron-right": '<path d="m9 18 6-6-6-6" />'
+};
+function icon(name, size) {
+  size = size || 16;
+  return '<svg class="ic" aria-hidden="true" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || "") + '</svg>';
+}
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function slugify(name) { return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""); }
+function fmtNum(n) { return typeof n === "number" ? n.toLocaleString() : "—"; }
+const SEP = '<i class="sep" aria-hidden="true"></i>';
+const $ = (sel, root) => (root || document).querySelector(sel);
+const who = () => (auth.currentUser && auth.currentUser.email) || "";
+const smoothScroll = () => (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth");
+function chip(cls, text) { return `<span class="chip chip-${cls}">${esc(text)}</span>`; }
+function pendingMsg() { return navigator.onLine ? "Saving…" : "You're offline. This will send when you're back online."; }
+
+const EPAS = ["Chilaza", "Ming'ongo", "Mpingu", "Office"];
+const SITE_STATUSES = ["active", "paused", "closed"];
+const VISIT_STATUSES = ["Pending", "Completed", "Rescheduled", "Skipped"];
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const DAY_SHORT = { Monday: "Mon", Tuesday: "Tue", Wednesday: "Wed", Thursday: "Thu", Friday: "Fri" };
+
+/* Malawi numbers: +265 followed by 9 digits. Accepts 0999…, 999…, 265999…, +265 999…, 00265… */
+function normalizePhone(raw) {
+  let d = String(raw || "").replace(/[^\d]/g, "");
+  if (d.startsWith("00")) d = d.slice(2);
+  if (!d.startsWith("265")) d = d.startsWith("0") ? "265" + d.slice(1) : "265" + d;
+  return d.length === 12 ? "+" + d : null;
+}
+
+/* ============================= SCHEDULE MATH (same as index.html) ============================= */
+function isoFromDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function validISO(iso) {
+  if (typeof iso !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return false;
+  const d = new Date(iso + "T00:00:00");
+  return !isNaN(d) && isoFromDate(d) === iso;
+}
+function addDaysISO(iso, n) { const d = new Date(iso + "T00:00:00"); d.setDate(d.getDate() + n); return isoFromDate(d); }
+function daysBetweenISO(a, b) { return Math.round((new Date(b + "T00:00:00") - new Date(a + "T00:00:00")) / 86400000); }
+function mondayOfISO(iso) { return addDaysISO(iso, -((new Date(iso + "T00:00:00").getDay() + 6) % 7)); }
+function weekdayName(iso) {
+  if (!validISO(iso)) return null;
+  const n = new Date(iso + "T00:00:00").getDay();
+  return n >= 1 && n <= 5 ? DAY_NAMES[n] : null; // null on weekends
+}
+function todayISO() { return isoFromDate(new Date()); }
+
+/* Each dated visit votes for the Week-1 Monday it implies; the majority wins. */
+function inferWeek1Monday() {
+  const votes = {};
+  let total = 0;
+  checkins.forEach((c) => {
+    if (!validISO(c.date) || !Number.isFinite(c.week) || c.week < 1) return;
+    const start = addDaysISO(mondayOfISO(c.date), -7 * (c.week - 1));
+    votes[start] = (votes[start] || 0) + 1;
+    total++;
+  });
+  let best = null, bestN = 0;
+  Object.entries(votes).forEach(([k, n]) => { if (n > bestN) { best = k; bestN = n; } });
+  return { date: best, votes: bestN, total };
+}
+function week1Anchor(inferred) {
+  const set = programDoc && programDoc.week1Monday;
+  if (validISO(set)) return set;
+  return (inferred || inferWeek1Monday()).date;
+}
+function weekOfISO(iso, anchor) {
+  if (!anchor || !validISO(iso)) return null;
+  return Math.floor(daysBetweenISO(anchor, iso) / 7) + 1;
+}
+/* The week the team is in now, limited to weeks that exist (as in the main app). */
+function currentWeek(anchor) {
+  const weeks = [...new Set(checkins.map((c) => c.week))].filter(Number.isFinite).sort((a, b) => a - b);
+  if (!weeks.length) return 1;
+  const w = weekOfISO(todayISO(), anchor);
+  if (w !== null) return Math.min(Math.max(w, weeks[0]), weeks[weeks.length - 1]);
+  const open = weeks.find((wk) => checkins.some((c) => c.week === wk && c.status !== "Completed"));
+  return open ?? weeks[weeks.length - 1];
+}
+
+/* ============================= STATE ============================= */
+const KEYS = ["sites", "checkins", "observations", "users", "program"];
+const KEY_LABEL = { sites: "sites", checkins: "visits", observations: "observations", users: "team", program: "program settings" };
+let sites = [];
+let checkins = [];
+let observations = [];
+let users = [];
+let programDoc = null;
+let loaded = {};
+let errs = {};
+let unsubs = [];
+let authSeq = 0;
+let activeTab = "sites";
+let built = {};
+let siteCardMode = null;   // null | "new" | "edit"
+let editingSiteId = null;
+let cardToken = 0;
+let siteSearch = "";
+let importRows = null;
+let editingUid = null;
+let programDirty = false;
+const VF_DEFAULT = () => ({ week: "", status: "", q: "", attention: false, ids: null, idsLabel: "", limit: 50 });
+let vf = VF_DEFAULT();
+let weekSig = "";
+
+function resetState() {
+  sites = []; checkins = []; observations = []; users = []; programDoc = null;
+  loaded = {}; errs = {};
+  siteCardMode = null; editingSiteId = null; siteSearch = ""; importRows = null;
+  editingUid = null; programDirty = false; vf = VF_DEFAULT(); weekSig = "";
+  built = {};
+  ["sites", "import", "visits", "team", "program", "oversight"].forEach((t) => { $("#panel-" + t).innerHTML = ""; });
+  if (modalResolve) closeModal(false);
+}
+
+/* Shared list states: a visible error (with retry) or a loading line. */
+function errHTML(keys) {
+  const bad = keys.filter((k) => errs[k]);
+  if (!bad.length) return "";
+  return `<div class="err-banner" role="alert"><strong>Couldn't load ${esc(bad.map((k) => KEY_LABEL[k]).join(", "))}.</strong> ${esc(bad.map((k) => errs[k]).join(", "))}. <button type="button" class="btn-link" data-retry>Try again</button></div>`;
+}
+function isLoading(keys) { return keys.some((k) => !loaded[k] && !errs[k]); }
+function loadingHTML(what) { return `<div class="loading" role="status">Loading ${esc(what)}…</div>`; }
+
+/* ============================= MODAL ============================= */
+let modalResolve = null;
+let modalOpener = null;
+function confirmModal({ title, body, confirmLabel }) {
+  return new Promise((resolve) => {
+    modalResolve = resolve;
+    modalOpener = document.activeElement;
+    $("#modal-title").textContent = title;
+    $("#modal-body").textContent = body;
+    $("#modal-ok").textContent = confirmLabel;
+    $("#modal-backdrop").classList.remove("hidden");
+    $("#app").inert = true;
+    $("#modal-cancel").focus();
+  });
+}
+function closeModal(result) {
+  $("#modal-backdrop").classList.add("hidden");
+  $("#app").inert = false;
+  const resolve = modalResolve, opener = modalOpener;
+  modalResolve = null; modalOpener = null;
+  const target = opener && opener.isConnected ? opener : ($("#visit-count") || $("#tabs .tab-btn.active"));
+  if (target && target.focus) target.focus();
+  if (resolve) resolve(result);
+}
+$("#modal-cancel").addEventListener("click", () => closeModal(false));
+$("#modal-ok").addEventListener("click", () => closeModal(true));
+$("#modal-backdrop").addEventListener("click", (e) => { if (e.target === e.currentTarget) closeModal(false); });
+$("#modal-backdrop").addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { e.preventDefault(); closeModal(false); return; }
+  if (e.key === "Tab") {
+    const cancel = $("#modal-cancel"), ok = $("#modal-ok");
+    if (e.shiftKey && document.activeElement === cancel) { e.preventDefault(); ok.focus(); }
+    else if (!e.shiftKey && document.activeElement === ok) { e.preventDefault(); cancel.focus(); }
+  }
+});
+
+/* ============================= CONNECTIVITY ============================= */
+function updateOnline() { $("#offline-banner").classList.toggle("hidden", navigator.onLine); }
+window.addEventListener("online", updateOnline);
+window.addEventListener("offline", updateOnline);
+updateOnline();
+
+/* ============================= AUTH ============================= */
+function authMessage(err) {
+  switch (err && err.code) {
+    case "auth/invalid-credential":
+    case "auth/wrong-password":
+    case "auth/user-not-found":
+    case "auth/invalid-email":
+      return "That email or password isn't right. Check them and try again, or use Forgot password.";
+    case "auth/too-many-requests":
+      return "Too many attempts. Wait a few minutes, or reset your password, then try again.";
+    case "auth/network-request-failed":
+      return "No connection. Check your internet and try again.";
+    case "auth/user-disabled":
+      return "This account has been disabled. Ask an admin.";
+    default:
+      return "Couldn't complete that (" + ((err && err.code) || "unknown") + "). Try again.";
+  }
+}
+function setSigninStatus(text, ok) {
+  const el = $("#signin-status");
+  el.textContent = text;
+  el.classList.toggle("ok", !!ok);
+}
+$("#signin-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = $("#signin-btn");
+  setSigninStatus("");
+  const email = $("#email").value.trim(), password = $("#password").value;
+  if (!email || !password) { setSigninStatus("Enter your email and password."); return; }
+  btn.disabled = true;
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch (err) {
+    setSigninStatus(authMessage(err));
+  } finally {
+    btn.disabled = false;
+  }
+});
+$("#forgot-btn").addEventListener("click", async () => {
+  const email = $("#email").value.trim();
+  if (!email) { setSigninStatus("Type your email above first, then tap Forgot password."); $("#email").focus(); return; }
+  setSigninStatus("Sending…");
+  try {
+    await sendPasswordResetEmail(auth, email);
+    setSigninStatus("If an account exists for " + email + ", a password reset email is on its way. Check your spam folder too.", true);
+  } catch (err) {
+    setSigninStatus(authMessage(err));
+  }
+});
+$("#signout-btn").addEventListener("click", () => signOut(auth));
+
+function showScreen(name) {
+  ["gate", "signin", "main"].forEach((n) => $("#" + n + "-screen").classList.toggle("hidden", n !== name));
+}
+function showGate(kind, user, err) {
+  const card = $("#gate-card");
+  const out = `<button class="btn-outline" type="button" data-gate="signout">Sign out</button>`;
+  if (kind === "checking") {
+    card.innerHTML = `<h1>Checking your account…</h1>`;
+  } else if (kind === "denied") {
+    card.innerHTML = `<h1>This account isn't an admin</h1>
+      <p>You're signed in as <strong>${esc(user.email)}</strong>, which doesn't have admin access. Ask an admin to change your role, or sign in with a different account.</p>
+      <div class="gate-actions">${out}</div>`;
+  } else if (kind === "offline") {
+    card.innerHTML = `<h1>The admin page needs a connection</h1>
+      <p>We couldn't check your admin access because you appear to be offline. Connect to the internet and try again.</p>
+      <div class="gate-actions"><button class="btn-save" type="button" data-gate="retry" style="flex:none;">Try again</button>${out}</div>`;
+  } else {
+    card.innerHTML = `<h1>Couldn't check your account</h1>
+      <p>Something went wrong while checking your admin access (${esc((err && err.code) || "unknown error")}). Try again in a moment.</p>
+      <div class="gate-actions"><button class="btn-save" type="button" data-gate="retry" style="flex:none;">Try again</button>${out}</div>`;
+  }
+  showScreen("gate");
+  const h = $("h1", card);
+  if (h && kind !== "checking") { h.setAttribute("tabindex", "-1"); h.focus(); }
+}
+$("#gate-screen").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-gate]");
+  if (!b) return;
+  if (b.dataset.gate === "signout") signOut(auth);
+  else if (auth.currentUser) { showGate("checking"); checkAdmin(auth.currentUser, ++authSeq); }
+});
+
+async function checkAdmin(user, seq) {
+  try {
+    const snap = await getDocFromServer(doc(db, "users", user.uid));
+    if (seq !== authSeq) return;
+    const role = snap.exists() ? snap.data().role : null;
+    if (role === "admin") enterMain(user);
+    else showGate("denied", user);
+  } catch (err) {
+    if (seq !== authSeq) return;
+    if (err && err.code === "permission-denied") showGate("denied", user);
+    else if (!navigator.onLine || (err && err.code === "unavailable")) showGate("offline", user, err);
+    else showGate("error", user, err);
+  }
+}
+
+onAuthStateChanged(auth, (user) => {
+  const seq = ++authSeq;
+  stopListeners();
+  resetState();
+  if (!user) { showScreen("signin"); return; }
+  showGate("checking");
+  checkAdmin(user, seq);
+});
+
+function enterMain(user) {
+  $("#who").textContent = "Signed in as " + (user.email || user.uid);
+  showScreen("main");
+  setTab("sites", false);
+  startListeners();
+  render();
+}
+
+/* ============================= LISTENERS ============================= */
+function stopListeners() { unsubs.forEach((u) => u()); unsubs = []; }
+
+function updateSync() {
+  const el = $("#sync-status");
+  const bad = KEYS.filter((k) => errs[k]);
+  if (bad.length) el.textContent = "Problem loading " + bad.map((k) => KEY_LABEL[k]).join(", ") + ". See the message in each tab.";
+  else if (KEYS.every((k) => loaded[k])) el.textContent = "All data loaded";
+  else el.textContent = "Loading data… (" + KEYS.filter((k) => loaded[k]).length + " of " + KEYS.length + ")";
+}
+
+function startListeners() {
+  loaded = {}; errs = {};
+  updateSync();
+  const listen = (key, ref, assign) => onSnapshot(ref,
+    (snap) => { assign(snap); loaded[key] = true; delete errs[key]; updateSync(); render(); },
+    (err) => { errs[key] = err.code || "error"; updateSync(); render(); });
+  unsubs = [
+    listen("sites", collection(db, "sites"), (s) => { sites = s.docs.map((d) => ({ id: d.id, ...d.data() })); }),
+    listen("checkins", collection(db, "checkins"), (s) => { checkins = s.docs.map((d) => ({ id: d.id, ...d.data() })); }),
+    listen("observations", collection(db, "observations"), (s) => { observations = s.docs.map((d) => ({ id: d.id, ...d.data() })); }),
+    listen("users", collection(db, "users"), (s) => { users = s.docs.map((d) => ({ id: d.id, ...d.data() })); }),
+    listen("program", doc(db, "meta", "program"), (s) => { programDoc = s.exists() ? s.data() : null; })
+  ];
+}
+document.addEventListener("click", (e) => {
+  if (e.target.closest("[data-retry]") && auth.currentUser) { stopListeners(); startListeners(); }
+});
+
+/* ============================= TABS ============================= */
+const TABS = ["sites", "import", "visits", "team", "program", "oversight"];
+function setTab(tab, doRender = true) {
+  activeTab = tab;
+  document.querySelectorAll(".tab-btn").forEach((b) => {
+    const on = b.dataset.tab === tab;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-selected", on ? "true" : "false");
+    if (on) b.scrollIntoView({ block: "nearest", inline: "nearest" });
+  });
+  TABS.forEach((t) => $("#panel-" + t).classList.toggle("hidden", tab !== t));
+  if (doRender) render();
+}
+document.querySelectorAll(".tab-btn").forEach((btn) => {
+  btn.addEventListener("click", () => setTab(btn.dataset.tab));
+  btn.addEventListener("keydown", (e) => {
+    const i = TABS.indexOf(btn.dataset.tab);
+    let n = null;
+    if (e.key === "ArrowRight") n = (i + 1) % TABS.length;
+    else if (e.key === "ArrowLeft") n = (i - 1 + TABS.length) % TABS.length;
+    else if (e.key === "Home") n = 0;
+    else if (e.key === "End") n = TABS.length - 1;
+    if (n === null) return;
+    e.preventDefault();
+    setTab(TABS[n]);
+    $("#tab-" + TABS[n]).focus();
+  });
+});
+
+/* Live data only redraws what depends on it. The site/team edit cards, the
+   import textarea, the filter controls and the program date input are built
+   once and never rebuilt by a snapshot, so a teammate's change can't wipe what
+   you're typing or pasting. */
+function render() {
+  if (!auth.currentUser || $("#main-screen").classList.contains("hidden")) return;
+  if (activeTab === "sites") renderSites();
+  else if (activeTab === "import") renderImport();
+  else if (activeTab === "visits") renderVisits();
+  else if (activeTab === "team") renderTeam();
+  else if (activeTab === "program") renderProgram();
+  else renderOversight();
+}
+
+function knownAssistants() {
+  const all = [...sites.map((s) => s.assistant), ...checkins.map((c) => c.assistant)];
+  return [...new Set(all.filter((a) => a && a !== "N/A"))].sort((a, b) => a.localeCompare(b));
+}
+
+/* ============================= SITES ============================= */
+function renderSites() {
+  const el = $("#panel-sites");
+  if (!built.sites) {
+    el.innerHTML = `
+      <p class="hint">Select a site to change its details, or add a new one. Changes save straight to the database.</p>
+      <div id="sites-banner"></div>
+      <div class="toolbar"><button class="btn-add" id="add-site-btn" type="button">Add site</button></div>
+      <div id="edit-slot"></div>
+      <div class="search-bar">${icon("search", 15)}<input id="site-search" type="search" aria-label="Search sites" placeholder="Search by site, manager or nursery ID" value="${esc(siteSearch)}"></div>
+      <div id="site-list"></div>`;
+    $("#site-search").addEventListener("input", (e) => { siteSearch = e.target.value; renderSiteList(); });
+    $("#add-site-btn").addEventListener("click", () => {
+      siteCardMode = "new"; editingSiteId = null;
+      renderEditSlot(); renderSiteList();
+      $("#edit-slot").scrollIntoView({ behavior: smoothScroll(), block: "start" });
+    });
+    built.sites = true;
+  }
+  $("#sites-banner").innerHTML = errHTML(["sites"]);
+  renderSiteList();
+}
+
+function closeSiteCard() {
+  siteCardMode = null; editingSiteId = null; cardToken++;
+  const slot = $("#edit-slot");
+  if (slot) slot.innerHTML = "";
+}
+
+function renderSiteList() {
+  const listEl = $("#site-list");
+  if (!listEl) return;
+  if (errs.sites) { listEl.innerHTML = ""; return; }
+  if (isLoading(["sites"])) { listEl.innerHTML = loadingHTML("sites"); return; }
+  const q = siteSearch.trim().toLowerCase();
+  let filtered = sites.filter((s) => s.id !== "n-a");
+  if (q) filtered = filtered.filter((s) =>
+    (s.name || "").toLowerCase().includes(q) || (s.nurseryId || "").toLowerCase().includes(q) || (s.nmName || "").toLowerCase().includes(q));
+  filtered.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+
+  listEl.innerHTML = filtered.map((s) => {
+    const flags = [];
+    if (!s.nmPhone) flags.push("No phone");
+    if (typeof s.lat !== "number" || typeof s.lng !== "number") flags.push("No GPS");
+    const status = s.status === "paused" || s.status === "closed" ? s.status : "active";
+    const statusChip = status === "paused" ? chip("warn", "Paused") : status === "closed" ? chip("bad", "Closed") : "";
+    const isEditing = siteCardMode === "edit" && s.id === editingSiteId;
+    return `
+      <button class="site-row ${isEditing ? "editing" : ""} ${status === "closed" ? "closed" : ""}" data-site="${esc(s.id)}" type="button">
+        <div style="flex:1;min-width:0;">
+          <div class="name">${esc(s.name)} ${statusChip}</div>
+          <div class="meta">${esc(s.assistant || "No assistant")}${SEP}${esc(s.epa || "No EPA")}${SEP}${esc(s.nmName || "No manager on file")}${SEP}target ${fmtNum(s.potfillingTarget)}
+            ${flags.map((f) => `<span class="flag">${esc(f)}</span>`).join("")}
+          </div>
+        </div>
+        ${icon("chevron-right", 16)}
+      </button>`;
+  }).join("") || `<div class="empty">${sites.length ? `No sites match "${esc(siteSearch)}".` : "No sites yet. Use Add site to create the first one."}</div>`;
+
+  listEl.querySelectorAll(".site-row").forEach((row) =>
+    row.addEventListener("click", () => {
+      siteCardMode = "edit"; editingSiteId = row.dataset.site;
+      renderEditSlot();
+      renderSiteList();
+      $("#edit-slot").scrollIntoView({ behavior: smoothScroll(), block: "start" });
+    }));
+}
+
+function renderEditSlot() {
+  const slot = $("#edit-slot");
+  const isNew = siteCardMode === "new";
+  const site = isNew ? {} : sites.find((s) => s.id === editingSiteId);
+  if (!isNew && !site) { closeSiteCard(); return; }
+  const token = ++cardToken;
+  const assistants = knownAssistants();
+  if (site.assistant && !assistants.includes(site.assistant) && site.assistant !== "N/A") assistants.push(site.assistant);
+  const pendingCount = isNew ? 0 : checkins.filter((c) => c.siteId === site.id && c.status === "Pending").length;
+  const epas = [...EPAS];
+  if (site.epa && !epas.includes(site.epa)) epas.push(site.epa);
+  const status = SITE_STATUSES.includes(site.status) ? site.status : "active";
+
+  slot.innerHTML = `
+    <div class="edit-card">
+      <h2>${isNew ? "Add site" : esc(site.name)}</h2>
+      <div class="edit-grid">
+        ${isNew ? `<div class="field"><label for="f-name">Site name (required)</label><input id="f-name" data-field="name" autocomplete="off">
+          <div class="field-note" id="f-id-note">The site ID is made from the name.</div></div>` : ""}
+        <div class="field"><label for="f-epa">EPA</label>
+          <select id="f-epa" data-field="epa">
+            ${(isNew || !site.epa) ? `<option value="" selected>Not set</option>` : ""}
+            ${epas.map((e) => `<option value="${esc(e)}" ${e === site.epa ? "selected" : ""}>${esc(e)}</option>`).join("")}
+          </select></div>
+        <div class="field"><label for="f-status">Status</label>
+          <select id="f-status" data-field="status">
+            ${SITE_STATUSES.map((s) => `<option value="${s}" ${s === status ? "selected" : ""}>${s[0].toUpperCase() + s.slice(1)}</option>`).join("")}
+          </select></div>
+        <div class="field"><label for="f-assistant">Field assistant</label>
+          <select id="f-assistant" data-field="assistant">
+            <option value="" ${site.assistant ? "" : "selected"}>Not assigned</option>
+            ${assistants.map((fa) => `<option value="${esc(fa)}" ${fa === site.assistant ? "selected" : ""}>${esc(fa)}</option>`).join("")}
+          </select>
+          ${isNew ? "" : `<div class="field-note">${pendingCount} pending visit${pendingCount === 1 ? "" : "s"} for this site will move to the new assistant if you change it.</div>`}
+        </div>
+        <div class="field"><label for="f-nurseryId">Nursery ID</label><input id="f-nurseryId" data-field="nurseryId" value="${esc(site.nurseryId || "")}"></div>
+        <div class="field"><label for="f-target">Potfilling target</label><input id="f-target" data-field="potfillingTarget" type="number" min="0" value="${esc(site.potfillingTarget ?? "")}"></div>
+        <div class="field"><label for="f-nmName">Nursery manager name</label><input id="f-nmName" data-field="nmName" value="${esc(site.nmName || "")}"></div>
+        <div class="field"><label for="f-nmPhone">Nursery manager phone</label><input id="f-nmPhone" data-field="nmPhone" type="tel" value="${esc(site.nmPhone || "")}" placeholder="0999 123 456"></div>
+        <div class="field-row">
+          <div class="field"><label for="f-lat">Latitude</label><input id="f-lat" data-field="lat" type="number" step="any" inputmode="decimal" min="-90" max="90" value="${esc(typeof site.lat === "number" ? site.lat : "")}" placeholder="-13.9626"></div>
+          <div class="field"><label for="f-lng">Longitude</label><input id="f-lng" data-field="lng" type="number" step="any" inputmode="decimal" min="-180" max="180" value="${esc(typeof site.lng === "number" ? site.lng : "")}" placeholder="33.7741"></div>
+        </div>
+        <div class="field">
+          <button class="btn-secondary" type="button" data-role="geo">Use my current location</button>
+          <div class="field-note" data-role="geo-msg" role="status">Stand at the nursery before using this. Leave both empty if the site has no GPS yet.</div>
+        </div>
+      </div>
+      <div class="edit-actions">
+        <button class="btn-save" data-role="save" type="button">${isNew ? "Add site" : "Save changes"}</button>
+        <button class="btn-cancel" data-role="cancel" type="button">Cancel</button>
+      </div>
+      <div class="save-msg" data-role="msg" role="status"></div>
+    </div>`;
+
+  const card = $(".edit-card", slot);
+  $('[data-role="cancel"]', card).addEventListener("click", () => { closeSiteCard(); renderSiteList(); });
+  $('[data-role="save"]', card).addEventListener("click", () => saveSite(site, card, token));
+  $('[data-role="geo"]', card).addEventListener("click", () => useMyLocation(card));
+  if (isNew) {
+    const nameInput = $('[data-field="name"]', card);
+    nameInput.addEventListener("input", () => {
+      const id = slugify(nameInput.value);
+      $("#f-id-note").textContent = id ? "Site ID will be: " + id : "The site ID is made from the name.";
+    });
+  }
+  const first = $("input,select", card);
+  if (first) first.focus({ preventScroll: true });
+}
+
+function useMyLocation(card) {
+  const btn = $('[data-role="geo"]', card);
+  const msg = $('[data-role="geo-msg"]', card);
+  if (!("geolocation" in navigator)) { msg.textContent = "This device or browser can't give a location. Type the coordinates instead."; return; }
+  btn.disabled = true;
+  btn.textContent = "Getting location…";
+  msg.textContent = "Waiting for a GPS fix. This can take up to 20 seconds.";
+  navigator.geolocation.getCurrentPosition((pos) => {
+    btn.disabled = false; btn.textContent = "Use my current location";
+    $('[data-field="lat"]', card).value = pos.coords.latitude.toFixed(6);
+    $('[data-field="lng"]', card).value = pos.coords.longitude.toFixed(6);
+    const acc = Math.round(pos.coords.accuracy);
+    msg.textContent = "Filled from your location, accurate to about " + acc + " m." + (acc > 100 ? " That's rough. Try again outdoors with a clear sky before saving." : "");
+  }, (err) => {
+    btn.disabled = false; btn.textContent = "Use my current location";
+    if (err.code === 1) msg.textContent = "Location permission was denied. Allow location for this page in your browser settings, or type the coordinates.";
+    else if (err.code === 3) msg.textContent = "Timed out waiting for a GPS fix. Move outdoors and try again, or type the coordinates.";
+    else msg.textContent = "Couldn't get a position. Try again outdoors, or type the coordinates.";
+  }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+}
+
+async function saveSite(site, card, token) {
+  const isNew = siteCardMode === "new";
+  const msg = $('[data-role="msg"]', card);
+  const saveBtn = $('[data-role="save"]', card);
+  const val = (f) => $(`[data-field="${f}"]`, card).value.trim();
+  const fail = (text) => { msg.className = "save-msg err"; msg.textContent = text; };
+
+  let name = "", id = "";
+  if (isNew) {
+    name = val("name");
+    if (!name) return fail("Enter a site name.");
+    id = slugify(name);
+    if (!id) return fail("The site name needs at least one letter or number.");
+    if (id === "n-a") return fail("That name is reserved. Choose another.");
+    if (!loaded.sites) return fail("Sites are still loading. Try again in a moment.");
+    if (sites.some((s) => s.id === id)) return fail(`A site with the ID "${id}" already exists. Pick it from the list to edit it.`);
+  }
+
+  let nmPhone = "";
+  if (val("nmPhone")) {
+    nmPhone = normalizePhone(val("nmPhone"));
+    if (!nmPhone) return fail("That phone number doesn't look right. Use a Malawi number such as 0999 123 456.");
+  }
+  let target = null;
+  if (val("potfillingTarget") !== "") {
+    target = Number(val("potfillingTarget").replace(/,/g, ""));
+    if (!Number.isFinite(target) || target < 0) return fail("Potfilling target must be a number, 0 or higher.");
+  }
+  let lat = null, lng = null;
+  const latS = val("lat"), lngS = val("lng");
+  if (latS !== "" || lngS !== "") {
+    if (latS === "" || lngS === "") return fail("Enter both latitude and longitude, or leave both empty.");
+    lat = Number(latS); lng = Number(lngS);
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90) return fail("Latitude must be a number from -90 to 90.");
+    if (!Number.isFinite(lng) || lng < -180 || lng > 180) return fail("Longitude must be a number from -180 to 180.");
+  }
+
+  const fields = {
+    epa: val("epa"), status: val("status"), assistant: val("assistant"), nurseryId: val("nurseryId"),
+    potfillingTarget: target, nmName: val("nmName"), nmPhone, lat, lng
+  };
+
+  saveBtn.disabled = true;
+  msg.className = "save-msg"; msg.textContent = pendingMsg();
+  const closeLater = () => setTimeout(() => { if (cardToken === token) { closeSiteCard(); renderSiteList(); } }, 1200);
+  try {
+    if (isNew) {
+      try {
+        const existing = await getDocFromServer(doc(db, "sites", id));
+        if (existing.exists()) { saveBtn.disabled = false; return fail(`A site with the ID "${id}" already exists. Pick it from the list to edit it.`); }
+      } catch (e) { /* offline: the local list check above is what we have */ }
+      await setDoc(doc(db, "sites", id), {
+        name, ...fields,
+        createdAt: serverTimestamp(), createdBy: who(),
+        updatedAt: serverTimestamp(), updatedBy: who()
+      });
+      msg.className = "save-msg ok"; msg.textContent = "Site added.";
+      closeLater();
+      return;
+    }
+    const patch = { ...fields, updatedAt: serverTimestamp(), updatedBy: who() };
+    const batch = writeBatch(db);
+    batch.update(doc(db, "sites", site.id), patch);
+    let moved = 0;
+    if (patch.assistant && patch.assistant !== (site.assistant || "")) {
+      checkins.filter((c) => c.siteId === site.id && c.status === "Pending").forEach((c) => {
+        batch.update(doc(db, "checkins", c.id), { assistant: patch.assistant, updatedAt: serverTimestamp(), updatedBy: who() });
+        moved++;
+      });
+    }
+    await batch.commit();
+    msg.className = "save-msg ok";
+    msg.textContent = moved ? `Saved. Moved ${moved} pending visit${moved === 1 ? "" : "s"} to ${patch.assistant}.` : "Saved.";
+    closeLater();
+  } catch (err) {
+    saveBtn.disabled = false;
+    fail("Couldn't save: " + (err.code || err.message));
+  }
+}
+
+/* ============================= IMPORT ============================= */
+/* Pasted columns, tab-separated:
+   Field Assistant | Nursery ID | Nursery Site | Potfilling Target | NM Name | NM Number
+   The Field Assistant column is read but not applied; reassign on the Sites tab. */
+function parseImportText(text) {
+  return text.split("\n").map((l) => l.trim()).filter(Boolean)
+    .filter((l) => !/^field assistant\b/i.test(l))
+    .map((line) => {
+      const [fa, nurseryId, siteName, target, nmName, nmPhoneRaw] = line.split("\t").map((c) => c.trim());
+      const t = target ? Number(target.replace(/,/g, "")) : null;
+      return { fa, nurseryId, siteName, target: Number.isFinite(t) ? t : null, nmName, nmPhoneRaw };
+    }).filter((r) => r.siteName);
+}
+
+function buildImportPreview(rows) {
+  return rows.map((r) => {
+    const id = slugify(r.siteName || "");
+    const existing = sites.find((s) => s.id === id);
+    if (!existing) return { ...r, id, status: "unmatched", diffs: [] };
+
+    let nmPhone = null;
+    if (r.nmPhoneRaw) {
+      nmPhone = normalizePhone(r.nmPhoneRaw);
+      if (!nmPhone) return { ...r, id, status: "invalid", diffs: [`phone "${r.nmPhoneRaw}" isn't a valid Malawi number`] };
+    }
+    const diffs = [];
+    if (r.nurseryId && r.nurseryId !== existing.nurseryId) diffs.push(`nursery ID: ${existing.nurseryId || "—"} → ${r.nurseryId}`);
+    if (r.target != null && r.target !== existing.potfillingTarget) diffs.push(`target: ${fmtNum(existing.potfillingTarget)} → ${fmtNum(r.target)}`);
+    if (r.nmName && r.nmName !== existing.nmName) diffs.push(`manager: ${existing.nmName || "—"} → ${r.nmName}`);
+    if (nmPhone && nmPhone !== existing.nmPhone) diffs.push(`phone: ${existing.nmPhone || "—"} → ${nmPhone}`);
+    return { ...r, id, nmPhone, status: diffs.length ? "update" : "nochange", diffs };
+  });
+}
+
+const IMPORT_CHIP = {
+  update: ["update", "Will update"], nochange: ["nochange", "No change"],
+  unmatched: ["unmatched", "No match"], invalid: ["invalid", "Check phone"]
+};
+
+function renderImport() {
+  const el = $("#panel-import");
+  if (built.import) return;
+  built.import = true;
+  el.innerHTML = `
+    <p class="hint">Paste rows copied from your sheet: Field Assistant, Nursery ID, Nursery Site, Potfilling Target, NM Name, NM Number, separated by tabs. The Field Assistant column is ignored here; change assignments on the Sites tab. Nothing is saved until you review and apply.</p>
+    <label class="hint" for="import-text" style="display:block;margin-bottom:6px;">Rows from your sheet</label>
+    <textarea id="import-text" placeholder="Paste rows here"></textarea>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button class="btn-save" id="parse-btn" type="button">Preview changes</button>
+    </div>
+    <div id="import-preview" aria-live="polite"></div>`;
+  $("#parse-btn").addEventListener("click", () => {
+    if (!loaded.sites) {
+      $("#import-preview").innerHTML = `<p class="hint" style="margin-top:12px;">${errs.sites ? "Sites couldn't be loaded, so there's nothing to match against. Check the Sites tab." : "Sites are still loading. Try again in a moment."}</p>`;
+      return;
+    }
+    importRows = buildImportPreview(parseImportText($("#import-text").value));
+    renderImportPreview();
+  });
+}
+
+function renderImportPreview() {
+  const previewEl = $("#import-preview");
+  if (!importRows || !importRows.length) {
+    previewEl.innerHTML = `<p class="hint" style="margin-top:12px;">No rows found. Check that the columns are tab-separated and include a site name.</p>`;
+    return;
+  }
+  const count = (s) => importRows.filter((r) => r.status === s).length;
+  const updates = count("update");
+  previewEl.innerHTML = `
+    <div class="sec-title">${updates} to update, ${count("nochange")} unchanged, ${count("unmatched")} unmatched, ${count("invalid")} need attention</div>
+    ${importRows.map((r) => {
+      const [cls, label] = IMPORT_CHIP[r.status];
+      return `
+        <div class="import-row">
+          <span class="chip chip-${cls}">${label}</span>
+          <div class="cell">
+            <div>${esc(r.siteName)}</div>
+            ${r.diffs.length ? `<div class="diffs">${r.diffs.map(esc).join(SEP)}</div>` : ""}
+          </div>
+        </div>`;
+    }).join("")}
+    ${updates ? `<button class="btn-save" id="confirm-import" type="button" style="margin-top:12px;width:100%;">Apply ${updates} update${updates === 1 ? "" : "s"}</button>` : ""}
+    <div class="save-msg" id="import-msg" role="status"></div>`;
+
+  const confirmBtn = $("#confirm-import");
+  if (!confirmBtn) return;
+  confirmBtn.addEventListener("click", async () => {
+    const msg = $("#import-msg");
+    confirmBtn.disabled = true;
+    msg.className = "save-msg"; msg.textContent = pendingMsg();
+    try {
+      const batch = writeBatch(db);
+      importRows.filter((r) => r.status === "update").forEach((r) => {
+        const patch = { updatedAt: serverTimestamp(), updatedBy: who() };
+        if (r.nurseryId) patch.nurseryId = r.nurseryId;
+        if (r.target != null) patch.potfillingTarget = r.target;
+        if (r.nmName) patch.nmName = r.nmName;
+        if (r.nmPhone) patch.nmPhone = r.nmPhone;
+        batch.update(doc(db, "sites", r.id), patch);
+      });
+      await batch.commit();
+      msg.className = "save-msg ok"; msg.textContent = `Applied ${updates} update${updates === 1 ? "" : "s"}.`;
+      importRows = null;
+      confirmBtn.remove();
+    } catch (err) {
+      confirmBtn.disabled = false;
+      msg.className = "save-msg err"; msg.textContent = "Import failed, nothing was saved: " + (err.code || err.message);
+    }
+  });
+}
+
+/* ============================= VISITS ============================= */
+function startOf(c) { return c.evidence && c.evidence.start ? c.evidence.start : null; }
+function isFlagged(c) {
+  const s = startOf(c);
+  return (c.status === "Completed" && !s) || (!!s && s.result === "far");
+}
+function evidenceChip(c) {
+  const s = startOf(c);
+  if (!s || !s.result) return chip("mute", "Not recorded");
+  switch (s.result) {
+    case "verified": return chip("ok", "Verified");
+    case "far": return chip("bad", typeof s.distanceM === "number" ? "Far (" + Math.round(s.distanceM).toLocaleString() + " m)" : "Far");
+    case "no-site-gps": return chip("warn", "Site has no GPS");
+    case "denied": return chip("warn", "Location denied");
+    case "no-fix":
+    case "unsupported": return chip("warn", "No GPS fix");
+    default: return chip("mute", "Not recorded");
+  }
+}
+function statusChip(status) {
+  const cls = { Completed: "ok", Pending: "mute", Rescheduled: "warn", Skipped: "bad" }[status] || "mute";
+  return chip(cls, status || "No status");
+}
+function siteName(c) {
+  const s = sites.find((x) => x.id === c.siteId);
+  return (s && s.name) || c.siteId || "Unknown site";
+}
+
+function filteredVisits() {
+  let list = checkins;
+  if (vf.ids) list = list.filter((c) => vf.ids.has(c.id));
+  if (vf.week) list = list.filter((c) => String(c.week) === vf.week);
+  if (vf.status) list = list.filter((c) => c.status === vf.status);
+  if (vf.attention) list = list.filter(isFlagged);
+  const q = vf.q.trim().toLowerCase();
+  if (q) list = list.filter((c) => [siteName(c), c.siteId, c.assistant, c.purpose, c.date].join(" ").toLowerCase().includes(q));
+  return [...list].sort((a, b) =>
+    (b.date || "").localeCompare(a.date || "") || siteName(a).localeCompare(siteName(b)) || (a.order || 0) - (b.order || 0));
+}
+
+function renderVisits() {
+  const el = $("#panel-visits");
+  if (!built.visits) {
+    el.innerHTML = `
+      <p class="hint">Search every visit. Visits flagged "needs attention" were completed without a recorded start location, or started far from the site.</p>
+      <div id="visits-banner"></div>
+      <div class="filters">
+        <div class="field"><label for="vf-week">Week</label><select id="vf-week"><option value="">All weeks</option></select></div>
+        <div class="field"><label for="vf-status">Status</label>
+          <select id="vf-status"><option value="">All statuses</option>${VISIT_STATUSES.map((s) => `<option value="${s}">${s}</option>`).join("")}</select></div>
+        <div class="field wide"><label for="vf-q">Search site, assistant or purpose</label><input id="vf-q" type="search" autocomplete="off" placeholder="e.g. Kasungu, Grace, pot filling"></div>
+        <div class="wide"><label class="toggle"><input type="checkbox" id="vf-attn"> Needs attention only</label></div>
+      </div>
+      <div id="visit-notice"></div>
+      <div class="count-line" id="visit-count" tabindex="-1" aria-live="polite"></div>
+      <div class="save-msg" id="visit-msg" role="status"></div>
+      <div id="visit-rows"></div>
+      <button class="btn-secondary more-btn hidden" id="visit-more" type="button">Show more</button>`;
+    const bump = () => { vf.limit = 50; renderVisitList(); };
+    $("#vf-week").addEventListener("change", (e) => { vf.week = e.target.value; bump(); });
+    $("#vf-status").addEventListener("change", (e) => { vf.status = e.target.value; bump(); });
+    $("#vf-q").addEventListener("input", (e) => { vf.q = e.target.value; bump(); });
+    $("#vf-attn").addEventListener("change", (e) => { vf.attention = e.target.checked; bump(); });
+    $("#visit-more").addEventListener("click", () => { vf.limit += 50; renderVisitList(); });
+    $("#visit-rows").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-del]");
+      if (b) deleteVisit(b.dataset.del);
+    });
+    $("#visit-notice").addEventListener("click", (e) => {
+      if (e.target.closest("[data-clear-ids]")) { vf.ids = null; vf.idsLabel = ""; vf.limit = 50; renderVisitList(); }
+    });
+    built.visits = true;
+    weekSig = "";
+  }
+  $("#visits-banner").innerHTML = errHTML(["checkins"]);
+  const sel = $("#vf-week");
+  const weeks = [...new Set(checkins.map((c) => c.week).filter(Number.isFinite))].sort((a, b) => a - b);
+  const sig = weeks.join(",");
+  if (sig !== weekSig) {
+    weekSig = sig;
+    sel.innerHTML = `<option value="">All weeks</option>` + weeks.map((w) => `<option value="${esc(w)}">Week ${esc(w)}</option>`).join("");
+    sel.value = vf.week;
+  }
+  renderVisitList();
+}
+
+function syncVisitControls() {
+  if (!built.visits) return;
+  $("#vf-week").value = vf.week;
+  $("#vf-status").value = vf.status;
+  $("#vf-q").value = vf.q;
+  $("#vf-attn").checked = vf.attention;
+}
+
+function renderVisitList() {
+  const rowsEl = $("#visit-rows"), moreBtn = $("#visit-more"), countEl = $("#visit-count");
+  if (!rowsEl) return;
+  $("#visit-notice").innerHTML = vf.ids
+    ? `<div class="notice"><span>Showing: ${esc(vf.idsLabel)}</span><button type="button" class="btn-link" data-clear-ids>Clear</button></div>` : "";
+  if (errs.checkins) { rowsEl.innerHTML = ""; countEl.textContent = ""; moreBtn.classList.add("hidden"); return; }
+  if (isLoading(["checkins"])) { rowsEl.innerHTML = loadingHTML("visits"); countEl.textContent = ""; moreBtn.classList.add("hidden"); return; }
+  const all = filteredVisits();
+  const shown = all.slice(0, vf.limit);
+  countEl.textContent = all.length ? `Showing ${shown.length} of ${all.length} visit${all.length === 1 ? "" : "s"}` : "";
+  rowsEl.innerHTML = shown.map((c) => {
+    const day = DAY_SHORT[c.day] || c.day || "";
+    const when = [c.date || "No date", day, Number.isFinite(c.week) ? "Week " + c.week : ""].filter(Boolean).join(" · ");
+    return `
+      <div class="visit-row ${isFlagged(c) ? "flagged" : ""}">
+        <div class="v-main">
+          <div class="name">${esc(siteName(c))}</div>
+          <div class="meta">${esc(when)}${SEP}${esc(c.assistant || "No assistant")}${SEP}${esc(c.purpose || "No purpose")}</div>
+          <div class="chips">${statusChip(c.status)}${evidenceChip(c)}</div>
+        </div>
+        <button class="btn-del" type="button" data-del="${esc(c.id)}" aria-label="Delete visit: ${esc(siteName(c))}, ${esc(c.date || "no date")}">Delete</button>
+      </div>`;
+  }).join("") || `<div class="empty">${checkins.length ? "No visits match these filters." : "No visits yet."}</div>`;
+  const remaining = all.length - shown.length;
+  moreBtn.classList.toggle("hidden", remaining <= 0);
+  moreBtn.textContent = `Show more (${remaining} remaining)`;
+}
+
+async function deleteVisit(id) {
+  const c = checkins.find((x) => x.id === id);
+  if (!c) return;
+  const msg = $("#visit-msg");
+  const ok = await confirmModal({
+    title: "Delete this visit?",
+    body: `${siteName(c)}, ${c.date || "no date"}, ${c.assistant || "no assistant"}, ${c.purpose || "no purpose"} (${c.status || "no status"}). This can't be undone. Any photos stay in storage.`,
+    confirmLabel: "Delete visit"
+  });
+  if (!ok) return;
+  msg.className = "save-msg"; msg.textContent = navigator.onLine ? "Deleting…" : "You're offline. The delete will send when you're back online.";
+  try {
+    await deleteDoc(doc(db, "checkins", id));
+    msg.className = "save-msg ok"; msg.textContent = "Visit deleted.";
+  } catch (err) {
+    msg.className = "save-msg err"; msg.textContent = "Couldn't delete: " + (err.code || err.message);
+  }
+}
+
+/* Open the Visits tab with a preset filter (used by Oversight cards). */
+function openVisits(preset) {
+  vf = { ...VF_DEFAULT(), ...preset };
+  setTab("visits");
+  syncVisitControls();
+  const c = $("#visit-count");
+  if (c) c.focus({ preventScroll: true });
+  $("#panel-visits").scrollIntoView({ behavior: smoothScroll(), block: "start" });
+}
+
+/* ============================= TEAM ============================= */
+const ROLE_LABEL = { admin: "Admin", member: "Member", none: "No access" };
+function roleKey(u) { return u.role === "admin" || u.role === "member" ? u.role : "none"; }
+function roleChip(u) {
+  const r = roleKey(u);
+  return chip(r === "admin" ? "ok" : r === "member" ? "mute" : "bad", ROLE_LABEL[r]);
+}
+
+function renderTeam() {
+  const el = $("#panel-team");
+  if (!built.team) {
+    el.innerHTML = `
+      <p class="hint">Everyone who can sign in to the apps. Admins can change roles here. "No access" blocks someone without deleting their sign-in.</p>
+      <div id="team-banner"></div>
+      <div id="team-edit-slot"></div>
+      <div id="team-list"></div>
+      <details class="add-card" id="add-user">
+        <summary>Add by UID</summary>
+        <div class="inner">
+          <p class="hint">The person's Firebase Auth account must already exist (Firebase console, Authentication, Users). Copy their User UID from there.</p>
+          <div class="field"><label for="au-uid">User UID</label><input id="au-uid" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+          <div class="field"><label for="au-email">Email</label><input id="au-email" type="email" autocomplete="off" inputmode="email"></div>
+          <div class="field"><label for="au-name">Name</label><input id="au-name" type="text" autocomplete="off"></div>
+          <div class="field"><label for="au-role">Role</label>
+            <select id="au-role"><option value="member">Member</option><option value="admin">Admin</option></select></div>
+          <button class="btn-save" id="au-save" type="button" style="width:100%;flex:none;">Add team member</button>
+          <div class="save-msg" id="au-msg" role="status"></div>
+        </div>
+      </details>`;
+    $("#au-save").addEventListener("click", addUserByUid);
+    $("#team-list").addEventListener("click", (e) => {
+      const row = e.target.closest("[data-uid]");
+      if (!row) return;
+      editingUid = row.dataset.uid;
+      renderUserSlot(); renderTeamList();
+      $("#team-edit-slot").scrollIntoView({ behavior: smoothScroll(), block: "start" });
+    });
+    built.team = true;
+  }
+  $("#team-banner").innerHTML = errHTML(["users"]);
+  renderTeamList();
+}
+
+function renderTeamList() {
+  const listEl = $("#team-list");
+  if (!listEl) return;
+  if (errs.users) { listEl.innerHTML = ""; return; }
+  if (isLoading(["users"])) { listEl.innerHTML = loadingHTML("team"); return; }
+  const list = [...users].sort((a, b) => (a.email || a.id).localeCompare(b.email || b.id));
+  const me = auth.currentUser && auth.currentUser.uid;
+  listEl.innerHTML = list.map((u) => `
+    <button class="site-row ${u.id === editingUid ? "editing" : ""}" data-uid="${esc(u.id)}" type="button">
+      <div style="flex:1;min-width:0;">
+        <div class="name">${esc(u.name || u.email || u.id)}${u.id === me ? " (you)" : ""}</div>
+        <div class="meta">${esc(u.email || "No email on file")}${SEP}${esc(u.assistant ? "FA: " + u.assistant : "No linked assistant")}</div>
+        <div style="margin-top:6px;">${roleChip(u)}</div>
+      </div>
+      ${icon("chevron-right", 16)}
+    </button>`).join("") || `<div class="empty">No team members yet. Use Add by UID below.</div>`;
+}
+
+function closeUserCard() {
+  editingUid = null;
+  const slot = $("#team-edit-slot");
+  if (slot) slot.innerHTML = "";
+}
+
+function renderUserSlot() {
+  const slot = $("#team-edit-slot");
+  const u = users.find((x) => x.id === editingUid);
+  if (!u) { closeUserCard(); return; }
+  const isSelf = !!auth.currentUser && u.id === auth.currentUser.uid;
+  const assistants = knownAssistants();
+  if (u.assistant && !assistants.includes(u.assistant)) assistants.push(u.assistant);
+  const r = roleKey(u);
+
+  slot.innerHTML = `
+    <div class="edit-card">
+      <h2>${esc(u.name || u.email || u.id)}</h2>
+      <div class="field-note" style="margin:-8px 0 12px;">${esc(u.email || "No email on file")}${SEP}UID ${esc(u.id)}</div>
+      <div class="edit-grid">
+        <div class="field"><label for="u-name">Name</label><input id="u-name" data-field="name" value="${esc(u.name || "")}" autocomplete="off"></div>
+        <div class="field"><label for="u-role">Role</label>
+          <select id="u-role" data-field="role" ${isSelf ? "disabled" : ""}>
+            <option value="admin" ${r === "admin" ? "selected" : ""}>Admin</option>
+            <option value="member" ${r === "member" ? "selected" : ""}>Member</option>
+            <option value="none" ${r === "none" ? "selected" : ""}>No access</option>
+          </select>
+          ${isSelf ? `<div class="field-note">You can't change your own role. Ask another admin.</div>` : ""}
+        </div>
+        <div class="field"><label for="u-assistant">Linked assistant</label>
+          <select id="u-assistant" data-field="assistant">
+            <option value="" ${u.assistant ? "" : "selected"}>None</option>
+            ${assistants.map((fa) => `<option value="${esc(fa)}" ${fa === u.assistant ? "selected" : ""}>${esc(fa)}</option>`).join("")}
+          </select></div>
+      </div>
+      <div class="edit-actions">
+        <button class="btn-save" data-role="save" type="button">Save changes</button>
+        <button class="btn-cancel" data-role="cancel" type="button">Cancel</button>
+      </div>
+      <div class="save-msg" data-role="msg" role="status"></div>
+    </div>`;
+  const card = $(".edit-card", slot);
+  $('[data-role="cancel"]', card).addEventListener("click", () => { closeUserCard(); renderTeamList(); });
+  $('[data-role="save"]', card).addEventListener("click", () => saveUser(u, card, isSelf));
+  $("input", card).focus({ preventScroll: true });
+}
+
+async function saveUser(u, card, isSelf) {
+  const msg = $('[data-role="msg"]', card);
+  const saveBtn = $('[data-role="save"]', card);
+  const val = (f) => $(`[data-field="${f}"]`, card).value.trim();
+  const patch = { name: val("name"), assistant: val("assistant"), updatedAt: serverTimestamp(), updatedBy: who() };
+  if (!isSelf) {
+    const role = val("role");
+    patch.role = role;
+    if (role === "none" && roleKey(u) !== "none") {
+      const ok = await confirmModal({
+        title: "Remove access?",
+        body: `${u.name || u.email || u.id} will no longer be able to read or save anything in the SFO Tracker. You can give access back later by changing their role.`,
+        confirmLabel: "Set to No access"
+      });
+      if (!ok) return;
+    }
+  }
+  saveBtn.disabled = true;
+  msg.className = "save-msg"; msg.textContent = pendingMsg();
+  try {
+    await updateDoc(doc(db, "users", u.id), patch);
+    msg.className = "save-msg ok"; msg.textContent = "Saved.";
+    setTimeout(() => { if (editingUid === u.id) { closeUserCard(); renderTeamList(); } }, 1000);
+  } catch (err) {
+    saveBtn.disabled = false;
+    msg.className = "save-msg err"; msg.textContent = "Couldn't save: " + (err.code || err.message);
+  }
+}
+
+async function addUserByUid() {
+  const msg = $("#au-msg"), btn = $("#au-save");
+  const uid = $("#au-uid").value.trim(), email = $("#au-email").value.trim(), name = $("#au-name").value.trim(), role = $("#au-role").value;
+  const fail = (t) => { msg.className = "save-msg err"; msg.textContent = t; };
+  if (!uid) return fail("Enter the user's UID.");
+  if (/[\/\s]/.test(uid) || uid.length < 6) return fail("That UID doesn't look right. Copy it exactly from the Firebase console.");
+  if (!email || !/^\S+@\S+\.\S+$/.test(email)) return fail("Enter a valid email address.");
+  if (!loaded.users) return fail("The team list is still loading. Try again in a moment.");
+  if (users.some((x) => x.id === uid)) return fail("That UID is already on the team. Select them in the list to edit.");
+  btn.disabled = true;
+  msg.className = "save-msg"; msg.textContent = pendingMsg();
+  try {
+    await setDoc(doc(db, "users", uid), {
+      role, email, name,
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp(), updatedBy: who()
+    });
+    msg.className = "save-msg ok"; msg.textContent = "Added " + email + " as " + ROLE_LABEL[role].toLowerCase() + ".";
+    ["#au-uid", "#au-email", "#au-name"].forEach((s) => { $(s).value = ""; });
+  } catch (err) {
+    fail("Couldn't add: " + (err.code || err.message));
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* ============================= PROGRAM ============================= */
+function renderProgram() {
+  const el = $("#panel-program");
+  if (!built.program) {
+    el.innerHTML = `
+      <p class="hint">Week numbers are counted from the Monday of Week 1. Every phone reads the value set here, so week numbers agree everywhere.</p>
+      <div id="program-banner"></div>
+      <div id="program-info"></div>
+      <div class="edit-card">
+        <h2>Set Week 1 Monday</h2>
+        <div class="field"><label for="p-date">Monday of Week 1</label><input id="p-date" type="date"></div>
+        <div class="edit-actions"><button class="btn-save" id="p-save" type="button">Save</button></div>
+        <div class="save-msg" id="p-msg" role="status"></div>
+      </div>`;
+    $("#p-date").addEventListener("input", () => { programDirty = true; });
+    $("#p-save").addEventListener("click", saveProgram);
+    built.program = true;
+  }
+  $("#program-banner").innerHTML = errHTML(["program", "checkins"]);
+  if (!programDirty) $("#p-date").value = validISO(programDoc && programDoc.week1Monday) ? programDoc.week1Monday : "";
+
+  const info = $("#program-info");
+  if (isLoading(["program", "checkins"])) { info.innerHTML = loadingHTML("program settings"); return; }
+  const inferred = inferWeek1Monday();
+  const set = programDoc && validISO(programDoc.week1Monday) ? programDoc.week1Monday : null;
+  const anchor = week1Anchor(inferred);
+  const wk = currentWeek(anchor);
+  const rangeLine = anchor ? `${addDaysISO(anchor, 7 * (wk - 1))} to ${addDaysISO(anchor, 7 * (wk - 1) + 6)}` : "";
+  info.innerHTML = `
+    <div class="ov-card ${set ? "ok" : ""}">
+      <div class="head"><span class="title">Set by an admin</span><span class="badge">${set ? esc(set) : "Not set"}</span></div>
+      <div class="sub">${set ? "In use on every phone." : "Phones fall back to the date inferred from visits."}${programDoc && programDoc.updatedBy ? SEP + "last changed by " + esc(programDoc.updatedBy) : ""}</div>
+    </div>
+    <div class="ov-card">
+      <div class="head"><span class="title">Inferred from visits</span><span class="badge">${inferred.date ? esc(inferred.date) : "No dated visits"}</span></div>
+      <div class="sub">${inferred.date ? `${inferred.votes} of ${inferred.total} dated visits agree.` : "Needs visits that have a date and a week number."}${set && inferred.date && set !== inferred.date ? SEP + "Differs from the value set above." : ""}</div>
+    </div>
+    <div class="ov-card ok">
+      <div class="head"><span class="title">Current program week</span><span class="badge">Week ${wk}</span></div>
+      <div class="sub">${anchor ? esc(rangeLine) + SEP : ""}Limited to weeks that have visits, like the main app.${anchor ? "" : " No Week-1 Monday is available yet."}</div>
+    </div>`;
+}
+
+async function saveProgram() {
+  const msg = $("#p-msg"), btn = $("#p-save");
+  const v = $("#p-date").value;
+  const fail = (t) => { msg.className = "save-msg err"; msg.textContent = t; };
+  if (!v) return fail("Pick a date.");
+  if (!validISO(v)) return fail("That isn't a valid date.");
+  const dow = new Date(v + "T00:00:00").getDay();
+  if (dow !== 1) return fail(`${v} is a ${DAY_NAMES[dow]}. Week 1 must start on a Monday.`);
+  const current = programDoc && programDoc.week1Monday;
+  if (validISO(current) && current !== v) {
+    const ok = await confirmModal({
+      title: "Change Week 1 Monday?",
+      body: `This moves the program calendar from ${current} to ${v} on every phone. Visits already saved keep their stored week until their date is edited.`,
+      confirmLabel: "Change it"
+    });
+    if (!ok) return;
+  }
+  btn.disabled = true;
+  msg.className = "save-msg"; msg.textContent = pendingMsg();
+  try {
+    await setDoc(doc(db, "meta", "program"), { week1Monday: v, updatedAt: serverTimestamp(), updatedBy: who() }, { merge: true });
+    programDirty = false;
+    msg.className = "save-msg ok"; msg.textContent = "Saved.";
+  } catch (err) {
+    fail("Couldn't save: " + (err.code || err.message));
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* ============================= OVERSIGHT ============================= */
+function dqCard({ title, badge, sub, lines, action, ok }) {
+  return `
+    <div class="ov-card ${ok ? "ok" : ""}">
+      <div class="head"><span class="title">${esc(title)}</span><span class="badge">${esc(badge)}</span></div>
+      ${sub ? `<div class="sub">${esc(sub)}</div>` : ""}
+      ${lines && lines.length ? `<ul>${lines.map((l) => `<li>${esc(l)}</li>`).join("")}</ul>` : ""}
+      ${action ? `<div class="card-actions"><button type="button" class="btn-link" data-ov="${esc(action.key)}">${esc(action.label)}</button></div>` : ""}
+    </div>`;
+}
+
+let ovPresets = {};
+function renderOversight() {
+  const el = $("#panel-oversight");
+  const banner = errHTML(["sites", "checkins", "observations", "program"]);
+  if (isLoading(["sites", "checkins", "observations", "program"]) && !banner) { el.innerHTML = loadingHTML("overview"); return; }
+
+  const real = sites.filter((s) => s.id !== "n-a");
+  const maxWeek = checkins.reduce((m, c) => Math.max(m, c.week || 0), 0);
+  const inferred = inferWeek1Monday();
+  const anchor = week1Anchor(inferred);
+  const wk = currentWeek(anchor);
+  ovPresets = {};
+
+  /* This week */
+  const inWeek = checkins.filter((c) => c.week === wk);
+  const countStatus = (s) => inWeek.filter((c) => c.status === s).length;
+  const sunday = anchor ? addDaysISO(anchor, 7 * (wk - 1) + 6) : null;
+  const issuesRaised = observations.filter((o) => o.type === "issue" && o.week === wk).length;
+  const followUpsDue = sunday
+    ? observations.filter((o) => o.type === "followUp" && (o.status || "Open") !== "Resolved" && validISO(o.dueDate) && o.dueDate <= sunday).length
+    : null;
+  const counters = [
+    { lbl: "Planned", n: inWeek.length, preset: { week: String(wk) } },
+    { lbl: "Completed", n: countStatus("Completed"), preset: { week: String(wk), status: "Completed" } },
+    { lbl: "Pending", n: countStatus("Pending"), preset: { week: String(wk), status: "Pending" } },
+    { lbl: "Rescheduled", n: countStatus("Rescheduled"), preset: { week: String(wk), status: "Rescheduled" } },
+    { lbl: "Skipped", n: countStatus("Skipped"), preset: { week: String(wk), status: "Skipped" } },
+    { lbl: "Issues raised", n: issuesRaised, alert: issuesRaised > 0 },
+    { lbl: "Follow-ups due", n: followUpsDue, alert: !!followUpsDue }
+  ];
+  const counterHTML = counters.map((c, i) => {
+    const inner = `<span class="num">${c.n === null ? "—" : c.n}</span><span class="lbl">${esc(c.lbl)}</span>`;
+    if (c.preset) { ovPresets["c" + i] = c.preset; return `<button type="button" class="counter" data-ov="c${i}" aria-label="${esc(c.lbl)}: ${c.n}. Open in Visits">${inner}</button>`; }
+    return `<div class="counter ${c.alert ? "alert" : ""}" role="group" aria-label="${esc(c.lbl)}: ${c.n === null ? "unknown" : c.n}">${inner}</div>`;
+  }).join("");
+
+  /* Stale sites + open items (unchanged) */
+  const stale = real.map((s) => {
+    const done = checkins.filter((c) => c.siteId === s.id && c.status === "Completed");
+    const lastCompletedWeek = done.reduce((m, c) => Math.max(m, c.week || 0), 0);
+    return { site: s, lastCompletedWeek, gap: lastCompletedWeek ? maxWeek - lastCompletedWeek : null };
+  }).filter((r) => r.gap === null || r.gap >= 2).sort((a, b) => (b.gap ?? 999) - (a.gap ?? 999));
+
+  const openIssues = observations
+    .filter((o) => (o.type === "issue" || o.type === "followUp") && (o.status || "Open") !== "Resolved")
+    .sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+
+  const noPhone = real.filter((s) => !s.nmPhone).length;
+  const noGps = real.filter((s) => typeof s.lat !== "number" || typeof s.lng !== "number").length;
+
+  /* Data quality: day/week disagreeing with date */
+  let mismatchCard;
+  if (!anchor) {
+    mismatchCard = dqCard({ title: "Visits whose day or week disagrees with their date", badge: "—", sub: "Can't check yet: no Week-1 Monday is set or inferable. Set one on the Program tab." });
+  } else {
+    const mism = [];
+    checkins.forEach((c) => {
+      if (!validISO(c.date)) return;
+      const expDay = weekdayName(c.date);
+      const expWeek = weekOfISO(c.date, anchor);
+      const dayBad = expDay && c.day !== expDay;
+      const weekBad = expWeek !== null && expWeek >= 1 && c.week !== expWeek;
+      if (dayBad || weekBad) mism.push({ c, expDay, expWeek, dayBad, weekBad });
+    });
+    ovPresets.mismatch = { ids: new Set(mism.map((m) => m.c.id)), idsLabel: "visits whose day or week disagrees with their date" };
+    mismatchCard = dqCard({
+      title: "Visits whose day or week disagrees with their date", badge: String(mism.length), ok: !mism.length,
+      sub: mism.length ? "Stored day or week doesn't match what the date implies." : "Every dated visit agrees with its date.",
+      lines: mism.slice(0, 5).map((m) => `${siteName(m.c)}, ${m.c.date}: stored ${m.c.day || "no day"}, week ${Number.isFinite(m.c.week) ? m.c.week : "none"}; date implies ${m.expDay || "weekend"}, week ${m.expWeek}`)
+        .concat(mism.length > 5 ? [`and ${mism.length - 5} more`] : []),
+      action: mism.length ? { key: "mismatch", label: `Review ${mism.length} in Visits` } : null
+    });
+  }
+
+  /* Data quality: possible duplicates */
+  const groups = {};
+  checkins.forEach((c) => {
+    if (!validISO(c.date)) return;
+    const key = [c.siteId, c.date, (c.assistant || "").trim().toLowerCase(), (c.purpose || "").trim().toLowerCase()].join("|");
+    (groups[key] = groups[key] || []).push(c);
+  });
+  const dupGroups = Object.values(groups).filter((g) => g.length > 1);
+  const dupVisits = dupGroups.flat();
+  ovPresets.dups = { ids: new Set(dupVisits.map((c) => c.id)), idsLabel: "possible duplicate visits" };
+  const dupCard = dqCard({
+    title: "Possible duplicate visits", badge: String(dupGroups.length), ok: !dupGroups.length,
+    sub: dupGroups.length ? `${dupVisits.length} visits share the same site, date, assistant and purpose. Visits without a date aren't compared.` : "No duplicates found.",
+    lines: dupGroups.slice(0, 6).map((g) => `${siteName(g[0])}, ${g[0].date}, ${g[0].assistant || "no assistant"}, ${g[0].purpose || "no purpose"} (${g.length} copies)`)
+      .concat(dupGroups.length > 6 ? [`and ${dupGroups.length - 6} more`] : []),
+    action: dupGroups.length ? { key: "dups", label: `Review ${dupVisits.length} in Visits` } : null
+  });
+
+  /* Data quality: completed without start evidence */
+  const noEvidence = checkins.filter((c) => c.status === "Completed" && !startOf(c));
+  ovPresets.noev = { attention: true };
+  const noEvCard = dqCard({
+    title: "Completed visits with no start evidence", badge: String(noEvidence.length), ok: !noEvidence.length,
+    sub: noEvidence.length ? "Completed without a recorded start location." : "Every completed visit has start evidence.",
+    action: noEvidence.length ? { key: "noev", label: "Review in Visits (needs attention)" } : null
+  });
+
+  el.innerHTML = `
+    ${banner}
+    <p class="hint">What's slipping across all sites, not limited to one week like the main app's Analytics tab.</p>
+    <div class="sec-title">This week${anchor ? ": Week " + wk + " (" + esc(addDaysISO(anchor, 7 * (wk - 1))) + " to " + esc(sunday) + ")" : ""}</div>
+    ${checkins.length ? `<div class="counters">${counterHTML}</div>${anchor ? "" : `<p class="hint">Follow-ups due needs a Week-1 Monday. Set one on the Program tab.</p>`}` : `<div class="empty">No visits yet.</div>`}
+
+    <div class="sec-title">Data quality</div>
+    ${noEvCard}
+    ${dupCard}
+    ${mismatchCard}
+    ${dqCard({ title: "Sites missing a manager phone number", badge: String(noPhone), ok: !noPhone })}
+    ${dqCard({ title: "Sites missing GPS coordinates", badge: String(noGps), ok: !noGps })}
+
+    <div class="sec-title">Stale sites: no completed visit in 2+ weeks</div>
+    ${stale.length ? stale.slice(0, 15).map((r) => `
+      <div class="ov-card">
+        <div class="head"><span class="title">${esc(r.site.name)}</span><span class="badge">${r.lastCompletedWeek ? r.gap + " weeks since last visit" : "Never completed"}</span></div>
+        <div class="sub">${esc(r.site.assistant)}${SEP}${esc(r.site.epa)}</div>
+      </div>`).join("") + (stale.length > 15 ? `<p class="hint">Showing 15 of ${stale.length}.</p>` : "")
+      : `<div class="empty">No stale sites.</div>`}
+
+    <div class="sec-title">Oldest open issues and follow-ups</div>
+    ${openIssues.length ? openIssues.slice(0, 15).map((o) => {
+      const site = sites.find((s) => s.id === o.siteId);
+      const days = o.createdAt?.seconds ? Math.floor((Date.now() / 1000 - o.createdAt.seconds) / 86400) : null;
+      return `
+        <div class="ov-card">
+          <div class="head"><span class="title">${esc(site ? site.name : o.siteId)}</span><span class="badge">${days != null ? days + " days open" : ""}</span></div>
+          <div class="sub">${esc(o.type === "issue" ? "Issue" : "Follow-up")}${SEP}${esc(o.text)}</div>
+        </div>`;
+    }).join("") + (openIssues.length > 15 ? `<p class="hint">Showing 15 of ${openIssues.length}.</p>` : "")
+      : `<div class="empty">No open issues or follow-ups.</div>`}
+  `;
+}
+$("#panel-oversight").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-ov]");
+  if (b && ovPresets[b.dataset.ov]) openVisits(ovPresets[b.dataset.ov]);
+});
+</script>
+</body>
+</html>

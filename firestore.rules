@@ -1,22 +1,33 @@
 rules_version = '2';
 
 /*
-  SFO Field Tracker: Firestore security rules (role-based).
+  SFO Field Tracker: Firestore security rules (role-based, with audit checks).
 
   HOW ROLES WORK
   Each person has a document at  users/<their Firebase Auth UID>  with a
   string field  role:
     "admin"   everything a member can do, plus: change sites, meta and
-              users, and delete check-ins.
-    "member"  read everything; create and edit check-ins, notes (observations)
+              users, and delete visits, notes and weekly check-ins.
+    "member"  read everything; create and edit visits, notes (observations)
               and weekly check-ins.
   Anyone who is signed in but has no users/<uid> document (or a role that is
-  not one of the two above) gets NO access. The app shows
-  "No access, ask an admin to add your account".
+  not one of the two above) gets NO access. The app shows "No access yet".
 
-  The seed script uses the Firebase Admin SDK, which bypasses these rules, so
-  it keeps working no matter what is in here.
+  WHAT THE RULES CHECK ON TOP OF THE ROLE
+  - Audit: every member write to a visit, note or weekly check-in must carry
+    updatedBy equal to the signer's own email, creates must carry createdBy
+    equal to it too, and createdBy / createdAt can never change afterwards.
+  - Shape: visit status is one of the four known values, dates are YYYY-MM-DD,
+    GPS evidence uses the documented result words, photos only ever grow
+    (admins excepted) and are capped at 20 per visit.
+  - Evidence: once a visit has a start check-in, a member cannot overwrite it.
+  - Deletion: admins only.
 
+  The seed and cleanup scripts use the Firebase Admin SDK, which bypasses these
+  rules, so they keep working no matter what is in here.
+
+  DEPLOY ORDER: publish the new index.html first, then these rules. An older
+  copy of the app does not send updatedBy and would be refused.
   FIRST-TIME SETUP: create your own users/<your UID> document with
   role = "admin" BEFORE you publish these rules, or you will lock yourself out.
   See "Access control" in README.md.
@@ -39,6 +50,54 @@ service cloud.firestore {
     }
     function isAdmin()  { return hasRole(['admin']); }
     function isMember() { return hasRole(['member', 'admin']); }
+    function me()       { return request.auth.token.email; }
+
+    // Audit fields: who is writing, and that the creation record is never rewritten.
+    function auditOnCreate() {
+      return request.resource.data.get('createdBy', null) == me()
+        && request.resource.data.get('updatedBy', null) == me();
+    }
+    function auditOnUpdate() {
+      return request.resource.data.get('updatedBy', null) == me()
+        && request.resource.data.get('createdBy', null) == resource.data.get('createdBy', null)
+        && request.resource.data.get('createdAt', null) == resource.data.get('createdAt', null);
+    }
+
+    // A date is empty/absent (an unscheduled placeholder) or a real-looking YYYY-MM-DD.
+    function okDate(v) {
+      return v == null || v == '' || (v is string && v.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'));
+    }
+    function okFix(f) {
+      return f is map
+        && f.get('result', '') in ['verified', 'far', 'no-site-gps', 'no-fix', 'denied', 'unsupported']
+        && (f.get('lat', null) == null || f.lat is number)
+        && (f.get('lng', null) == null || f.lng is number)
+        && (f.get('accuracyM', null) == null || f.accuracyM is number)
+        && (f.get('distanceM', null) == null || f.distanceM is number)
+        && f.get('capturedAtMs', 0) is number;
+    }
+    function okEvidence(d) {
+      let ev = d.get('evidence', {});
+      return ev is map
+        && (!('start' in ev) || okFix(ev.start))
+        && (!('end' in ev) || okFix(ev.end));
+    }
+    function okVisit(d) {
+      return d.get('status', 'Pending') in ['Pending', 'Completed', 'Rescheduled', 'Skipped']
+        && d.get('siteId', '') is string && d.get('siteId', '') != ''
+        && okDate(d.get('date', null))
+        && d.get('photos', []) is list && d.get('photos', []).size() <= 20
+        && okEvidence(d);
+    }
+    // A start check-in, once recorded, stays: no second check-in, no overwriting.
+    function startKept() {
+      return !('evidence' in resource.data)
+        || !('start' in resource.data.evidence)
+        || request.resource.data.get('evidence', {}).get('start', null) == resource.data.evidence.start;
+    }
+    function photosOnlyGrow() {
+      return request.resource.data.get('photos', []).size() >= resource.data.get('photos', []).size();
+    }
 
     // ---- users: who has which role ------------------------------------
     // People can read their own role document; only admins can read others
@@ -54,10 +113,17 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // ---- schedule ------------------------------------------------------
-    match /checkins/{checkinId} {
+    // ---- visits (the schedule) -----------------------------------------
+    match /checkins/{visitId} {
       allow read: if isMember();
-      allow create, update: if isMember();
+      allow create: if isMember()
+        && auditOnCreate()
+        && okVisit(request.resource.data)
+        && request.resource.data.get('status', 'Pending') == 'Pending';
+      allow update: if isMember()
+        && auditOnUpdate()
+        && okVisit(request.resource.data)
+        && (isAdmin() || (startKept() && photosOnlyGrow()));
       allow delete: if isAdmin();
     }
 
@@ -67,23 +133,32 @@ service cloud.firestore {
       // The author field must be the signed-in person's own email, so a note
       // cannot be posted under someone else's name.
       allow create: if isMember()
-        && request.resource.data.author == request.auth.token.email;
+        && request.resource.data.author == me()
+        && auditOnCreate()
+        && request.resource.data.type in ['observation', 'issue', 'action', 'followUp'];
       // Any member can update a note (for example to mark an issue resolved),
       // but nobody can change who wrote it. get(..., null) keeps older notes
       // that have no author field updatable.
       allow update: if isMember()
-        && request.resource.data.get('author', null) == resource.data.get('author', null);
+        && request.resource.data.get('author', null) == resource.data.get('author', null)
+        && request.resource.data.get('updatedBy', null) == me()
+        && request.resource.data.get('createdBy', null) == resource.data.get('createdBy', null);
       allow delete: if isAdmin();
     }
 
     // ---- weekly check-in (one document per week) -----------------------
     match /weeklyCheckins/{weekId} {
       allow read: if isMember();
-      allow create, update: if isMember();
+      allow create: if isMember()
+        && request.resource.data.get('updatedBy', null) == me()
+        && request.resource.data.get('createdBy', null) == me();
+      allow update: if isMember()
+        && request.resource.data.get('updatedBy', null) == me()
+        && request.resource.data.get('createdBy', null) == resource.data.get('createdBy', null);
       allow delete: if isAdmin();
     }
 
-    // ---- setup marker written by the seed script -----------------------
+    // ---- setup marker + program settings (week 1 Monday) ---------------
     match /meta/{docId} {
       allow read: if isMember();
       allow write: if isAdmin();
