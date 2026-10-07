@@ -50,7 +50,7 @@ comparing `date + siteId + assistant + purpose` across all visits.
 | startedAt, startedBy | server, email | set when "Start visit" is tapped. A visit counts as started once `startedBy` or `evidence.start` exists (`startedAt` reads as empty offline until the server confirms). The start check-in cannot be overwritten by a member. |
 | completedAt, completedBy | server, email | set when marked Completed; cleared if reopened |
 | evidence | map | see below |
-| photos | array of map | `{ path, url, takenAtMs, takenBy }`; at most 20, only ever grows for members |
+| photos | array of map | `{ path (Cloudinary public ID), url, takenAtMs, takenBy }`; at most 20, only ever grows for members |
 | createdAt, createdBy | server, email | set once |
 | updatedAt, updatedBy | server, email | every write |
 
@@ -98,11 +98,13 @@ inferring it from dated visits.
 | assistant | string | optional: the FA this person is |
 | createdAt, updatedAt, updatedBy | | |
 
-## Storage: visits/{visitId}/{photoId}.jpg
-JPEG photos, resized on the phone to at most 1280 px on the long side (`storage.rules`).
-Members can add and read; only admins can delete.
+## Photos (Cloudinary)
+JPEG photos, resized on the phone to at most 1280 px on the long side, uploaded with an
+unsigned Cloudinary preset (`PHOTO_HOST` in `index.html`). In `checkins.photos`, `url` is
+the Cloudinary `secure_url` and `path` is its public ID (`sfo-visits/<visitId>_<photoId>`).
+Deleting a visit does not delete its photos from Cloudinary; remove them in its Media Library.
 
 On the phone a photo first goes into an IndexedDB outbox (`sfo-outbox`), then uploads
 and attaches itself to the visit when there is a connection. The photo ID never
-changes, so a retry rewrites the same file and a photo that already uploaded is not
+changes, so a retry uses the same public ID and a photo that already uploaded is not
 uploaded twice.

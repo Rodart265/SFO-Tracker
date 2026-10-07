@@ -1,7 +1,7 @@
 /* Bump CACHE_NAME on every deploy. It is what tells an installed phone that there is
    a new version: the activate handler deletes every cache with a different name, and
    the page shows "A new version is ready" when the new worker takes over. */
-const CACHE_NAME = "sfo-field-tracker-v10";
+const CACHE_NAME = "sfo-field-tracker-v12";
 
 /* Must all download, or the worker doesn't install (the old version keeps running). */
 const APP_SHELL = [
@@ -12,7 +12,7 @@ const APP_SHELL = [
    without them, so they are fetched at install too; if one fails here it is still
    cached the first time the page loads it. Keep the version in step with index.html. */
 const FIREBASE = "https://www.gstatic.com/firebasejs/10.12.2/";
-const SDK_FILES = ["firebase-app.js", "firebase-auth.js", "firebase-firestore.js", "firebase-storage.js"].map((f) => FIREBASE + f);
+const SDK_FILES = ["firebase-app.js", "firebase-auth.js", "firebase-firestore.js"].map((f) => FIREBASE + f);
 const CACHEABLE_CROSS_ORIGIN = ["https://fonts.googleapis.com", "https://fonts.gstatic.com", "https://www.gstatic.com"];
 
 self.addEventListener("install", (event) => {
@@ -42,7 +42,7 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   const sameOrigin = url.origin === self.location.origin;
-  if (!sameOrigin && !CACHEABLE_CROSS_ORIGIN.includes(url.origin)) return; // Firebase Auth / Firestore / Storage calls go straight to the network
+  if (!sameOrigin && !CACHEABLE_CROSS_ORIGIN.includes(url.origin)) return; // Firebase Auth / Firestore and Cloudinary photo calls go straight to the network
   if (sameOrigin && url.pathname.endsWith("/admin.html")) return;           // the admin page needs a live connection anyway; never serve it stale
 
   event.respondWith((async () => {
