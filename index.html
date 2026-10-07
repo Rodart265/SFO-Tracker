@@ -2835,7 +2835,7 @@ function renderAnalytics() {
   el.innerHTML = `
     ${errorBanner()}
     <div class="week-head">
-      <div class="wk-title headline">This week · Week ${wk}</div>
+      <div class="wk-title headline">${wk === currentWeek() ? "This week · Week " + wk : "Week " + wk}</div>
       <div class="week-step">
         <button type="button" data-role="wk-prev" aria-label="Previous week" ${wkIdx <= 0 ? "disabled" : ""}>${icon("chevron-left", 18)}</button>
         <button type="button" data-role="wk-next" aria-label="Next week" ${wkIdx < 0 || wkIdx >= weeks.length - 1 ? "disabled" : ""}>${icon("chevron-right", 18)}</button>
@@ -2843,7 +2843,7 @@ function renderAnalytics() {
     </div>
     ${renderCounters(wk)}
     <button class="report-btn" data-role="open-report">${icon("file-text", 17)} Open weekly check-in</button>
-    <div class="sec-title">All weeks</div>
+    <div class="sec-title">Overall</div>
     <div class="stat-grid">
       <div class="stat-tile"><div class="num">${total}</div><div class="label">Total visits</div></div>
       <div class="stat-tile"><div class="num">${pct}%</div><div class="label">Completed · ${completed} of ${total}</div></div>
@@ -2909,7 +2909,7 @@ function renderAnalytics() {
     </div>
   `;
 
-  el.querySelector('[data-role="open-report"]').addEventListener("click", () => openReport());
+  el.querySelector('[data-role="open-report"]').addEventListener("click", () => openReport(wk));
   el.querySelector('[data-role="wk-prev"]').addEventListener("click", () => { if (wkIdx > 0) { dashWeek = weeks[wkIdx - 1]; renderAnalytics(); } });
   el.querySelector('[data-role="wk-next"]').addEventListener("click", () => { if (wkIdx >= 0 && wkIdx < weeks.length - 1) { dashWeek = weeks[wkIdx + 1]; renderAnalytics(); } });
   el.querySelectorAll(".risk-row").forEach((r) => r.addEventListener("click", () => openSiteProfile(r.dataset.site)));
@@ -3106,9 +3106,10 @@ function buildReportText(d) {
   return lines.join("\n");
 }
 
-function openReport() {
+function openReport(preferWeek) {
   const weeks = allReportWeeks();
-  reportWeek = weeks.includes(selectedWeek) ? selectedWeek : (weeks[weeks.length - 1] ?? 1);
+  const want = preferWeek !== undefined && preferWeek !== null ? preferWeek : selectedWeek;
+  reportWeek = weeks.includes(want) ? want : (weeks[weeks.length - 1] ?? 1);
   addItemDraft = null;
   document.getElementById("report-screen").classList.remove("hidden");
   updateFab();
