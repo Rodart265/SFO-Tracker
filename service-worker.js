@@ -1,7 +1,7 @@
 /* Bump CACHE_NAME on every deploy. It is what tells an installed phone that there is
    a new version: the activate handler deletes every cache with a different name, and
    the page shows "A new version is ready" when the new worker takes over. */
-const CACHE_NAME = "sfo-field-tracker-v11";
+const CACHE_NAME = "sfo-field-tracker-v12";
 
 /* Must all download, or the worker doesn't install (the old version keeps running). */
 const APP_SHELL = [
