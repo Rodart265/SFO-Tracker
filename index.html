@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SFO Field Tracker</title>
 <meta name="theme-color" content="#1C211E">
+<meta name="description" content="Field visit planner and site tracker for the Trees Program">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Field Tracker">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -490,25 +494,104 @@ mark{background:var(--flag-soft);color:var(--ink);border-radius:3px;padding:0 2p
 .attn-title{font-size:18px;}
 .epa-row .name{font-size:16px;flex-basis:96px;}
 .today-stat .lbl,.sp-stat .lbl,.rep-stat .lbl{font-size:13px;color:var(--ink-soft);}
+
+/* ============ V1.0 additions ============ */
+button{min-height:44px;}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+.btn-link{color:var(--leaf);font-size:14px;font-weight:700;text-decoration:underline;text-underline-offset:3px;padding:0 4px;align-self:flex-start;}
+#auth-info{color:var(--status-completed-fg);font-size:13px;min-height:0;}
+#auth-info:empty{display:none;}
+#gate-screen{flex:1;display:flex;flex-direction:column;justify-content:center;padding:40px 26px;}
+.gate-card h1{font-size:28px;line-height:1.1;margin:0 0 10px;}
+.gate-card p{margin:0 0 18px;color:var(--ink-soft);font-size:15px;line-height:1.55;overflow-wrap:anywhere;}
+.gate-actions{display:flex;gap:10px;flex-wrap:wrap;}
+.gate-actions .btn-primary{flex:1;}
+.btn-outline{border:1px solid var(--ink-faint);border-radius:var(--radius-sm);padding:12px 16px;font-size:15px;font-weight:650;color:var(--ink);background:#fff;}
+.type-chip,.ps-score-row button,.promo-seg button,.ps-yn button,.rep-actions button,.rep-week-btn,.add-item-btn,.add-item-actions .cancel{min-height:44px;}
+
+/* Sync pill: Offline / Syncing / Synced */
+#sync-pill{display:inline-flex;padding:4px 10px 4px 8px;border-radius:99px;background:rgba(255,255,255,.1);color:#fff;}
+#sync-pill.offline{background:var(--flag);color:var(--ink);}
+#sync-pill.offline .dot{background:var(--ink);}
+#sync-pill.syncing .dot{background:var(--flag-soft);animation:pulse 1.1s ease-in-out infinite;}
+@keyframes pulse{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){#sync-pill.syncing .dot{animation:none}}
+
+/* Loading / error / empty */
+.loading{padding:36px 20px;text-align:center;color:var(--ink-soft);font-size:14px;font-weight:600;}
+.err-banner{background:var(--status-skipped-bg);color:var(--status-skipped-fg);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:12px;font-size:14px;font-weight:600;line-height:1.45;}
+.err-banner .btn-link{color:var(--status-skipped-fg);}
+.empty-state b{display:block;color:var(--ink);font-size:16px;margin-bottom:4px;}
+
+/* Visit evidence + start */
+.start-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;margin-top:13px;background:var(--leaf);color:#fff;border-radius:var(--radius-sm);font-size:16px;font-weight:750;}
+.start-btn:disabled{opacity:.7;}
+.start-btn:active{background:var(--ink);}
+.ev-line{display:flex;align-items:flex-start;gap:8px;margin-top:10px;padding:9px 11px;border-radius:var(--radius-sm);font-size:13px;line-height:1.4;font-weight:600;background:var(--paper);color:var(--ink-soft);}
+.ev-line .ic{margin-top:2px;}
+.ev-line.ok{background:var(--status-completed-bg);color:var(--status-completed-fg);}
+.ev-line.bad{background:var(--status-skipped-bg);color:var(--status-skipped-fg);}
+.ev-line.warn{background:var(--status-pending-bg);color:var(--status-pending-fg);}
+.ev-line small{display:block;font-weight:500;opacity:.9;}
+.progress-tag{font-size:13px;font-weight:700;color:var(--epa-chilaza-fg);background:var(--epa-chilaza-bg);padding:3px 8px;border-radius:99px;}
+.photo-strip{display:flex;gap:8px;overflow-x:auto;margin-top:12px;padding-bottom:2px;-webkit-overflow-scrolling:touch;}
+.photo-strip::-webkit-scrollbar{display:none;}
+.photo-thumb{position:relative;flex:0 0 auto;width:76px;height:76px;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--line);background:var(--paper);display:block;}
+.photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.photo-thumb .wait{position:absolute;left:0;right:0;bottom:0;background:rgba(28,33,30,.82);color:#fff;font-size:11px;font-weight:700;text-align:center;padding:2px 0;}
+.card-actions button:nth-child(2){border-left:1px solid var(--line);}
+.card-actions button:nth-child(3){border-left:1px solid var(--line);}
+.card-actions button:first-child{border-right:none;}
+
+/* This-week counters */
+.week-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 10px;}
+.week-head .wk-title{font-size:22px;}
+.week-step{display:flex;gap:6px;}
+.week-step button{width:48px;border:1px solid var(--line);background:#fff;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;color:var(--ink);}
+.week-step button:disabled{opacity:.35;}
+.counters{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px;margin-bottom:10px;}
+.counter{background:#fff;border:1px solid var(--line);border-radius:var(--radius-md);padding:10px 12px;min-height:68px;}
+.counter .num{font-size:30px;line-height:1;color:var(--ink);font-family:"Archivo",sans-serif;font-stretch:72%;font-weight:800;}
+.counter .lbl{font-size:13px;color:var(--ink-soft);font-weight:650;margin-top:4px;line-height:1.2;}
+.counter.alert .num{color:var(--obs-issue);}
+.counter.good .num{color:var(--status-completed-fg);}
+
+/* Team */
+.seg-top{display:flex;gap:4px;background:#fff;border:1px solid var(--line);padding:4px;border-radius:var(--radius-sm);margin-bottom:12px;}
+.seg-top button{flex:1;border-radius:3px;font-size:14px;font-weight:700;color:var(--ink-soft);}
+.seg-top button.active{background:var(--ink);color:#fff;}
+.site-row .chip,.chip{display:inline-block;font-size:12px;font-weight:700;border-radius:99px;padding:2px 8px;margin-left:6px;vertical-align:middle;}
+.chip-warn{background:var(--status-pending-bg);color:var(--status-pending-fg);}
+.chip-bad{background:var(--status-skipped-bg);color:var(--status-skipped-fg);}
+.site-row.closed{opacity:.7;}
+.data-flag{color:var(--status-pending-fg);font-size:13px;font-weight:700;}
+.sp-card .field-hint{font-size:13px;margin-left:0;}
+.coords{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:var(--ink-soft);margin-top:4px;overflow-wrap:anywhere;}
 </style>
 </head>
 <body>
 <div id="app">
 
-  <div id="auth-screen" class="hidden">
+  <form id="auth-screen" class="hidden" novalidate>
     <div class="mark"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FF5A1F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
     <h1 class="headline">SFO Field Tracker</h1>
     <p class="sub">Sign in with the account set up in Firebase for this tracker.</p>
-    <div class="field"><label for="auth-email">Email</label><input id="auth-email" type="email" autocomplete="username"></div>
+    <div class="field"><label for="auth-email">Email</label><input id="auth-email" type="email" autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false"></div>
     <div class="field"><label for="auth-password">Password</label><div style="position:relative;"><input id="auth-password" type="password" autocomplete="current-password" style="width:100%;padding-right:64px;"><button type="button" class="pw-toggle" id="pw-toggle" aria-controls="auth-password" aria-pressed="false">Show</button></div></div>
-    <div id="auth-error"></div>
-    <button class="btn-primary" id="sign-in-btn">Sign in</button>
+    <div id="auth-error" role="alert"></div>
+    <div id="auth-info" role="status"></div>
+    <button class="btn-primary" id="sign-in-btn" type="submit">Sign in</button>
+    <button class="btn-link" id="forgot-btn" type="button">Forgot password?</button>
+  </form>
+
+  <div id="gate-screen" class="hidden">
+    <div class="gate-card" id="gate-card" role="status" aria-live="polite"></div>
   </div>
 
   <div id="main-screen" class="hidden">
     <div id="top-bar">
       <div class="row1">
-        <h1 class="headline" id="top-title">Schedule</h1>
+        <h1 class="headline" id="top-title">Today</h1>
         <div class="actions">
           <button class="icon-btn" id="install-btn" title="Install app" aria-label="Install app" style="display:none;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3" /> <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /> <path d="m7 10 5 5 5-5" /></svg></button>
           <button class="icon-btn" id="sign-out-btn" title="Sign out" aria-label="Sign out"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 17 5-5-5-5" /> <path d="M21 12H9" /> <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /></svg></button>
@@ -517,10 +600,12 @@ mark{background:var(--flag-soft);color:var(--ink);border-radius:3px;padding:0 2p
       <div id="sync-pill" aria-live="polite"><span class="dot"></span><span id="sync-text">Loading…</span></div>
     </div>
 
+    <main id="main-content">
     <div id="screen-today" class="screen"></div>
     <div id="screen-schedule" class="screen hidden"></div>
     <div id="screen-analytics" class="screen hidden"></div>
     <div id="screen-sites" class="screen hidden"></div>
+    </main>
 
     <button id="fab" title="Add site visit" aria-label="Add site visit"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14" /> <path d="M12 5v14" /></svg><span>Add visit</span></button>
   </div>
@@ -529,19 +614,21 @@ mark{background:var(--flag-soft);color:var(--ink);border-radius:3px;padding:0 2p
   <div id="add-checkin-screen" class="hidden"></div>
   <div id="report-screen" class="hidden"></div>
 
-  <div id="bottom-nav" class="hidden">
+  <nav id="bottom-nav" class="hidden" aria-label="Main">
     <div id="bottom-nav-inner">
-      <button class="nav-btn active" data-tab="today"><span>Today</span></button>
-      <button class="nav-btn" data-tab="schedule"><span>Schedule</span></button>
-      <button class="nav-btn" data-tab="analytics"><span>Analytics</span></button>
-      <button class="nav-btn" data-tab="sites"><span>Sites &amp; Team</span></button>
+      <button class="nav-btn active" data-tab="today" aria-current="page"><span>Today</span></button>
+      <button class="nav-btn" data-tab="schedule" aria-current="false"><span>Schedule</span></button>
+      <button class="nav-btn" data-tab="analytics" aria-current="false"><span>Dashboard</span></button>
+      <button class="nav-btn" data-tab="sites" aria-current="false"><span>Sites &amp; Team</span></button>
     </div>
-  </div>
+  </nav>
+
+  <input type="file" id="photo-input" accept="image/*" capture="environment" hidden aria-hidden="true" tabindex="-1">
 
   <div class="toast" id="toast" role="status" aria-live="polite"><span id="toast-text"></span><button type="button" id="toast-action" hidden></button></div>
 
   <div class="dialog-backdrop" id="dialog-backdrop">
-    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title" aria-describedby="dialog-msg">
       <div class="dialog-title" id="dialog-title"></div>
       <p class="dialog-msg" id="dialog-msg"></p>
       <label class="dialog-field" id="dialog-field"><span id="dialog-label"></span><input id="dialog-input"></label>
@@ -553,7 +640,7 @@ mark{background:var(--flag-soft);color:var(--ink);border-radius:3px;padding:0 2p
   </div>
 
   <div class="sheet-backdrop" id="sheet-backdrop">
-    <div class="sheet" id="sheet">
+    <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
       <div class="sheet-handle"></div>
       <div class="sheet-title" id="sheet-title"></div>
       <div class="sheet-list" id="sheet-list"></div>
@@ -563,11 +650,13 @@ mark{background:var(--flag-soft);color:var(--ink);border-radius:3px;padding:0 2p
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getFirestore, collection, doc, getDoc, addDoc, updateDoc, setDoc, deleteDoc, onSnapshot,
-  query, orderBy, serverTimestamp, enableIndexedDbPersistence
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+  collection, doc, getDoc, addDoc, updateDoc, setDoc, deleteDoc, onSnapshot,
+  query, orderBy, serverTimestamp, arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 /* 1) FIREBASE CONFIG */
 const firebaseConfig = {
@@ -580,8 +669,21 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
-try { await enableIndexedDbPersistence(db); } catch (err) { console.warn("Offline persistence unavailable:", err.code); }
+/* Offline cache. The multi-tab manager lets the installed app and a browser tab
+   share one cache; the old single-tab call failed when a second tab was open and
+   silently fell back to memory, which loses queued changes on reload. Long-polling
+   auto-detect keeps Firestore working behind the flaky proxies common on mobile data. */
+let db;
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+    experimentalAutoDetectLongPolling: true,
+  });
+} catch (err) {
+  console.warn("Offline persistence unavailable:", err.code || err);
+  db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
+}
+const storage = getStorage(app);
 
 /* 2) ICONS */
 const ICONS = {"check": "<path d=\"M20 6 9 17l-5-5\" />", "x": "<path d=\"M18 6 6 18\" /> <path d=\"m6 6 12 12\" />", "chevron-right": "<path d=\"m9 18 6-6-6-6\" />", "chevron-down": "<path d=\"m6 9 6 6 6-6\" />", "chevron-left": "<path d=\"m15 18-6-6 6-6\" />", "phone": "<path d=\"M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384\" />", "map-pin": "<path d=\"M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0\" /> <circle cx=\"12\" cy=\"10\" r=\"3\" />", "users": "<path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\" /> <path d=\"M16 3.128a4 4 0 0 1 0 7.744\" /> <path d=\"M22 21v-2a4 4 0 0 0-3-3.87\" /> <circle cx=\"9\" cy=\"7\" r=\"4\" />", "layout-grid": "<rect width=\"7\" height=\"7\" x=\"3\" y=\"3\" rx=\"1\" /> <rect width=\"7\" height=\"7\" x=\"14\" y=\"3\" rx=\"1\" /> <rect width=\"7\" height=\"7\" x=\"14\" y=\"14\" rx=\"1\" /> <rect width=\"7\" height=\"7\" x=\"3\" y=\"14\" rx=\"1\" />", "bar-chart-3": "<path d=\"M3 3v16a2 2 0 0 0 2 2h16\" /> <path d=\"M18 17V9\" /> <path d=\"M13 17V5\" /> <path d=\"M8 17v-3\" />", "calendar": "<path d=\"M8 2v3\" /> <path d=\"M16 2v3\" /> <rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\" /> <path d=\"M3 9h18\" />", "calendar-check": "<path d=\"M8 2v3\" /> <path d=\"M16 2v3\" /> <rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\" /> <path d=\"M3 9h18\" /> <path d=\"m9 15 2 2 4-4\" />", "plus": "<path d=\"M5 12h14\" /> <path d=\"M12 5v14\" />", "pencil": "<path d=\"M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z\" /> <path d=\"m15 5 4 4\" />", "trash-2": "<path d=\"M10 11v6\" /> <path d=\"M14 11v6\" /> <path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6\" /> <path d=\"M3 6h18\" /> <path d=\"M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\" />", "cloud": "<path d=\"M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z\" />", "cloud-off": "<path d=\"M10.94 5.274A7 7 0 0 1 15.71 10h1.79a4.5 4.5 0 0 1 4.222 6.057\" /> <path d=\"M18.796 18.81A4.5 4.5 0 0 1 17.5 19H9A7 7 0 0 1 5.79 5.78\" /> <path d=\"m2 2 20 20\" />", "wifi-off": "<path d=\"M12 20h.01\" /> <path d=\"M8.5 16.429a5 5 0 0 1 7 0\" /> <path d=\"M5 12.859a10 10 0 0 1 5.17-2.69\" /> <path d=\"M19 12.859a10 10 0 0 0-2.007-1.523\" /> <path d=\"M2 8.82a15 15 0 0 1 4.177-2.643\" /> <path d=\"M22 8.82a15 15 0 0 0-11.288-3.764\" /> <path d=\"m2 2 20 20\" />", "clock": "<circle cx=\"12\" cy=\"12\" r=\"10\" /> <path d=\"M12 6v6l4 2\" />", "circle-check": "<circle cx=\"12\" cy=\"12\" r=\"10\" /> <path d=\"m16 9-5.5 5.5L8 12\" />", "circle-alert": "<circle cx=\"12\" cy=\"12\" r=\"10\" /> <line x1=\"12\" x2=\"12\" y1=\"8\" y2=\"12\" /> <line x1=\"12\" x2=\"12.01\" y1=\"16\" y2=\"16\" />", "list-checks": "<path d=\"M13 5h8\" /> <path d=\"M13 12h8\" /> <path d=\"M13 19h8\" /> <path d=\"m3 17 2 2 4-4\" /> <path d=\"m3 7 2 2 4-4\" />", "sprout": "<path d=\"M14 9.536V7a4 4 0 0 1 4-4h1.5a.5.5 0 0 1 .5.5V5a4 4 0 0 1-4 4 4 4 0 0 0-4 4c0 2 1 3 1 5a5 5 0 0 1-1 3\" /> <path d=\"M4 9a5 5 0 0 1 8 4 5 5 0 0 1-8-4\" /> <path d=\"M5 21h14\" />", "building-2": "<path d=\"M10 12h4\" /> <path d=\"M10 8h4\" /> <path d=\"M14 21v-3a2 2 0 0 0-4 0v3\" /> <path d=\"M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2\" /> <path d=\"M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16\" />", "search": "<path d=\"m21 21-4.34-4.34\" /> <circle cx=\"11\" cy=\"11\" r=\"8\" />", "sliders-horizontal": "<path d=\"M10 5H3\" /> <path d=\"M12 19H3\" /> <path d=\"M14 3v4\" /> <path d=\"M16 17v4\" /> <path d=\"M21 12h-9\" /> <path d=\"M21 19h-5\" /> <path d=\"M21 5h-7\" /> <path d=\"M8 10v4\" /> <path d=\"M8 12H3\" />", "log-out": "<path d=\"m16 17 5-5-5-5\" /> <path d=\"M21 12H9\" /> <path d=\"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4\" />", "user": "<path d=\"M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2\" /> <circle cx=\"12\" cy=\"7\" r=\"4\" />", "folder": "<path d=\"M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z\" />", "file-text": "<path d=\"M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z\" /> <path d=\"M14 2v5a1 1 0 0 0 1 1h5\" /> <path d=\"M10 9H8\" /> <path d=\"M16 13H8\" /> <path d=\"M16 17H8\" />", "download": "<path d=\"M12 15V3\" /> <path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\" /> <path d=\"m7 10 5 5 5-5\" />", "arrow-up": "<path d=\"m5 12 7-7 7 7\" /> <path d=\"M12 19V5\" />", "arrow-down": "<path d=\"M12 5v14\" /> <path d=\"m19 12-7 7-7-7\" />", "send": "<path d=\"M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z\" /> <path d=\"m21.854 2.147-10.94 10.939\" />", "trees": "<path d=\"M10 10v.2A3 3 0 0 1 8.9 16H5a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z\" /> <path d=\"M7 16v6\" /> <path d=\"M13 19v3\" /> <path d=\"M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.5\" />", "clipboard-list": "<rect width=\"8\" height=\"4\" x=\"8\" y=\"2\" rx=\"1\" ry=\"1\" /> <path d=\"M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2\" /> <path d=\"M12 11h4\" /> <path d=\"M12 16h4\" /> <path d=\"M8 11h.01\" /> <path d=\"M8 16h.01\" />", "message-square": "<path d=\"M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z\" />", "camera": "<path d=\"M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z\" /> <circle cx=\"12\" cy=\"13\" r=\"3\" />", "image": "<rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\" ry=\"2\" /> <circle cx=\"9\" cy=\"9\" r=\"2\" /> <path d=\"m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21\" />", "badge-check": "<path d=\"M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z\" /> <path d=\"m16 9-5.5 5.5L8 12\" />", "activity": "<path d=\"M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2\" />", "more-vertical": "<circle cx=\"12\" cy=\"12\" r=\"1\" /> <circle cx=\"12\" cy=\"5\" r=\"1\" /> <circle cx=\"12\" cy=\"19\" r=\"1\" />", "info": "<circle cx=\"12\" cy=\"12\" r=\"10\" /> <path d=\"M12 16v-4\" /> <path d=\"M12 8h.01\" />", "triangle-alert": "<path d=\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3\" /> <path d=\"M12 9v4\" /> <path d=\"M12 17h.01\" />", "loader-circle": "<path d=\"M21 12a9 9 0 1 1-6.219-8.56\" />", "leaf": "<path d=\"M11 20a10 10 0 0010-10 25.9 25.9 0 00-1.04-7.281 1 1 0 00-1.755-.325C15.833 5.5 13 5.5 9.8 6.1A7 7 0 0011 20\" /> <path d=\"M2 21a5 5 0 012.911-4.544C7.613 15.212 8.351 15.24 11 13\" />", "copy": "<rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\" /> <path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\" />", "printer": "<path d=\"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2\" /> <path d=\"M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6\" /> <rect x=\"6\" y=\"14\" width=\"12\" height=\"8\" rx=\"1\" />", "repeat": "<path d=\"m17 2 4 4-4 4\" /> <path d=\"M3 11v-1a4 4 0 0 1 4-4h14\" /> <path d=\"m7 22-4-4 4-4\" /> <path d=\"M21 13v1a4 4 0 0 1-4 4H3\" />"};
@@ -640,11 +742,15 @@ function greeting() {
    Monday of Week 1) is inferred from the check-ins that already have dates:
    each one votes for the Week-1 Monday it implies, and the majority wins. If
    the inference is ever wrong, set PROGRAM_WEEK1_MONDAY below. */
-const PROGRAM_WEEK1_MONDAY = ""; // optional override, e.g. "2026-09-14"
+const PROGRAM_WEEK1_MONDAY = ""; // optional hard-coded override; normally an admin sets meta/program.week1Monday
 function isoFromDate(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
-function validISO(iso) { return typeof iso === "string" && /^\d{4}-\d{2}-\d{2}$/.test(iso) && !isNaN(new Date(iso + "T00:00:00")); }
+function validISO(iso) {
+  if (typeof iso !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return false;
+  const d = new Date(iso + "T00:00:00");
+  return !isNaN(d) && isoFromDate(d) === iso; // round-trip rejects 2026-02-30 and the like
+}
 function addDaysISO(iso, n) { const d = new Date(iso + "T00:00:00"); d.setDate(d.getDate() + n); return isoFromDate(d); }
 function daysBetweenISO(a, b) { return Math.round((new Date(b + "T00:00:00") - new Date(a + "T00:00:00")) / 86400000); }
 function mondayOfISO(iso) { return addDaysISO(iso, -((new Date(iso + "T00:00:00").getDay() + 6) % 7)); }
@@ -653,7 +759,10 @@ function weekdayName(iso) {
   const n = new Date(iso + "T00:00:00").getDay();
   return n >= 1 && n <= 5 ? DAY_ORDER[n - 1] : null; // null on weekends
 }
+/* Order of trust: the admin-set date in meta/program (so every phone agrees),
+   then the hard-coded override, then a majority vote of dated visits. */
 function programStart() {
+  if (programDoc && validISO(programDoc.week1Monday)) return programDoc.week1Monday;
   if (validISO(PROGRAM_WEEK1_MONDAY)) return PROGRAM_WEEK1_MONDAY;
   const votes = {};
   checkins.forEach((c) => {
@@ -709,6 +818,10 @@ let sites = [];
 let checkins = [];
 let observations = [];
 let weeklyCheckins = [];
+let programDoc = null;   // meta/program: { week1Monday, ... } set by an admin
+let myRole = null;       // "admin" | "member"; set once the access check passes
+let outbox = [];         // photos waiting to upload (mirror of the IndexedDB outbox)
+let startingVisit = new Set(); // visit ids with a GPS check-in in flight
 let unsubs = [];
 let activeTab = "today";
 let selectedWeek = 1;
@@ -716,9 +829,8 @@ let selectedWeek = 1;
    Add screens follow the current week instead of sitting on Week 1. */
 let weekPicked = false;
 /* Counts of documents with local changes the server hasn't acknowledged yet. */
-let pendingCounts = { sites: 0, checkins: 0, observations: 0 };
+let pendingCounts = { sites: 0, checkins: 0, observations: 0, weeklyCheckins: 0 };
 let pendingCheckinIds = new Set();
-let lastSnapMeta = { fromCache: true };
 const SNAP_OPTS = { includeMetadataChanges: true }; // lets the sync status flip out of "cache" once the server confirms
 let scheduleScrolledWeek = null;
 let openDrawerId = null;
@@ -732,19 +844,74 @@ let noteDraftMeta = { assignedTo: "", dueDate: "" };
 let selectedSiteId = null;
 let addDraft = null;
 let addFormError = "";
+let editFormError = "";
 let reportWeek = null;
 let addItemDraft = null;
 let deferredInstallPrompt = null;
-let migrationDone = false;
 /* Set when the seed check ran and found setup unfinished. updateSyncPill reads it
    so the first data snapshot can't overwrite the message with "Synced". */
 let setupIncomplete = false;
 
-/* 5) AUTH */
+/* 5) AUTH + ACCESS GATE
+   Three things can stop someone reaching the schedule, and each gets its own
+   plain-language screen: not signed in, signed in without a role ("No access"),
+   or unable to check the role because there is no signal and nothing cached. */
 const authScreen = document.getElementById("auth-screen");
+const gateScreen = document.getElementById("gate-screen");
 const mainScreen = document.getElementById("main-screen");
 const bottomNav = document.getElementById("bottom-nav");
 const authError = document.getElementById("auth-error");
+const authInfo = document.getElementById("auth-info");
+let authSeq = 0;
+
+function authMessage(err) {
+  switch (err && err.code) {
+    case "auth/invalid-credential":
+    case "auth/wrong-password":
+    case "auth/user-not-found":
+    case "auth/invalid-email":
+      return "That email or password isn't right. Check them and try again, or use Forgot password.";
+    case "auth/too-many-requests": return "Too many attempts. Wait a few minutes, or reset your password, then try again.";
+    case "auth/network-request-failed": return "No connection. Check your signal and try again.";
+    case "auth/user-disabled": return "This account has been disabled. Ask an admin.";
+    default: return "Couldn't sign in (" + ((err && err.code) || "unknown") + "). Try again.";
+  }
+}
+function showScreen(name) { // "auth" | "gate" | "main"
+  authScreen.classList.toggle("hidden", name !== "auth");
+  gateScreen.classList.toggle("hidden", name !== "gate");
+  mainScreen.classList.toggle("hidden", name !== "main");
+  bottomNav.classList.toggle("hidden", name !== "main");
+}
+function showGate(kind, user, err) {
+  const card = document.getElementById("gate-card");
+  const out = `<button class="btn-outline" type="button" data-gate="signout">Sign out</button>`;
+  const retry = `<button class="btn-primary" type="button" data-gate="retry">Try again</button>`;
+  if (kind === "checking") {
+    card.innerHTML = `<h1 class="headline">Checking your account…</h1>`;
+  } else if (kind === "noaccess") {
+    card.innerHTML = `<h1 class="headline">No access yet</h1>
+      <p>You're signed in as <strong>${esc(user.email)}</strong>, but this account hasn't been given a role. Ask an admin to add your account, then try again.</p>
+      <div class="gate-actions">${retry}${out}</div>`;
+  } else if (kind === "offline") {
+    card.innerHTML = `<h1 class="headline">Needs a connection once</h1>
+      <p>We couldn't check your account because there's no signal and this phone hasn't saved it yet. Connect to the internet once, then the tracker will work offline.</p>
+      <div class="gate-actions">${retry}${out}</div>`;
+  } else {
+    card.innerHTML = `<h1 class="headline">Couldn't check your account</h1>
+      <p>Something went wrong (${esc((err && err.code) || "unknown error")}). Try again in a moment.</p>
+      <div class="gate-actions">${retry}${out}</div>`;
+  }
+  showScreen("gate");
+  const h = card.querySelector("h1");
+  if (h && kind !== "checking") { h.setAttribute("tabindex", "-1"); h.focus(); }
+}
+gateScreen.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-gate]");
+  if (!b) return;
+  if (b.dataset.gate === "signout") signOut(auth);
+  else if (auth.currentUser) beginSession(auth.currentUser);
+});
 
 document.getElementById("pw-toggle").addEventListener("click", (e) => {
   const input = document.getElementById("auth-password");
@@ -753,13 +920,26 @@ document.getElementById("pw-toggle").addEventListener("click", (e) => {
   e.currentTarget.textContent = show ? "Hide" : "Show";
   e.currentTarget.setAttribute("aria-pressed", String(show));
 });
-document.getElementById("sign-in-btn").addEventListener("click", async () => {
-  authError.textContent = "";
+authScreen.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("sign-in-btn");
+  authError.textContent = ""; authInfo.textContent = "";
   const email = document.getElementById("auth-email").value.trim();
   const password = document.getElementById("auth-password").value;
   if (!email || !password) { authError.textContent = "Enter your email and password."; return; }
+  btn.disabled = true;
   try { await signInWithEmailAndPassword(auth, email, password); }
-  catch (err) { authError.textContent = "Sign-in error (" + (err.code || "unknown") + ") — " + err.message; }
+  catch (err) { authError.textContent = authMessage(err); }
+  finally { btn.disabled = false; }
+});
+document.getElementById("forgot-btn").addEventListener("click", async () => {
+  authError.textContent = ""; authInfo.textContent = "";
+  const email = document.getElementById("auth-email").value.trim();
+  if (!email) { authError.textContent = "Type your email above first, then tap Forgot password."; document.getElementById("auth-email").focus(); return; }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    authInfo.textContent = "If an account exists for " + email + ", a password reset email is on its way. Check spam too.";
+  } catch (err) { authError.textContent = authMessage(err); }
 });
 document.getElementById("sign-out-btn").addEventListener("click", async () => {
   const n = pendingTotal();
@@ -770,83 +950,138 @@ document.getElementById("sign-out-btn").addEventListener("click", async () => {
   if (r.ok) signOut(auth);
 });
 
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    authScreen.classList.add("hidden");
-    mainScreen.classList.remove("hidden");
-    bottomNav.classList.remove("hidden");
-    await runMigrationIfNeeded(user);
-    startListeners();
-  } else {
-    mainScreen.classList.add("hidden");
-    bottomNav.classList.add("hidden");
-    authScreen.classList.remove("hidden");
-    unsubs.forEach((u) => u()); unsubs = [];
-    sites = []; checkins = []; observations = []; weeklyCheckins = []; addItemDraft = null;
-    setupIncomplete = false;
-  }
+function resetState() {
+  sites = []; checkins = []; observations = []; weeklyCheckins = []; programDoc = null; myRole = null;
+  loadedKeys = {}; listenErrors = {}; snapFromCache = {};
+  pendingCounts = { sites: 0, checkins: 0, observations: 0, weeklyCheckins: 0 }; pendingCheckinIds = new Set();
+  addItemDraft = null; setupIncomplete = false;
+  selectedSiteId = null; addDraft = null; reportWeek = null;
+  openDrawerId = null; openEditId = null; editDraft = null; noteComposerFor = null;
+  ["site-profile-screen", "add-checkin-screen", "report-screen"].forEach((id) => document.getElementById(id).classList.add("hidden"));
+}
+
+onAuthStateChanged(auth, (user) => {
+  authSeq++;
+  stopListeners();
+  resetState();
+  stopPhotoSync();
+  if (!user) { showScreen("auth"); return; }
+  beginSession(user);
 });
 
-/* 6) MIGRATION CHECK
-   Seeding now happens from a trusted machine via scripts/seed-firestore.js
-   (see that file's header comment for setup and rationale). This just
-   checks whether that's been run yet. */
+async function beginSession(user) {
+  const seq = ++authSeq;
+  showGate("checking");
+  const access = await checkAccess(user);
+  if (seq !== authSeq) return; // signed out or switched account while we waited
+  if (access.kind !== "ok") { showGate(access.kind, user, access.err); return; }
+  myRole = access.role;
+  showScreen("main");
+  updateFab();
+  startListeners();
+  checkSetup(); // not awaited: with no signal it can take a while to give up
+  startPhotoSync();
+  render();
+}
+
+/* Roles live in users/<uid>. getDoc reads the phone's cache first, so a person who
+   has signed in before can still open the app with no signal. */
+async function checkAccess(user) {
+  try {
+    const snap = await getDoc(doc(db, "users", user.uid));
+    const role = snap.exists() ? snap.data().role : null;
+    if (role === "admin" || role === "member") return { kind: "ok", role };
+    return { kind: "noaccess" };
+  } catch (err) {
+    if (err && err.code === "permission-denied") return { kind: "noaccess" };
+    if (!navigator.onLine || (err && err.code === "unavailable")) return { kind: "offline", err };
+    return { kind: "error", err };
+  }
+}
+
+/* 6) SETUP CHECK
+   Seeding happens from a trusted machine via scripts/seed-firestore.js. This only
+   checks whether that has been run. Never throws. */
 const SETUP_INCOMPLETE_TEXT = "Setup incomplete — ask an admin to run the seed script";
 const NO_ACCESS_TEXT = "No access — ask an admin to add your account";
-/* Never throws. If the check can't run (offline with nothing cached, a rules
-   denial, a network blip) the app still starts its listeners: they will either
-   load from cache, or report their own error through onListenError below. */
-async function runMigrationIfNeeded(user) {
+async function checkSetup() {
+  const seq = authSeq;
   try {
     const metaSnap = await getDoc(doc(db, "meta", "schemaV2"));
-    if (metaSnap.exists() && metaSnap.data().done) { migrationDone = true; setupIncomplete = false; return; }
-    setupIncomplete = true;
-    setSyncText(SETUP_INCOMPLETE_TEXT, "offline");
+    if (seq !== authSeq) return;
+    setupIncomplete = !(metaSnap.exists() && metaSnap.data().done);
   } catch (err) {
+    if (seq !== authSeq) return;
     console.warn("Setup check failed:", err.code || err);
     setupIncomplete = false; // unknown, so don't claim setup is unfinished
-    if (err.code === "permission-denied") setSyncText(NO_ACCESS_TEXT, "offline");
   }
+  updateSyncPill(); render();
 }
 
 /* 7) FIRESTORE LISTENERS */
-/* Without an error callback a denied or failed listener just goes quiet and the
-   screen sits on "Loading…" forever. */
+const LISTEN_LABEL = { sites: "sites", checkins: "visits", observations: "notes", weeklyCheckins: "weekly check-ins", program: "program settings" };
+const CORE_KEYS = ["sites", "checkins", "observations", "weeklyCheckins", "program"];
+let loadedKeys = {};
+let listenErrors = {};
+let snapFromCache = {};
+
 function onListenError(name) {
   return (err) => {
     console.error("Listener failed (" + name + "):", err);
-    if (err && err.code === "permission-denied") setSyncText(NO_ACCESS_TEXT, "offline");
-    else setSyncText("Connection problem — some data may be missing", "offline");
+    listenErrors[name] = (err && err.code) || "error";
+    updateSyncPill();
+    render();
   };
 }
+/* A visible state for every screen, so nothing sits blank: loading while the first
+   snapshot is on its way, an error banner (with retry) when a listener fails. */
+function loadingHTML(what) { return `<div class="loading" role="status">Loading ${esc(what)}…</div>`; }
+function errorBanner() {
+  const bad = Object.keys(listenErrors);
+  if (!bad.length) return "";
+  const denied = bad.some((k) => listenErrors[k] === "permission-denied");
+  const names = bad.map((k) => LISTEN_LABEL[k] || k).join(", ");
+  return `<div class="err-banner" role="alert"><strong>${denied ? "No permission to load" : "Couldn't load"} ${esc(names)}.</strong>
+    ${denied ? "Ask an admin to check your account." : "Some information may be missing."}
+    <button type="button" class="btn-link" data-retry>Try again</button></div>`;
+}
+/* Returns HTML to show instead of the screen's content while the data it needs
+   has not arrived, or "" when it can render normally. */
+function screenGate(what, needKeys) {
+  const keys = needKeys || ["sites", "checkins"];
+  const missing = keys.filter((k) => !loadedKeys[k]);
+  if (!missing.length) return "";
+  if (missing.some((k) => listenErrors[k])) return errorBanner();
+  return loadingHTML(what);
+}
+document.addEventListener("click", (e) => {
+  if (e.target.closest("[data-retry]") && auth.currentUser) { stopListeners(); startListeners(); }
+});
+function stopListeners() { unsubs.forEach((u) => u()); unsubs = []; }
 
 function startListeners() {
-  const pendingFlags = pendingCounts;
+  loadedKeys = {}; listenErrors = {}; snapFromCache = {};
+  const watch = (key, ref, onData) => onSnapshot(ref, SNAP_OPTS, (snap) => {
+    onData(snap);
+    loadedKeys[key] = true; delete listenErrors[key];
+    snapFromCache[key] = snap.metadata.fromCache;
+    updateSyncPill();
+    render();
+    if (key === "checkins" && outbox.length) flushPhotos();
+  }, onListenError(key));
+  const docsOf = (snap) => snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const countPending = (key, snap) => { pendingCounts[key] = snap.docs.filter((d) => d.metadata.hasPendingWrites).length; };
 
-  const u1 = onSnapshot(collection(db, "sites"), SNAP_OPTS, (snap) => {
-    sites = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    pendingFlags.sites = snap.docs.filter((d) => d.metadata.hasPendingWrites).length;
-    updateSyncPill(snap, pendingFlags);
-    render();
-  }, onListenError("sites"));
-  const u2 = onSnapshot(query(collection(db, "checkins"), orderBy("order")), SNAP_OPTS, (snap) => {
-    checkins = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    pendingFlags.checkins = snap.docs.filter((d) => d.metadata.hasPendingWrites).length;
-    pendingCheckinIds = new Set(snap.docs.filter((d) => d.metadata.hasPendingWrites).map((d) => d.id));
-    updateSyncPill(snap, pendingFlags);
-    render();
-  }, onListenError("checkins"));
-  const u3 = onSnapshot(collection(db, "observations"), SNAP_OPTS, (snap) => {
-    observations = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    pendingFlags.observations = snap.docs.filter((d) => d.metadata.hasPendingWrites).length;
-    updateSyncPill(snap, pendingFlags);
-    render();
-  }, onListenError("observations"));
-  const u4 = onSnapshot(collection(db, "weeklyCheckins"), (snap) => {
-    weeklyCheckins = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    render();
-  }, onListenError("weeklyCheckins"));
-  unsubs = [u1, u2, u3, u4];
+  unsubs = [
+    watch("sites", collection(db, "sites"), (snap) => { sites = docsOf(snap); countPending("sites", snap); }),
+    watch("checkins", query(collection(db, "checkins"), orderBy("order")), (snap) => {
+      checkins = docsOf(snap); countPending("checkins", snap);
+      pendingCheckinIds = new Set(snap.docs.filter((d) => d.metadata.hasPendingWrites).map((d) => d.id));
+    }),
+    watch("observations", collection(db, "observations"), (snap) => { observations = docsOf(snap); countPending("observations", snap); }),
+    watch("weeklyCheckins", collection(db, "weeklyCheckins"), (snap) => { weeklyCheckins = docsOf(snap); countPending("weeklyCheckins", snap); }),
+    watch("program", doc(db, "meta", "program"), (snap) => { programDoc = snap.exists() ? snap.data() : null; }),
+  ];
 }
 
 function setSyncText(text, cls) {
@@ -854,24 +1089,32 @@ function setSyncText(text, cls) {
   document.getElementById("sync-text").textContent = text;
   pill.className = cls || "";
 }
-function pendingTotal() { return pendingCounts.sites + pendingCounts.checkins + pendingCounts.observations; }
+function pendingTotal() {
+  return pendingCounts.sites + pendingCounts.checkins + pendingCounts.observations + pendingCounts.weeklyCheckins + outbox.length;
+}
 function plural(n, word) { return `${n} ${word}${n === 1 ? "" : "s"}`; }
-/* Plain states a field worker can act on: offline (with how much is waiting),
-   syncing, connecting, or up to date as of a time. Called with no argument by
-   the online/offline events, which reuse the last snapshot's metadata. */
-function updateSyncPill(snap) {
-  if (snap && snap.metadata) lastSnapMeta = snap.metadata;
+/* Exactly three states a field worker can act on: Offline (with how much is
+   waiting), Syncing, or Synced as of a time. "Connecting" is shown as syncing
+   until the first server-confirmed snapshot arrives. */
+function updateSyncPill() {
   if (setupIncomplete) { setSyncText(SETUP_INCOMPLETE_TEXT, "offline"); return; }
+  const errs = Object.keys(listenErrors);
+  if (errs.length) {
+    const denied = errs.some((k) => listenErrors[k] === "permission-denied");
+    setSyncText(denied ? NO_ACCESS_TEXT : "Connection problem — some data may be missing", "offline");
+    return;
+  }
   const n = pendingTotal();
   if (!navigator.onLine) {
     setSyncText(n ? `Offline · ${plural(n, "change")} waiting to sync` : "Offline · changes save on this phone", "offline");
     return;
   }
-  if (n) { setSyncText(`Syncing ${plural(n, "change")}…`, ""); return; }
-  if (lastSnapMeta.fromCache) { setSyncText("Connecting…", ""); return; }
-  setSyncText("Up to date · " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), "synced");
+  if (n) { setSyncText(`Syncing ${plural(n, "change")}…`, "syncing"); return; }
+  const waiting = CORE_KEYS.some((k) => loadedKeys[k] === undefined || snapFromCache[k]);
+  if (waiting) { setSyncText("Connecting…", "syncing"); return; }
+  setSyncText("Synced · " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), "synced");
 }
-window.addEventListener("online", () => setSyncText("Reconnecting…", ""));
+window.addEventListener("online", () => { setSyncText("Syncing…", "syncing"); flushPhotos(); });
 window.addEventListener("offline", () => updateSyncPill());
 
 /* 8) DATA HELPERS */
@@ -991,6 +1234,33 @@ function allAssistants() {
   return [...new Set([...fromSites, ...fromCheckins].filter((a) => a && a !== "N/A"))].sort();
 }
 
+const meEmail = () => (auth.currentUser && auth.currentUser.email) || "unknown";
+const isAdmin = () => myRole === "admin";
+function uid() { return (crypto.randomUUID && crypto.randomUUID()) || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10)); }
+
+/* Audit fields. Every document records who made it and when, and who last touched
+   it. Timestamps come from the server clock; names come from the signed-in account
+   (the security rules check that the name matches). */
+function stampNew(data) { const me = meEmail(); return { ...data, createdAt: serverTimestamp(), createdBy: me, updatedAt: serverTimestamp(), updatedBy: me }; }
+function stampEdit(patch) { return { ...patch, updatedAt: serverTimestamp(), updatedBy: meEmail() }; }
+
+/* Visit identity.
+   New visits get a predictable ID built from what makes a visit "the same visit".
+   Two people (or one person tapping twice, or two phones working offline) who add
+   the same visit therefore write to the same document instead of creating two.
+   Older visits keep their random IDs, so duplicates are also detected by comparing
+   the four fields, which is what the admin page's duplicate check does too. */
+function normKey(s) { return String(s || "").trim().toLowerCase(); }
+function visitIdFor(d) { return [d.date, d.siteId, slugify(d.assistant || ""), slugify(d.purpose || "")].join("_"); }
+function findDuplicateVisit(d, ignoreId) {
+  if (!validISO(d.date)) return null;
+  return checkins.find((c) => c.id !== ignoreId && c.date === d.date && c.siteId === d.siteId &&
+    normKey(c.assistant) === normKey(d.assistant) && normKey(c.purpose) === normKey(d.purpose)) || null;
+}
+function dupMessage(dup) {
+  return `That visit is already on the schedule (${siteLabel(dup.siteId)}, ${fmtDayDate(dup.date)}, ${dup.assistant}).`;
+}
+
 /* 9) MUTATIONS
    Every write goes through guardedWrite. A rejected write (no permission,
    signed out, server unreachable) used to surface as an unhandled promise
@@ -1002,6 +1272,7 @@ function writeErrorMessage(action, err) {
   if (code === "permission-denied") return "You don't have permission to " + action + ". Ask an admin if you think you should.";
   if (code === "unauthenticated") return "You've been signed out. Sign in again and retry.";
   if (code === "unavailable" || code === "deadline-exceeded") return "Couldn't reach the server, so this wasn't saved. Check your connection and try again.";
+  if (code === "not-found") return "That item no longer exists.";
   return "Couldn't " + action + ". Please try again.";
 }
 function reportWriteError(action, err) {
@@ -1026,18 +1297,41 @@ async function guardedWrite(action, fn) {
   } catch (err) { reportWriteError(action, err); return false; }
 }
 
+/* Only these fields can be changed from the Edit form. Anything else on a visit
+   (evidence, photos, audit fields) is written by its own action, so a stale form
+   can never overwrite a photo that finished uploading while it was open. */
+const EDITABLE_VISIT_FIELDS = ["date", "day", "week", "epa", "assistant", "siteId", "purpose", "checklistItems", "checkedItems"];
+function pickEditable(draft) {
+  const out = {};
+  EDITABLE_VISIT_FIELDS.forEach((k) => { if (draft[k] !== undefined) out[k] = draft[k]; });
+  return out;
+}
+
 function saveCheckin(id, patch) {
-  return guardedWrite("save this check-in", () => updateDoc(doc(db, "checkins", id), { ...patch, updatedAt: serverTimestamp() }));
+  return guardedWrite("save this check-in", () => updateDoc(doc(db, "checkins", id), stampEdit(patch)));
 }
 function createCheckin(data) {
+  const id = visitIdFor(data);
+  if (checkins.some((c) => c.id === id)) {
+    showToast("That visit is already on the schedule.", { kind: "error" });
+    return Promise.resolve(false);
+  }
   return guardedWrite("create this check-in", () => {
     const maxOrder = checkins.reduce((m, c) => Math.max(m, c.order ?? 0), -1);
-    return addDoc(collection(db, "checkins"), { ...data, order: maxOrder + 1, updatedAt: serverTimestamp() });
+    const record = {
+      siteId: data.siteId, epa: data.epa, assistant: data.assistant, purpose: data.purpose,
+      date: data.date, day: data.day, week: data.week,
+      status: "Pending", statusNote: "", rescheduledFrom: "",
+      checklistItems: data.checklistItems || [], checkedItems: data.checkedItems || [],
+      order: maxOrder + 1,
+    };
+    return setDoc(doc(db, "checkins", id), stampNew(record));
   });
 }
 /* One tap on a status pill used to write immediately with no feedback. Now it
    confirms with a toast (Undo for 6s), asks for a new date when rescheduling
    and an optional reason when skipping. */
+const PREV_TEXT_KEYS = new Set(["statusNote", "rescheduledFrom", "completedBy"]);
 async function changeStatus(c, newStatus) {
   if (newStatus === c.status) return;
   if (newStatus !== "Pending" && (!c.epa || !c.assistant || !c.siteId)) {
@@ -1045,6 +1339,8 @@ async function changeStatus(c, newStatus) {
     return;
   }
   const patch = { status: newStatus, statusNote: "" };
+  if (newStatus === "Completed") { patch.completedAt = serverTimestamp(); patch.completedBy = meEmail(); }
+  else if (c.status === "Completed") { patch.completedAt = null; patch.completedBy = ""; }
   if (newStatus === "Rescheduled") {
     const r = await openDialog({
       title: "Reschedule this visit", message: c.date ? `Currently ${fmtDayDate(c.date)}.` : "",
@@ -1052,7 +1348,10 @@ async function changeStatus(c, newStatus) {
     });
     if (!r.ok) return;
     if (r.value) {
+      if (!validISO(r.value)) { showToast("That date isn't valid.", { kind: "error" }); return; }
       const moved = applyDateToDraft({ date: r.value, day: c.day, week: c.week });
+      const dup = findDuplicateVisit({ ...c, date: moved.date }, c.id);
+      if (dup) { showToast(dupMessage(dup), { kind: "error" }); return; }
       Object.assign(patch, { date: moved.date, day: moved.day, week: moved.week, rescheduledFrom: c.date || "" });
     }
   } else if (newStatus === "Skipped") {
@@ -1064,14 +1363,17 @@ async function changeStatus(c, newStatus) {
     patch.statusNote = r.value.trim();
   }
   const prev = {};
-  Object.keys(patch).forEach((k) => { prev[k] = c[k] ?? ""; });
+  Object.keys(patch).forEach((k) => { prev[k] = c[k] !== undefined ? c[k] : (PREV_TEXT_KEYS.has(k) ? "" : null); });
   saveCheckin(c.id, patch); // not awaited: offline writes settle only when the server acknowledges
   showToast(navigator.onLine ? `Marked ${newStatus}` : `Marked ${newStatus} · saved on this phone`, {
     action: "Undo",
     onAction: () => { saveCheckin(c.id, prev); showToast("Undone"); },
   });
+  if (newStatus === "Completed") captureEndEvidence(c);
 }
+/* Admin-only. The security rules enforce this too; hiding the button is just courtesy. */
 function removeCheckin(id) {
+  if (!isAdmin()) { showToast("Only an admin can delete a visit.", { kind: "error" }); return Promise.resolve(false); }
   return guardedWrite("delete this check-in", () => deleteDoc(doc(db, "checkins", id)));
 }
 function addObservation(siteId, checkinId, type, text, meta) {
@@ -1083,7 +1385,7 @@ async function writeObservation(siteId, checkinId, type, text, meta) {
     siteId, checkinId: checkinId || null, type, text,
     week: (meta && meta.week) ?? linkedCheckin?.week ?? null,
     bucket: null,
-    author: auth.currentUser?.email || "Unknown", createdAt: serverTimestamp(),
+    author: meEmail(),
   };
   /* Only issues and follow-ups get a lifecycle. Attaching a status to a plain
      observation would make it look actionable when it isn't. */
@@ -1094,33 +1396,290 @@ async function writeObservation(siteId, checkinId, type, text, meta) {
     record.resolvedAt = null;
     record.resolvedBy = "";
   }
-  await addDoc(collection(db, "observations"), record);
+  await addDoc(collection(db, "observations"), stampNew(record));
 }
 /* An item an FA relayed to the SFO: no visit attached, so the week is explicit. */
 function addStandaloneObservation(siteId, week, type, text) {
   return addObservation(siteId, null, type, text, { week });
 }
 function setObservationBucket(id, bucket) {
-  return guardedWrite("update this item", () => updateDoc(doc(db, "observations", id), { bucket, updatedAt: serverTimestamp() }));
+  return guardedWrite("update this item", () => updateDoc(doc(db, "observations", id), stampEdit({ bucket })));
 }
 function saveWeeklyCheckin(week, patch) {
-  return guardedWrite("save the weekly check-in", () => setDoc(doc(db, "weeklyCheckins", String(week)), { ...patch, week, updatedAt: serverTimestamp() }, { merge: true }));
+  const isNew = !weeklyCheckins.some((w) => w.week === week);
+  const extra = isNew ? { createdAt: serverTimestamp(), createdBy: meEmail() } : {};
+  return guardedWrite("save the weekly check-in", () => setDoc(doc(db, "weeklyCheckins", String(week)), stampEdit({ ...patch, week, ...extra }), { merge: true }));
 }
 function setObservationStatus(id, status) {
   return guardedWrite("update this note's status", () => {
-    const patch = { status, updatedAt: serverTimestamp() };
+    const patch = { status };
     if (status === "Resolved") {
       patch.resolvedAt = serverTimestamp();
-      patch.resolvedBy = auth.currentUser?.email || "Unknown";
+      patch.resolvedBy = meEmail();
     } else {
       patch.resolvedAt = null;
       patch.resolvedBy = "";
     }
-    return updateDoc(doc(db, "observations", id), patch);
+    return updateDoc(doc(db, "observations", id), stampEdit(patch));
   });
 }
 
-/* 9b) TOAST + DIALOG
+/* 9a) EVIDENCE: GPS at check-in
+   "Start visit" records where the phone was, how sure the GPS was, and when,
+   then compares that with the site's coordinates. The result is stored as a plain
+   word (verified / far / ...), never as a pass/fail that blocks the visit: a field
+   worker with no GPS signal can still do the work, and the SFO can see why a visit
+   isn't verified. Times are the phone's clock in ms (that is the evidence); audit
+   times elsewhere come from the server. */
+const SITE_RADIUS_M = 300;        // how close counts as "at the site"
+const ACCURACY_CREDIT_M = 150;    // a vague fix gets at most this much benefit of the doubt
+const GPS_TIMEOUT_MS = 20000;
+const GPS_GOOD_M = 30;            // stop waiting once the fix is this good
+function haversineM(lat1, lng1, lat2, lng2) {
+  const R = 6371008.8, rad = Math.PI / 180;
+  const dLat = (lat2 - lat1) * rad, dLng = (lng2 - lng1) * rad;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+/* Resolves with the best fix seen before the timeout (or as soon as one is good
+   enough). Never rejects: failures come back as { ok:false, reason }. */
+function getFix(opts) {
+  const timeoutMs = (opts && opts.timeoutMs) || GPS_TIMEOUT_MS;
+  const goodM = (opts && opts.goodEnoughM) || GPS_GOOD_M;
+  return new Promise((resolve) => {
+    if (!("geolocation" in navigator)) { resolve({ ok: false, reason: "unsupported" }); return; }
+    let best = null, done = false, watchId = null;
+    const finish = (result) => {
+      if (done) return; done = true;
+      clearTimeout(timer);
+      if (watchId !== null) { try { navigator.geolocation.clearWatch(watchId); } catch (e) { /* ignore */ } }
+      resolve(result);
+    };
+    const timer = setTimeout(() => finish(best ? { ok: true, ...best } : { ok: false, reason: "no-fix" }), timeoutMs);
+    try {
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          const cur = { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracyM: pos.coords.accuracy };
+          if (!best || cur.accuracyM < best.accuracyM) best = cur;
+          if (cur.accuracyM <= goodM) finish({ ok: true, ...best });
+        },
+        (err) => { if (err && err.code === 1) finish({ ok: false, reason: "denied" }); /* other errors: keep waiting for the timeout */ },
+        { enableHighAccuracy: true, maximumAge: 0, timeout: timeoutMs }
+      );
+    } catch (e) { finish({ ok: false, reason: "unsupported" }); }
+  });
+}
+function buildEvidence(fix, site) {
+  const ev = { lat: null, lng: null, accuracyM: null, capturedAtMs: Date.now(), distanceM: null, radiusM: SITE_RADIUS_M, result: "no-fix" };
+  if (!fix.ok) { ev.result = fix.reason; return ev; }
+  ev.lat = Math.round(fix.lat * 1e6) / 1e6;
+  ev.lng = Math.round(fix.lng * 1e6) / 1e6;
+  ev.accuracyM = Math.round(fix.accuracyM);
+  if (!site || typeof site.lat !== "number" || typeof site.lng !== "number") { ev.result = "no-site-gps"; return ev; }
+  const dist = haversineM(fix.lat, fix.lng, site.lat, site.lng);
+  ev.distanceM = Math.round(dist);
+  ev.result = dist - Math.min(fix.accuracyM, ACCURACY_CREDIT_M) <= SITE_RADIUS_M ? "verified" : "far";
+  return ev;
+}
+/* A visit counts as started once a name or a start fix is on it. startedAt itself
+   is a server timestamp and reads back as null until the server confirms, so it
+   can't be used offline. */
+function isStarted(c) { return !!(c.startedBy || (c.evidence && c.evidence.start)); }
+function fmtDistance(m) { return m >= 1000 ? (m / 1000).toFixed(1) + " km" : Math.round(m).toLocaleString() + " m"; }
+function fmtTimeMs(ms) { return Number.isFinite(ms) ? new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""; }
+function evidenceToast(ev) {
+  switch (ev.result) {
+    case "verified": return `Visit started · you're at the site (${fmtDistance(ev.distanceM)})`;
+    case "far": return `Visit started, but you look ${fmtDistance(ev.distanceM)} from the site`;
+    case "no-site-gps": return "Visit started · this site has no GPS yet, so it can't be verified";
+    case "denied": return "Visit started without a location. Allow location for this app to verify visits";
+    default: return "Visit started without a GPS fix. Try again outdoors if it matters";
+  }
+}
+async function startVisit(c) {
+  if (isStarted(c) || startingVisit.has(c.id)) return; // a second tap must not make a second check-in
+  startingVisit.add(c.id);
+  render();
+  showToast("Getting your location…", { persist: true });
+  try {
+    const fix = await getFix({ timeoutMs: GPS_TIMEOUT_MS, goodEnoughM: GPS_GOOD_M });
+    const latest = checkins.find((x) => x.id === c.id);
+    if (!latest) { hideToast(); return; }
+    if (isStarted(latest)) { hideToast(); showToast("This visit was already started."); return; }
+    const ev = buildEvidence(fix, siteById(c.siteId));
+    hideToast();
+    const ok = await saveCheckin(c.id, { startedAt: serverTimestamp(), startedBy: meEmail(), "evidence.start": ev });
+    if (ok) showToast(evidenceToast(ev), { ms: 6000 });
+  } finally {
+    startingVisit.delete(c.id);
+    render();
+  }
+}
+/* Best-effort second fix when a visit is completed. Doesn't block the status change. */
+async function captureEndEvidence(c) {
+  const fix = await getFix({ timeoutMs: 10000, goodEnoughM: 50 });
+  if (!checkins.some((x) => x.id === c.id)) return;
+  guardedWrite("record where this visit ended", () => updateDoc(doc(db, "checkins", c.id), stampEdit({ "evidence.end": buildEvidence(fix, siteById(c.siteId)) })));
+}
+function evidenceLine(e, label) {
+  if (!e) return "";
+  const t = fmtTimeMs(e.capturedAtMs);
+  const acc = typeof e.accuracyM === "number" ? ` · GPS ±${e.accuracyM} m` : "";
+  switch (e.result) {
+    case "verified": return { cls: "ok", icon: "badge-check", head: `${label} ${t} · at the site`, sub: `${fmtDistance(e.distanceM)} from the site${acc}` };
+    case "far": return { cls: "bad", icon: "triangle-alert", head: `${label} ${t} · away from the site`, sub: `${fmtDistance(e.distanceM)} from the site${acc}` };
+    case "no-site-gps": return { cls: "warn", icon: "map-pin", head: `${label} ${t} · location saved`, sub: `This site has no GPS yet, so it can't be verified${acc}` };
+    case "denied": return { cls: "warn", icon: "map-pin", head: `${label} ${t} · no location`, sub: "Location permission was denied" };
+    case "unsupported": return { cls: "warn", icon: "map-pin", head: `${label} ${t} · no location`, sub: "This device can't share its location" };
+    default: return { cls: "warn", icon: "map-pin", head: `${label} ${t} · no GPS fix`, sub: "Couldn't get a location in time" };
+  }
+}
+function renderEvidence(c) {
+  const ev = c.evidence || {};
+  const lines = [evidenceLine(ev.start, "Started"), evidenceLine(ev.end, "Finished")].filter(Boolean);
+  return lines.map((l) => `<div class="ev-line ${l.cls}">${icon(l.icon, 15)}<span>${esc(l.head)}<small>${esc(l.sub)}</small></span></div>`).join("");
+}
+
+/* 9b) PHOTOS
+   A photo is resized on the phone, saved in IndexedDB straight away (so it
+   survives a reload or no signal), then uploaded to Storage and attached to the
+   visit when there is a connection. Each photo gets one ID that never changes, so
+   a retry overwrites the same file rather than adding a second copy, and a photo
+   that already uploaded is not uploaded again. */
+const MAX_PHOTOS = 10;
+const OUTBOX_DB = "sfo-outbox", OUTBOX_STORE = "photos";
+let thumbUrls = new Map();
+let flushing = false, lastFlushAt = 0, photoTimer = null, photoErrorShown = false;
+
+function outboxOpen() {
+  return new Promise((resolve, reject) => {
+    if (!("indexedDB" in window)) { reject(new Error("no-indexeddb")); return; }
+    const req = indexedDB.open(OUTBOX_DB, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(OUTBOX_STORE, { keyPath: "id" });
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function outboxTx(mode, fn) {
+  const handle = await outboxOpen();
+  return new Promise((resolve, reject) => {
+    const tx = handle.transaction(OUTBOX_STORE, mode);
+    const req = fn(tx.objectStore(OUTBOX_STORE));
+    tx.oncomplete = () => { handle.close(); resolve(req && req.result); };
+    tx.onerror = tx.onabort = () => { handle.close(); reject(tx.error); };
+  });
+}
+const outboxAll = () => outboxTx("readonly", (s) => s.getAll());
+const outboxPut = (rec) => outboxTx("readwrite", (s) => s.put(rec));
+const outboxDelete = (id) => outboxTx("readwrite", (s) => s.delete(id));
+
+async function refreshOutbox() {
+  try { outbox = (await outboxAll()) || []; } catch (err) { console.warn("Photo outbox unavailable:", err); outbox = []; }
+  const keep = new Set(outbox.map((r) => r.id));
+  thumbUrls.forEach((url, id) => { if (!keep.has(id)) { URL.revokeObjectURL(url); thumbUrls.delete(id); } });
+  outbox.forEach((r) => { if (!thumbUrls.has(r.id) && r.blob) thumbUrls.set(r.id, URL.createObjectURL(r.blob)); });
+}
+function withTimeout(promise, ms) {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(Object.assign(new Error("timeout"), { code: "timeout" })), ms);
+    promise.then((v) => { clearTimeout(t); resolve(v); }, (e) => { clearTimeout(t); reject(e); });
+  });
+}
+async function resizeImage(file, maxSide = 1280, quality = 0.8) {
+  let bmp;
+  try { bmp = await createImageBitmap(file, { imageOrientation: "from-image" }); }
+  catch (e) {
+    bmp = await new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file), img = new Image();
+      img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("decode")); };
+      img.src = url;
+    });
+  }
+  const w0 = bmp.width || bmp.naturalWidth, h0 = bmp.height || bmp.naturalHeight;
+  const scale = Math.min(1, maxSide / Math.max(w0, h0));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(w0 * scale)); canvas.height = Math.max(1, Math.round(h0 * scale));
+  canvas.getContext("2d").drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  if (bmp.close) bmp.close();
+  return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("encode"))), "image/jpeg", quality));
+}
+function photosFor(visitId) { return outbox.filter((r) => r.visitId === visitId); }
+async function addPhoto(visitId, file) {
+  const c = checkins.find((x) => x.id === visitId);
+  if (!c || !file) return;
+  if ((c.photos || []).length + photosFor(visitId).length >= MAX_PHOTOS) {
+    showToast(`A visit can have up to ${MAX_PHOTOS} photos.`, { kind: "error" });
+    return;
+  }
+  try {
+    const blob = await resizeImage(file);
+    await outboxPut({ id: uid(), visitId, blob, takenAtMs: Date.now(), takenBy: meEmail(), url: "", path: "" });
+    await refreshOutbox();
+    updateSyncPill(); render();
+    showToast(navigator.onLine ? "Photo added" : "Photo saved on this phone · it will upload when you have signal");
+    flushPhotos(true);
+  } catch (err) {
+    console.error("Photo failed:", err);
+    showToast("Couldn't add that photo. Try again.", { kind: "error" });
+  }
+}
+function attachPhotoToVisit(rec) {
+  return guardedWrite("attach this photo", () => updateDoc(doc(db, "checkins", rec.visitId), stampEdit({
+    photos: arrayUnion({ path: rec.path, url: rec.url, takenAtMs: rec.takenAtMs, takenBy: rec.takenBy }),
+  })));
+}
+function photoError(err) {
+  const code = (err && err.code) || "";
+  console.warn("Photo upload paused:", code || err);
+  if (photoErrorShown) return;
+  if (code === "storage/unauthorized" || code === "storage/unauthenticated") { photoErrorShown = true; showToast("Photos can't be uploaded with this account yet. They're kept on this phone.", { kind: "error" }); }
+  else if (code === "storage/bucket-not-found" || code === "storage/project-not-found" || code === "storage/no-default-bucket") { photoErrorShown = true; showToast("Photo storage isn't set up yet. Photos are kept on this phone.", { kind: "error" }); }
+}
+async function flushPhotos(force) {
+  if (flushing || !navigator.onLine || !auth.currentUser || !loadedKeys.checkins) return;
+  if (!force && Date.now() - lastFlushAt < 15000) return;
+  flushing = true; lastFlushAt = Date.now();
+  try {
+    await refreshOutbox();
+    for (const rec of [...outbox]) {
+      if (!checkins.some((c) => c.id === rec.visitId)) { await outboxDelete(rec.id); continue; } // visit was deleted
+      try {
+        if (!rec.url) {
+          const path = `visits/${rec.visitId}/${rec.id}.jpg`;
+          const r = storageRef(storage, path);
+          await withTimeout(uploadBytes(r, rec.blob, { contentType: "image/jpeg" }), 90000);
+          rec.url = await withTimeout(getDownloadURL(r), 20000);
+          rec.path = path;
+          await outboxPut(rec); // remember it is uploaded so a retry doesn't upload again
+        }
+        if (await attachPhotoToVisit(rec)) await outboxDelete(rec.id);
+      } catch (err) { photoError(err); break; }
+    }
+  } finally {
+    flushing = false;
+    await refreshOutbox();
+    updateSyncPill(); render();
+  }
+}
+function startPhotoSync() {
+  refreshOutbox().then(() => { updateSyncPill(); render(); });
+  clearInterval(photoTimer);
+  photoTimer = setInterval(() => { if (outbox.length) flushPhotos(); }, 45000);
+}
+function stopPhotoSync() { clearInterval(photoTimer); photoTimer = null; }
+document.addEventListener("visibilitychange", () => { if (!document.hidden && outbox.length) flushPhotos(); });
+function renderPhotoStrip(c) {
+  const saved = (c.photos || []).filter((p) => p && p.url);
+  const queued = photosFor(c.id);
+  if (!saved.length && !queued.length) return "";
+  return `<div class="photo-strip" aria-label="Visit photos">
+    ${saved.map((p) => `<a class="photo-thumb" href="${esc(p.url)}" target="_blank" rel="noopener"><img src="${esc(p.url)}" alt="Visit photo${p.takenAtMs ? " taken " + esc(fmtTimeMs(p.takenAtMs)) : ""}" loading="lazy"></a>`).join("")}
+    ${queued.map((r) => `<span class="photo-thumb"><img src="${esc(thumbUrls.get(r.id) || "")}" alt="Photo waiting to upload"><span class="wait">Waiting</span></span>`).join("")}
+  </div>`;
+}
+
+/* 9c) TOAST + DIALOG
    Replace the browser's alert()/confirm(), which block the page, look foreign,
    and can't offer Undo. One toast at a time; one dialog at a time. */
 let toastTimer = null;
@@ -1153,12 +1712,24 @@ function openDialog(o) {
     }
     ok.textContent = o.confirmLabel || "OK"; cancel.textContent = o.cancelLabel || "Cancel";
     ok.className = o.danger ? "btn-danger" : "btn-primary";
-    const onKey = (e) => { if (e.key === "Escape") finish(false); };
+    const opener = document.activeElement;
+    /* Escape closes; Tab stays inside the dialog so keyboard and screen-reader
+       users can't wander onto the page behind it. */
+    const onKey = (e) => {
+      if (e.key === "Escape") { finish(false); return; }
+      if (e.key !== "Tab") return;
+      const stops = [o.inputType ? input : null, cancel, ok].filter(Boolean);
+      const first = stops[0], last = stops[stops.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
     function finish(accepted) {
       back.classList.remove("open");
       document.removeEventListener("keydown", onKey);
+      const value = o.inputType ? input.value : "";
       ok.onclick = cancel.onclick = back.onclick = null;
-      resolve({ ok: accepted, value: o.inputType ? input.value : "" });
+      if (opener && opener.isConnected && opener.focus) opener.focus();
+      resolve({ ok: accepted, value });
     }
     ok.onclick = () => finish(true);
     cancel.onclick = () => finish(false);
@@ -1170,18 +1741,28 @@ function openDialog(o) {
 }
 
 /* 10) BOTTOM SHEET */
+let sheetOpener = null;
 function openSheet(title, options, currentValue, onSelect) {
   const backdrop = document.getElementById("sheet-backdrop");
+  sheetOpener = document.activeElement;
   document.getElementById("sheet-title").textContent = title;
   const listEl = document.getElementById("sheet-list");
   listEl.innerHTML = options.map((opt) => `
     <button class="sheet-option ${opt === currentValue ? "selected" : ""}" data-value="${esc(opt)}">
       <span>${esc(opt)}</span>${icon("check").replace('class="ic"', 'class="ic check-icon"')}
     </button>`).join("");
-  listEl.querySelectorAll(".sheet-option").forEach((btn) => btn.addEventListener("click", () => { onSelect(btn.dataset.value); closeSheet(); }));
+  listEl.querySelectorAll(".sheet-option").forEach((btn) => btn.addEventListener("click", () => { closeSheet(); onSelect(btn.dataset.value); }));
   backdrop.classList.add("open");
+  setTimeout(() => { const first = listEl.querySelector(".sheet-option.selected") || listEl.querySelector(".sheet-option"); if (first) first.focus(); }, 60);
 }
-function closeSheet() { document.getElementById("sheet-backdrop").classList.remove("open"); }
+function closeSheet() {
+  const backdrop = document.getElementById("sheet-backdrop");
+  if (!backdrop.classList.contains("open")) return;
+  backdrop.classList.remove("open");
+  if (sheetOpener && sheetOpener.isConnected && sheetOpener.focus) sheetOpener.focus();
+  sheetOpener = null;
+}
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheet(); });
 document.getElementById("sheet-backdrop").addEventListener("click", (e) => { if (e.target.id === "sheet-backdrop") closeSheet(); });
 
 /* Single source of truth for FAB visibility: visible only on Today/Schedule,
@@ -1209,7 +1790,7 @@ document.querySelectorAll(".nav-btn").forEach((btn) => {
     document.getElementById("site-profile-screen").classList.add("hidden");
     document.getElementById("report-screen").classList.add("hidden");
     document.getElementById("add-checkin-screen").classList.add("hidden");
-    document.getElementById("top-title").textContent = { today: "Today", schedule: "Schedule", analytics: "Analytics", sites: "Sites & Team" }[activeTab];
+    document.getElementById("top-title").textContent = { today: "Today", schedule: "Schedule", analytics: "Dashboard", sites: "Sites & Team" }[activeTab];
     updateFab();
     render();
   });
@@ -1241,11 +1822,53 @@ function render() {
   labelIconButtons();
 }
 
+/* 11a) THIS-WEEK COUNTERS
+   The operational numbers, not analytics: what was planned, what happened, and
+   what still needs chasing. The same helper feeds Today (current week) and the
+   Dashboard tab (any week). Follow-ups due counts anything unresolved whose due
+   date falls on or before the end of that week, so overdue ones stay visible. */
+function weekEndISO(week) {
+  const start = programStart();
+  return start ? addDaysISO(start, 7 * (week - 1) + 6) : null;
+}
+function weekCounts(week) {
+  const items = checkins.filter((c) => c.week === week);
+  const by = (s) => items.filter((c) => c.status === s).length;
+  const end = weekEndISO(week) || todayISO();
+  return {
+    planned: items.length, completed: by("Completed"), pending: by("Pending"),
+    rescheduled: by("Rescheduled"), skipped: by("Skipped"),
+    issues: observations.filter((o) => o.type === "issue" && obsWeek(o) === week).length,
+    followUps: openFollowUps().filter((o) => validISO(o.dueDate) && o.dueDate <= end).length,
+  };
+}
+function renderCounters(week) {
+  const k = weekCounts(week);
+  const tiles = [
+    ["Planned", k.planned, ""], ["Completed", k.completed, k.completed ? "good" : ""], ["Pending", k.pending, ""],
+    ["Rescheduled", k.rescheduled, ""], ["Skipped", k.skipped, k.skipped ? "alert" : ""],
+    ["Issues raised", k.issues, k.issues ? "alert" : ""], ["Follow-ups due", k.followUps, k.followUps ? "alert" : ""],
+  ];
+  return `<div class="counters">${tiles.map(([lbl, n, cls]) =>
+    `<div class="counter ${cls}" role="group" aria-label="${esc(lbl)}: ${n}"><div class="num">${n}</div><div class="lbl">${esc(lbl)}</div></div>`).join("")}</div>`;
+}
+/* What to say when there are no visits at all. Offline with nothing cached is not
+   the same as "nothing scheduled", so the two get different words. */
+function emptyScheduleHTML() {
+  if (!navigator.onLine && snapFromCache.checkins) {
+    return `<div class="empty-state"><b>No schedule saved on this phone yet</b>Connect to the internet once and your schedule will download, then it works offline.</div>`;
+  }
+  if (setupIncomplete) return `<div class="empty-state"><b>Setup isn't finished</b>Ask an admin to run the seed script.</div>`;
+  return `<div class="empty-state"><b>No visits yet</b>Tap <b style="display:inline">Add visit</b> to plan the first one.</div>`;
+}
+
 /* 11b) TODAY SCREEN
    Answers the one question the app is opened to answer in the field:
    what do I need to deal with right now? */
 function renderToday() {
   const el = document.getElementById("screen-today");
+  const gate = screenGate("your schedule");
+  if (gate) { el.innerHTML = gate; return; }
   const iso = todayISO();
   const mine = checkinsToday();
   const done = mine.filter((c) => c.status === "Completed").length;
@@ -1285,7 +1908,11 @@ function renderToday() {
   const weekPct = weekItems.length ? Math.round((weekDone / weekItems.length) * 100) : 0;
   const activity = buildActivityFeed(8);
 
+  const nextUp = checkins.filter((c) => c.status === "Pending" && c.date && c.date > iso)
+    .sort((a, b) => a.date.localeCompare(b.date))[0];
+
   el.innerHTML = `
+    ${errorBanner()}
     <div class="today-hero">
       <div class="today-greet headline">${greeting()}</div>
       <div class="today-date">${esc(fmtLongDate(iso))}</div>
@@ -1303,9 +1930,7 @@ function renderToday() {
       ${mine.map(renderCheckinCard).join("")}
     ` : `
       <div class="sec-title">Today's visits</div>
-      <div class="empty-state" style="padding:26px 20px;">
-        No visits scheduled for today.
-      </div>
+      ${checkins.length ? `<div class="empty-state" style="padding:26px 20px;"><b>No visits scheduled for today</b>${nextUp ? `Next up: ${esc(siteLabel(nextUp.siteId))}, ${esc(fmtDayDate(nextUp.date))}.` : "Nothing else is scheduled."}</div>` : emptyScheduleHTML()}
     `}
 
     <div class="sec-title">Needs your attention</div>
@@ -1321,8 +1946,10 @@ function renderToday() {
       </button>`).join("")
     : `<div class="all-clear">${icon("badge-check", 18)} Nothing outstanding. You're clear.</div>`}
 
+    ${checkins.length ? `
+      <div class="sec-title">This week · Week ${curWeek}</div>
+      ${renderCounters(curWeek)}` : ""}
     ${weekItems.length ? `
-      <div class="sec-title">Week ${curWeek} progress</div>
       <div class="week-progress">
         <div class="wp-top">
           <span class="wp-num">${weekDone} / ${weekItems.length} visits</span>
@@ -1353,7 +1980,9 @@ function renderToday() {
 /* 12) SCHEDULE SCREEN */
 function renderSchedule() {
   const el = document.getElementById("screen-schedule");
-  if (!checkins.length) { el.innerHTML = '<div class="empty-state">No check-ins yet. Tap + to add one.</div>'; return; }
+  const gate = screenGate("the schedule");
+  if (gate) { el.innerHTML = gate; return; }
+  if (!checkins.length) { el.innerHTML = errorBanner() + emptyScheduleHTML(); return; }
 
   const weeks = [...new Set(checkins.map((c) => c.week))].sort((a, b) => a - b);
   if (!weekPicked) selectedWeek = currentWeek();
@@ -1379,7 +2008,9 @@ function renderSchedule() {
   const dayNames = Object.keys(byDay).sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
 
   el.innerHTML = `
-    <div id="week-strip">${stripHtml}</div>
+    ${errorBanner()}
+    <div id="week-strip" role="group" aria-label="Choose a week">${stripHtml}</div>
+    ${dayNames.length ? "" : `<div class="empty-state"><b>Nothing planned for week ${selectedWeek}</b>Tap Add visit to plan one.</div>`}
     ${dayNames.map((d) => `
       <div class="day-label"${selectedWeek === currentWeek() && d === todayDayName() ? ' id="day-today"' : ""}>${esc(d)}</div>
       ${byDay[d].map(renderCheckinCard).join("")}
@@ -1413,6 +2044,7 @@ function renderCheckinCard(c) {
         <div class="badge-row">
           <span class="badge" style="background:var(--epa-${epaClass}-bg);color:var(--epa-${epaClass}-fg);">${esc(c.epa)}</span>
           ${c.date ? `<span class="date-tag">${esc(fmtDayDate(c.date))}</span>` : ""}
+          ${c.status === "Pending" && isStarted(c) ? '<span class="progress-tag">In progress</span>' : ""}
           ${pendingCheckinIds.has(c.id) ? '<span class="pending-tag">Waiting to sync</span>' : ""}
         </div>
         <button class="site-link" data-role="open-site" data-site="${site.id}">${esc(site.name)}${icon("chevron-right", 15)}</button>
@@ -1431,7 +2063,14 @@ function renderCheckinCard(c) {
             </button>`).join("")}
         </div>` : ""}
 
-        <div class="status-row">
+        ${renderEvidence(c)}
+        ${renderPhotoStrip(c)}
+        ${canStart(c) ? `
+          <button class="start-btn" data-role="start-visit" ${startingVisit.has(c.id) ? "disabled" : ""}>
+            ${icon("map-pin", 18)} ${startingVisit.has(c.id) ? "Getting location…" : "Start visit"}
+          </button>` : ""}
+
+        <div class="status-row" role="group" aria-label="Visit status">
           ${STATUSES.map((s) => `
             <button class="status-pill ${c.status === s ? "active-" + s.toLowerCase() : ""}" data-status="${s}" aria-pressed="${c.status === s}">
               ${icon(STATUS_ICON[s], 12)}${s}
@@ -1441,6 +2080,7 @@ function renderCheckinCard(c) {
       <div class="card-actions">
         <button data-role="toggle-edit">${icon("pencil", 14)} Edit Details</button>
         <button data-role="toggle-drawer">${icon("message-square", 14)} Log Note${obsForThis.length ? `<span class="badge-count">${obsForThis.length}</span>` : ""}</button>
+        <button data-role="add-photo">${icon("camera", 14)} Photo${(c.photos || []).length + photosFor(c.id).length ? `<span class="badge-count">${(c.photos || []).length + photosFor(c.id).length}</span>` : ""}</button>
       </div>
       <div class="drawer-outer ${isEditOpen ? "open" : ""}"><div class="drawer"><div class="drawer-inner" data-role="edit-panel">
         ${isEditOpen ? renderEditFormBody(editDraft) : ""}
@@ -1451,6 +2091,9 @@ function renderCheckinCard(c) {
     </div>
   `;
 }
+
+/* Start is offered on pending visits that are due today or earlier and not yet started. */
+function canStart(c) { return c.status === "Pending" && !isStarted(c) && (!c.date || c.date <= todayISO()); }
 
 function renderObsEntry(o) {
   const tracked = isTracked(o);
@@ -1585,13 +2228,13 @@ function renderEditFormBody(d, mode) {
   const siteLabel = d.siteId ? siteById(d.siteId).name : "";
   return `
     <div class="edit-grid">
-      <div class="field"><label>Date</label><input type="date" data-field="date" value="${esc(d.date)}"></div>
+      <div class="field"><label>Date</label><input type="date" data-field="date" aria-label="Date" value="${esc(d.date)}"></div>
       <div class="field"><label>Day <span class="field-hint" data-hint="day" hidden>set from the date</span></label>
-        <div class="segmented" data-role="day-seg">${DAY_ORDER.map((day) => `<button type="button" data-value="${day}" class="${d.day === day ? "active" : ""}">${day.slice(0,3)}</button>`).join("")}</div>
+        <div class="segmented" data-role="day-seg" role="group" aria-label="Day">${DAY_ORDER.map((day) => `<button type="button" data-value="${day}" class="${d.day === day ? "active" : ""}">${day.slice(0,3)}</button>`).join("")}</div>
       </div>
-      <div class="field"><label>Week <span class="field-hint" data-hint="week" hidden>set from the date</span></label><input type="number" min="1" data-field="week" value="${d.week}"></div>
+      <div class="field"><label>Week <span class="field-hint" data-hint="week" hidden>set from the date</span></label><input type="number" min="1" data-field="week" aria-label="Week" value="${d.week}"></div>
       <div class="field"><label>EPA</label>
-        <div class="segmented" data-role="epa-seg">${REFERENCE.epas.map((e) => `<button data-value="${esc(e)}" class="${d.epa === e ? "active" : ""}">${esc(e)}</button>`).join("")}</div>
+        <div class="segmented" data-role="epa-seg" role="group" aria-label="EPA">${REFERENCE.epas.map((e) => `<button data-value="${esc(e)}" class="${d.epa === e ? "active" : ""}">${esc(e)}</button>`).join("")}</div>
       </div>
       <div class="field"><label>Field Assistant</label>
         <button class="picker-btn ${d.assistant ? "" : "placeholder"}" data-role="fa-picker" type="button"><span>${esc(d.assistant || "Select a field assistant…")}</span>${icon("chevron-right", 16)}</button>
@@ -1611,14 +2254,24 @@ function renderEditFormBody(d, mode) {
               </div>`).join("")}
           </div>
         </div>` : ""}
-      ${isAdd ? `<div class="form-error" data-role="form-error">${esc(addFormError)}</div>` : ""}
+      <div class="form-error" data-role="form-error" role="alert">${esc(isAdd ? addFormError : editFormError)}</div>
       <div class="edit-actions">
         <button class="btn-primary" data-role="save-btn" type="button">${isAdd ? "Create check-in" : "Save changes"}</button>
-        <button class="${isAdd ? "btn-delete" : "btn-delete"}" data-role="delete-btn" type="button">${isAdd ? "Cancel" : "Delete"}</button>
+        <button class="${!isAdd && isAdmin() ? "btn-delete" : "btn-outline"}" data-role="delete-btn" type="button">${isAdd ? "Cancel" : isAdmin() ? "Delete" : "Cancel"}</button>
       </div>
     </div>
   `;
 }
+
+/* One file input outside every re-rendered area, so a live update arriving while
+   the camera is open can't destroy it. */
+let photoTargetVisit = null;
+document.getElementById("photo-input").addEventListener("change", (e) => {
+  const file = e.target.files && e.target.files[0];
+  const id = photoTargetVisit; photoTargetVisit = null;
+  if (file && id) addPhoto(id, file);
+  e.target.value = "";
+});
 
 function wireCardEvents(scope) {
   scope.querySelectorAll(".visit-card").forEach((card) => {
@@ -1641,9 +2294,18 @@ function wireCardEvents(scope) {
       btn.addEventListener("click", () => changeStatus(c, btn.dataset.status));
     });
 
+    const startBtn = card.querySelector('[data-role="start-visit"]');
+    if (startBtn) startBtn.addEventListener("click", () => startVisit(c));
+    card.querySelector('[data-role="add-photo"]').addEventListener("click", () => {
+      photoTargetVisit = id;
+      const input = document.getElementById("photo-input");
+      input.value = "";
+      input.click();
+    });
+
     card.querySelector('[data-role="toggle-edit"]').addEventListener("click", () => {
       if (openEditId === id) { openEditId = null; editDraft = null; }
-      else { openEditId = id; editDraft = { ...c }; openDrawerId = null; }
+      else { openEditId = id; editDraft = { ...c }; openDrawerId = null; editFormError = ""; }
       render();
     });
     card.querySelector('[data-role="toggle-drawer"]').addEventListener("click", () => {
@@ -1665,7 +2327,7 @@ function wireCardEvents(scope) {
    REFERENCE only when Firestore hasn't loaded or knows nothing about them. */
 function sitesForAssistant(assistant) {
   if (!assistant) return [];
-  const fromDb = sites.filter((s) => s.assistant === assistant && s.id !== "n-a").map((s) => s.name);
+  const fromDb = sites.filter((s) => s.assistant === assistant && s.id !== "n-a" && s.status !== "closed").map((s) => s.name);
   if (fromDb.length) return fromDb.sort((a, b) => a.localeCompare(b));
   return REFERENCE.sitesByFa[assistant] || [];
 }
@@ -1748,18 +2410,34 @@ function wireDraftForm(panelInner, draft, opts) {
   panelInner.querySelector('[data-role="delete-btn"]').addEventListener("click", () => opts.onSecondary(draft));
 }
 
+/* Shared checks for the Add and Edit forms. Returns a sentence, or "" when fine. */
+function visitDraftProblem(draft, ignoreId) {
+  const missing = [];
+  if (!draft.epa) missing.push("EPA");
+  if (!draft.assistant) missing.push("field assistant");
+  if (!draft.siteId) missing.push("site");
+  if (!draft.purpose) missing.push("visit purpose");
+  if (missing.length) return "Still needed: " + missing.join(", ") + ".";
+  if (!validISO(draft.date)) return "Choose a valid date for this visit.";
+  const dup = findDuplicateVisit(draft, ignoreId);
+  if (dup) return dupMessage(dup);
+  return "";
+}
 function wireEditForm(panelInner, id, checkin) {
   wireDraftForm(panelInner, editDraft, {
     mode: "edit",
-    onSave: async (draft) => {
+    onSave: async (draft, refresh) => {
       applyDateToDraft(draft);
-      const patch = { ...draft }; delete patch.id;
-      if (!(await saveCheckin(id, patch))) return;
+      const problem = visitDraftProblem(draft, id);
+      if (problem) { editFormError = problem; refresh(); return; }
+      editFormError = "";
+      if (!(await saveCheckin(id, pickEditable(draft)))) return;
       showToast("Changes saved");
       openEditId = null; editDraft = null; render();
     },
     onSecondary: async () => {
-      const r = await openDialog({ title: "Delete this check-in?", message: "Its logged notes will remain in the site's history.", confirmLabel: "Delete", danger: true });
+      if (!isAdmin()) { openEditId = null; editDraft = null; editFormError = ""; render(); return; }
+      const r = await openDialog({ title: "Delete this check-in?", message: "Its notes stay in the site's history and its photos stay in storage. This can't be undone.", confirmLabel: "Delete", danger: true });
       if (!r.ok) return;
       if (!(await removeCheckin(id))) return;
       showToast("Check-in deleted");
@@ -1789,6 +2467,7 @@ function renderSiteProfile() {
         <span class="badge" style="background:var(--epa-${epaClass}-bg);color:var(--epa-${epaClass}-fg);">${esc(site.epa)}</span>
         <span>${esc(site.assistant)}</span>
         ${site.nurseryId ? `<span class="mono" style="font-family:ui-monospace,monospace;">${esc(site.nurseryId)}</span>` : ""}
+        ${statusChipHTML(site)}
       </div>
     </div>
     <div class="sp-body">
@@ -1808,6 +2487,13 @@ function renderSiteProfile() {
               : `<button class="call-btn" disabled title="No GPS coordinates yet">${icon("map-pin", 18)}</button>`}
           </div>
         </div>
+      </div>
+
+      <div class="sp-card">
+        <div class="target-label">GPS coordinates</div>
+        ${hasCoords
+          ? `<div class="coords">${site.lat.toFixed(5)}, ${site.lng.toFixed(5)}</div><div class="field-hint" style="margin:4px 0 0;">Starting a visit within ${SITE_RADIUS_M} m of this point counts as at the site.</div>`
+          : `<div class="coords" style="font-family:inherit;">None yet</div><div class="field-hint" style="margin:4px 0 0;">Visits here can't be verified until an admin adds coordinates.</div>`}
       </div>
 
       ${site.potfillingTarget ? `
@@ -1859,6 +2545,8 @@ function renderHistoryItem(c) {
         </div>
         <span class="status-pill active-${(c.status||"Pending").toLowerCase()}" style="min-width:0;">${icon(STATUS_ICON[c.status]||"clock", 12)} ${esc(c.status||"Pending")}</span>
       </div>
+      ${renderEvidence(c)}
+      ${renderPhotoStrip(c)}
       <div class="card-actions" style="margin-top:10px;border-top:1px solid var(--line);">
         <button data-role="hist-toggle" style="flex:1;">${icon("message-square", 14)} Notes${obsForThis.length ? `<span class="badge-count">${obsForThis.length}</span>` : ""}</button>
       </div>
@@ -1881,8 +2569,53 @@ function highlight(text, q) {
   return safe.replace(new RegExp(safeQ, "ig"), (m) => `<mark>${m}</mark>`);
 }
 
+let sitesView = "sites"; // "sites" | "team"
+const siteStatus = (s) => (s.status === "paused" || s.status === "closed" ? s.status : "active");
+function statusChipHTML(s) {
+  const st = siteStatus(s);
+  return st === "paused" ? '<span class="chip chip-warn">Paused</span>' : st === "closed" ? '<span class="chip chip-bad">Closed</span>' : "";
+}
+/* One row per field assistant: who they are, where, and how their week is going. */
+function teamRows(q) {
+  const wk = currentWeek();
+  return allAssistants().map((fa) => {
+    const mine = sites.filter((s) => s.assistant === fa && s.id !== "n-a");
+    const epa = (mine[0] && mine[0].epa) || (checkins.find((c) => c.assistant === fa) || {}).epa || "";
+    const visits = checkins.filter((c) => c.assistant === fa && c.week === wk);
+    return {
+      fa, epa, sites: mine.length, wk,
+      done: visits.filter((c) => c.status === "Completed").length, total: visits.length,
+      issues: mine.reduce((n, s) => n + openIssuesForSite(s.id).length, 0),
+    };
+  }).filter((r) => (siteFilterEpa === "All" || r.epa === siteFilterEpa) && (!q || r.fa.toLowerCase().includes(q) || r.epa.toLowerCase().includes(q)))
+    .sort((a, b) => a.fa.localeCompare(b.fa));
+}
+function renderTeamList(q) {
+  const rows = teamRows(q);
+  if (!rows.length) return `<div class="empty-state"><b>No field assistants found</b>${q ? `Nothing matches “${esc(q)}”.` : "Assign sites to field assistants in the admin page."}</div>`;
+  return `<div class="sec-title">${rows.length} field assistant${rows.length === 1 ? "" : "s"}</div>` + rows.map((r) => {
+    const epaClass = EPA_CLASS[r.epa] || "office";
+    return `
+      <button class="site-row" data-fa="${esc(r.fa)}">
+        <span class="avatar" style="background:var(--epa-${epaClass}-bg);color:var(--epa-${epaClass}-fg)">${initials(r.fa)}</span>
+        <div class="info">
+          <div class="name">${esc(r.fa)}</div>
+          <div class="meta">
+            ${r.epa ? `<span class="epa-label" style="color:var(--epa-${epaClass}-fg)">${esc(r.epa)}</span>` : ""}
+            <span>${plural(r.sites, "site")}</span>
+            <span>Wk ${r.wk}: ${r.done}/${r.total}</span>
+            ${r.issues ? `<span class="issue-flag">${icon("triangle-alert", 12)} ${r.issues}</span>` : ""}
+          </div>
+        </div>
+        ${icon("chevron-right", 17)}
+      </button>`;
+  }).join("");
+}
+
 function renderSitesTeam() {
   const el = document.getElementById("screen-sites");
+  const gate = screenGate("sites and team");
+  if (gate) { el.innerHTML = gate; return; }
   const epaOptions = ["All", ...REFERENCE.epas.filter((e) => e !== "Office")];
   const q = siteSearch.trim().toLowerCase();
 
@@ -1896,7 +2629,7 @@ function renderSitesTeam() {
       (s.nmName || "").toLowerCase().includes(q) ||
       (s.epa || "").toLowerCase().includes(q));
   }
-  filtered.sort((a, b) => a.name.localeCompare(b.name));
+  filtered.sort((a, b) => (siteStatus(a) === "closed") - (siteStatus(b) === "closed") || a.name.localeCompare(b.name));
 
   /* Notes matter as much as sites here: three weeks later you remember what
      you wrote, not which check-in you wrote it on. */
@@ -1922,27 +2655,37 @@ function renderSitesTeam() {
 
   const totalHits = filtered.length + noteHits.length + visitHits.length;
 
+  const isTeam = sitesView === "team";
   el.innerHTML = `
-    <div class="search-bar">${icon("search", 16)}<input id="site-search-input" placeholder="Search sites, staff, notes, issues…" value="${esc(siteSearch)}"></div>
-    <div class="pill-row">${epaOptions.map((e) => `<button class="filter-pill ${siteFilterEpa === e ? "active" : ""}" data-epa="${esc(e)}">${esc(e)}</button>`).join("")}</div>
+    ${errorBanner()}
+    <div class="seg-top" role="group" aria-label="Show">
+      <button type="button" data-view="sites" class="${isTeam ? "" : "active"}" aria-pressed="${!isTeam}">Sites</button>
+      <button type="button" data-view="team" class="${isTeam ? "active" : ""}" aria-pressed="${isTeam}">Team</button>
+    </div>
+    <div class="search-bar">${icon("search", 16)}<input id="site-search-input" type="search" aria-label="${isTeam ? "Search team" : "Search sites, staff, notes and issues"}" placeholder="${isTeam ? "Search field assistants…" : "Search sites, staff, notes, issues…"}" value="${esc(siteSearch)}"></div>
+    <div class="pill-row" role="group" aria-label="Filter by EPA">${epaOptions.map((e) => `<button class="filter-pill ${siteFilterEpa === e ? "active" : ""}" data-epa="${esc(e)}" aria-pressed="${siteFilterEpa === e}">${esc(e)}</button>`).join("")}</div>
 
+    ${isTeam ? renderTeamList(q) : `
     ${q && totalHits === 0 ? `<div class="empty-state">Nothing matches “${esc(siteSearch.trim())}”.</div>` : ""}
+    ${!q && !filtered.length ? `<div class="empty-state"><b>No sites yet</b>An admin adds sites on the admin page.</div>` : ""}
 
     ${filtered.length ? `
       <div class="sec-title">${filtered.length} site${filtered.length === 1 ? "" : "s"}</div>
       ${filtered.map((s) => {
         const epaClass = EPA_CLASS[s.epa] || "office";
         const issues = openIssuesForSite(s.id).length;
+        const noGps = typeof s.lat !== "number" || typeof s.lng !== "number";
         return `
-          <button class="site-row" data-site="${s.id}">
+          <button class="site-row ${siteStatus(s) === "closed" ? "closed" : ""}" data-site="${s.id}">
             <span class="dot" style="background:var(--epa-${epaClass}-dot)"></span>
             <div class="info">
-              <div class="name">${highlight(s.name, q)}</div>
+              <div class="name">${highlight(s.name, q)}${statusChipHTML(s)}</div>
               <div class="meta">
                 ${s.epa ? `<span class="epa-label" style="color:var(--epa-${epaClass}-fg)">${esc(s.epa)}</span>` : ""}
                 <span>${highlight(s.assistant || "", q)}</span>
                 ${s.nurseryId ? `<span class="mono">${highlight(s.nurseryId, q)}</span>` : ""}
                 ${issues ? `<span class="issue-flag">${icon("triangle-alert", 12)} ${issues}</span>` : ""}
+                ${noGps ? '<span class="data-flag">No GPS</span>' : ""}
               </div>
             </div>
             ${icon("chevron-right", 17)}
@@ -1984,8 +2727,13 @@ function renderSitesTeam() {
             <span class="res-meta">${esc(c.assistant || "")}${c.date ? `${SEP}${esc(fmtShortDate(c.date))}` : ""}${SEP}${esc(c.status || "Pending")}</span>
           </span>
         </button>`).join("")}` : ""}
+    `}
   `;
 
+  el.querySelectorAll(".seg-top button").forEach((b) => b.addEventListener("click", () => { sitesView = b.dataset.view; renderSitesTeam(); }));
+  el.querySelectorAll("[data-fa]").forEach((r) => r.addEventListener("click", () => {
+    sitesView = "sites"; siteSearch = r.dataset.fa; siteFilterEpa = "All"; renderSitesTeam();
+  }));
   const input = el.querySelector("#site-search-input");
   input.addEventListener("input", (e) => {
     siteSearch = e.target.value;
@@ -2002,9 +2750,15 @@ function renderSitesTeam() {
 }
 
 /* 15) ANALYTICS SCREEN */
+let dashWeek = null;
 function renderAnalytics() {
   const el = document.getElementById("screen-analytics");
-  if (!checkins.length) { el.innerHTML = '<div class="empty-state">Nothing to summarize yet.</div>'; return; }
+  const gate = screenGate("the dashboard", ["sites", "checkins", "observations"]);
+  if (gate) { el.innerHTML = gate; return; }
+  if (!checkins.length) { el.innerHTML = errorBanner() + emptyScheduleHTML(); return; }
+  const weeks = weeksWithData();
+  const wk = dashWeek !== null && weeks.includes(dashWeek) ? dashWeek : currentWeek();
+  const wkIdx = weeks.indexOf(wk);
 
   const total = checkins.length;
   const completed = checkins.filter((c) => c.status === "Completed").length;
@@ -2037,7 +2791,17 @@ function renderAnalytics() {
   const riskBadgeIcon = { issue: "circle-alert", followup: "clock", stale: "calendar", never: "map-pin", repeat: "repeat" };
 
   el.innerHTML = `
+    ${errorBanner()}
+    <div class="week-head">
+      <div class="wk-title headline">This week · Week ${wk}</div>
+      <div class="week-step">
+        <button type="button" data-role="wk-prev" aria-label="Previous week" ${wkIdx <= 0 ? "disabled" : ""}>${icon("chevron-left", 18)}</button>
+        <button type="button" data-role="wk-next" aria-label="Next week" ${wkIdx < 0 || wkIdx >= weeks.length - 1 ? "disabled" : ""}>${icon("chevron-right", 18)}</button>
+      </div>
+    </div>
+    ${renderCounters(wk)}
     <button class="report-btn" data-role="open-report">${icon("file-text", 17)} Open weekly check-in</button>
+    <div class="sec-title">All weeks</div>
     <div class="stat-grid">
       <div class="stat-tile"><div class="num">${total}</div><div class="label">Total visits</div></div>
       <div class="stat-tile"><div class="num">${pct}%</div><div class="label">Completed · ${completed} of ${total}</div></div>
@@ -2104,6 +2868,8 @@ function renderAnalytics() {
   `;
 
   el.querySelector('[data-role="open-report"]').addEventListener("click", () => openReport());
+  el.querySelector('[data-role="wk-prev"]').addEventListener("click", () => { if (wkIdx > 0) { dashWeek = weeks[wkIdx - 1]; renderAnalytics(); } });
+  el.querySelector('[data-role="wk-next"]').addEventListener("click", () => { if (wkIdx >= 0 && wkIdx < weeks.length - 1) { dashWeek = weeks[wkIdx + 1]; renderAnalytics(); } });
   el.querySelectorAll(".risk-row").forEach((r) => r.addEventListener("click", () => openSiteProfile(r.dataset.site)));
 }
 
@@ -2152,20 +2918,11 @@ function renderAddCheckin() {
   wireDraftForm(formHost, addDraft, {
     mode: "add",
     onSave: async (draft, refresh) => {
-      const missing = [];
-      if (!draft.epa) missing.push("EPA");
-      if (!draft.assistant) missing.push("field assistant");
-      if (!draft.siteId) missing.push("site");
-      if (!draft.purpose) missing.push("visit purpose");
-      if (missing.length) {
-        addFormError = "Still needed: " + missing.join(", ") + ".";
-        refresh();
-        return;
-      }
-      addFormError = "";
       applyDateToDraft(draft);
-      const payload = { ...draft };
-      if (!(await createCheckin(payload))) return;
+      const problem = visitDraftProblem(draft, null);
+      if (problem) { addFormError = problem; refresh(); return; }
+      addFormError = "";
+      if (!(await createCheckin({ ...draft }))) return;
       showToast("Visit added");
       closeAddCheckin();
       render();
