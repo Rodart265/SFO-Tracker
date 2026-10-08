@@ -190,6 +190,10 @@ a{color:inherit;text-decoration:none;}
 .toast.open{opacity:1;transform:translate(-50%,0);pointer-events:auto;}
 .toast.error{border-left-color:var(--flag);}
 .toast button{color:var(--flag-soft);font-size:14px;font-weight:700;min-height:44px;min-width:56px;padding:0 10px;}
+.ev-by{font-size:12px;color:var(--ink-3,#6b7266);margin:6px 0 0;}
+.ev-review{display:flex;gap:8px;margin-top:6px;}
+.ev-review button{flex:1;min-height:36px;border:1px solid var(--line);border-radius:10px;background:var(--paper);font:inherit;font-size:13px;}
+.ev-review button:disabled{opacity:.5;}
 .dialog-backdrop{position:fixed;inset:0;background:rgba(20,24,18,0);pointer-events:none;transition:background .2s var(--ease);z-index:80;display:flex;align-items:flex-end;justify-content:center;}
 .dialog-backdrop.open{background:rgba(20,24,18,.5);pointer-events:auto;}
 .dialog{width:100%;max-width:560px;background:#fff;border-radius:16px 16px 0 0;padding:20px 18px calc(18px + env(safe-area-inset-bottom,0px));transform:translateY(100%);transition:transform .25s var(--ease);}
@@ -1265,7 +1269,7 @@ function uid() { return (crypto.randomUUID && crypto.randomUUID()) || (Date.now(
 function stampNew(data) {
   const me = meEmail();
   const aid = data.assistantId !== undefined ? data.assistantId : data.assistant !== undefined ? faIdOf(data.assistant) : data.siteId ? faIdOf((siteById(data.siteId) || {}).assistant) : null;
-  return { ...data, assistantId: aid, createdAt: serverTimestamp(), createdBy: me, updatedAt: serverTimestamp(), updatedBy: me }; }
+  return { ...data, assistantId: aid, recordedByRole: myRole, createdAt: serverTimestamp(), createdBy: me, updatedAt: serverTimestamp(), updatedBy: me }; }
 function stampEdit(patch) { return { ...patch, updatedAt: serverTimestamp(), updatedBy: meEmail() }; }
 
 /* Visit identity.
@@ -1561,8 +1565,24 @@ function evidenceLine(e, label) {
 function renderEvidence(c) {
   const ev = c.evidence || {};
   const lines = [evidenceLine(ev.start, "Started"), evidenceLine(ev.end, "Finished")].filter(Boolean);
-  return lines.map((l) => `<div class="ev-line ${l.cls}">${icon(l.icon, 15)}<span>${esc(l.head)}<small>${esc(l.sub)}</small></span></div>`).join("");
+  let html = lines.map((l) => `<div class="ev-line ${l.cls}">${icon(l.icon, 15)}<span>${esc(l.head)}<small>${esc(l.sub)}</small></span></div>`).join("");
+  /* Older visits have no recordedByRole: the SFO entered those. */
+  const by = c.recordedByRole === "fa" ? "the FA" : "the SFO";
+  const rv = c.review && c.review.status;
+  html += `<div class="ev-by">Recorded by ${by}${rv === "verified" ? " · Verified" : rv === "followup" ? " · Needs follow-up" : ""}</div>`;
+  if (!isFa() && isStarted(c)) {
+    html += `<div class="ev-review"><button type="button" data-review="verified" data-visit="${esc(c.id)}"${rv === "verified" ? " disabled" : ""}>Verify</button><button type="button" data-review="followup" data-visit="${esc(c.id)}"${rv === "followup" ? " disabled" : ""}>Needs follow-up</button></div>`;
+  }
+  return html;
 }
+async function reviewVisit(id, status) {
+  try { await updateDoc(doc(db, "checkins", id), stampEdit({ review: { status, by: meEmail(), atMs: Date.now() } })); }
+  catch (err) { showToast("Couldn't save the review: " + (err.code || err.message)); }
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-review]");
+  if (b && !isFa()) reviewVisit(b.dataset.visit, b.dataset.review);
+});
 
 /* 9b) PHOTOS
    A photo is resized on the phone, saved in IndexedDB straight away (so it
@@ -2629,6 +2649,7 @@ function statusChipHTML(s) {
   const st = siteStatus(s);
   return st === "paused" ? '<span class="chip chip-warn">Paused</span>' : st === "closed" ? '<span class="chip chip-bad">Closed</span>' : "";
 }
+const WEEKLY_CAPACITY = 18; // visits one FA could theoretically handle in a week; the same for every FA
 /* One row per field assistant: who they are, where, and how their week is going. */
 function teamRows(q) {
   const wk = currentWeek();
@@ -2636,10 +2657,19 @@ function teamRows(q) {
     const mine = sites.filter((s) => s.assistant === fa && s.id !== "n-a");
     const epa = (mine[0] && mine[0].epa) || (checkins.find((c) => c.assistant === fa) || {}).epa || "";
     const visits = checkins.filter((c) => c.assistant === fa && c.week === wk);
+    const completed = visits.filter((c) => c.status === "Completed");
+    const active = mine.filter((s) => siteStatus(s) === "active");
+    const visitedIds = new Set(completed.map((c) => c.siteId));
+    const mineIds = new Set(mine.map((s) => s.id));
     return {
       fa, epa, sites: mine.length, wk,
-      done: visits.filter((c) => c.status === "Completed").length, total: visits.length,
+      done: completed.length, total: visits.length,
       issues: mine.reduce((n, s) => n + openIssuesForSite(s.id).length, 0),
+      assigned: active.length,
+      overdue: checkins.filter((c) => c.assistant === fa && isOverdue(c)).length,
+      notVisited: active.filter((s) => !visitedIds.has(s.id)).length,
+      followUps: observations.filter((o) => o.type === "followUp" && isUnresolved(o) && mineIds.has(o.siteId)).length,
+      weak: completed.filter((c) => !(c.evidence && c.evidence.start) || (c.evidence.start && c.evidence.start.result === "far")).length,
     };
   }).filter((r) => (siteFilterEpa === "All" || r.epa === siteFilterEpa) && (!q || r.fa.toLowerCase().includes(q) || r.epa.toLowerCase().includes(q)))
     .sort((a, b) => a.fa.localeCompare(b.fa));
@@ -2660,6 +2690,12 @@ function renderTeamList(q) {
             <span>Wk ${r.wk}: ${r.done}/${r.total}</span>
             ${r.issues ? `<span class="issue-flag">${icon("triangle-alert", 12)} ${r.issues}</span>` : ""}
           </div>
+          <div class="meta">
+            <span>Capacity ${WEEKLY_CAPACITY} · Assigned ${r.assigned} · Scheduled ${r.total} · Done ${r.done}</span>
+          </div>
+          ${(r.overdue || r.notVisited || r.followUps || r.weak) ? `<div class="meta">${[
+            r.overdue ? r.overdue + " overdue" : "", r.notVisited ? r.notVisited + " not visited this week" : "",
+            r.followUps ? plural(r.followUps, "open follow-up") : "", r.weak ? r.weak + " to check (GPS/evidence)" : ""].filter(Boolean).map((t) => `<span class="issue-flag">${esc(t)}</span>`).join("")}</div>` : ""}
         </div>
         ${icon("chevron-right", 17)}
       </button>`;
