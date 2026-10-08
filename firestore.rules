@@ -50,8 +50,7 @@ service cloud.firestore {
         && get(roleDocPath()).data.role in allowed;
     }
     function isAdmin()  { return hasRole(['admin']); }
-    // 'fa' is deliberately absent: Field Assistants get no access until their
-    // reads are limited to their own sites (V2 phase 2).
+    // 'fa' is not here: Field Assistants only get the own-record access above.
     function isMember() { return hasRole(['member', 'sfo', 'admin']); }
     function me()       { return request.auth.token.email; }
 
@@ -65,6 +64,15 @@ service cloud.firestore {
         && request.resource.data.get('createdBy', null) == resource.data.get('createdBy', null)
         && request.resource.data.get('createdAt', null) == resource.data.get('createdAt', null);
     }
+
+    // A Field Assistant is tied to one record id (users/<uid>.faId). They only
+    // touch documents whose assistantId is that id. Reads use plain field access
+    // so Firestore can prove a query (where assistantId == faId) is allowed.
+    function myFaId()    { return get(roleDocPath()).data.get('faId', null); }
+    function isFa()      { return hasRole(['fa']) && myFaId() != null; }
+    function ownsRead()  { return isFa() && resource.data.assistantId == myFaId(); }
+    function ownsNew(d)  { return isFa() && d.get('assistantId', null) == myFaId(); }
+    function ownsBoth()  { return ownsNew(resource.data) && ownsNew(request.resource.data); }
 
     // A date is empty/absent (an unscheduled placeholder) or a real-looking YYYY-MM-DD.
     function okDate(v) {
@@ -112,24 +120,24 @@ service cloud.firestore {
 
     // ---- Field Assistant records (a person, not a login) -----------------
     match /fieldAssistants/{faId} {
-      allow read: if isMember();
+      allow read: if isMember() || (isFa() && faId == myFaId());
       allow write: if isAdmin();
     }
 
     // ---- site directory (names, phone numbers, GPS) --------------------
     match /sites/{siteId} {
-      allow read: if isMember();
+      allow read: if isMember() || ownsRead();
       allow write: if isAdmin();
     }
 
     // ---- visits (the schedule) -----------------------------------------
     match /checkins/{visitId} {
-      allow read: if isMember();
-      allow create: if isMember()
+      allow read: if isMember() || ownsRead();
+      allow create: if (isMember() || ownsNew(request.resource.data))
         && auditOnCreate()
         && okVisit(request.resource.data)
         && request.resource.data.get('status', 'Pending') == 'Pending';
-      allow update: if isMember()
+      allow update: if (isMember() || ownsBoth())
         && auditOnUpdate()
         && okVisit(request.resource.data)
         && (isAdmin() || (startKept() && photosOnlyGrow()));
@@ -138,17 +146,17 @@ service cloud.firestore {
 
     // ---- notes / issues / follow-ups -----------------------------------
     match /observations/{obsId} {
-      allow read: if isMember();
+      allow read: if isMember() || ownsRead();
       // The author field must be the signed-in person's own email, so a note
       // cannot be posted under someone else's name.
-      allow create: if isMember()
+      allow create: if (isMember() || ownsNew(request.resource.data))
         && request.resource.data.author == me()
         && auditOnCreate()
         && request.resource.data.type in ['observation', 'issue', 'action', 'followUp'];
       // Any member can update a note (for example to mark an issue resolved),
       // but nobody can change who wrote it. get(..., null) keeps older notes
       // that have no author field updatable.
-      allow update: if isMember()
+      allow update: if (isMember() || ownsBoth())
         && request.resource.data.get('author', null) == resource.data.get('author', null)
         && request.resource.data.get('updatedBy', null) == me()
         && request.resource.data.get('createdBy', null) == resource.data.get('createdBy', null);
@@ -169,7 +177,7 @@ service cloud.firestore {
 
     // ---- setup marker + program settings (week 1 Monday) ---------------
     match /meta/{docId} {
-      allow read: if isMember();
+      allow read: if isMember() || isFa();
       allow write: if isAdmin();
     }
 

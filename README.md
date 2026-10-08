@@ -82,7 +82,7 @@ Each person needs a document at `users/<their UID>` with a text field `role`:
 |------|--------|
 | `admin` | everything: also edit the site directory, `meta` and `users`, and delete visits, notes, weekly check-ins and photos |
 | `sfo` | same as `member` for now; supervises Field Assistants |
-| `fa` | no access yet (limited access arrives in V2 phase 2) |
+| `fa` | only their own sites, visits and notes (`users/<uid>` needs `faId`); no weekly check-in, no other FAs |
 | `member` | read everything; create and edit visits, notes and weekly check-ins; add photos |
 
 A person whose `users` document has `active: false`, or who has no document or any other role, sees a

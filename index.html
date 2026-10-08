@@ -654,7 +654,7 @@ import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendP
 import {
   initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
   collection, doc, getDoc, addDoc, updateDoc, setDoc, deleteDoc, onSnapshot,
-  query, orderBy, serverTimestamp, arrayUnion
+  query, where, orderBy, serverTimestamp, arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* 1) FIREBASE CONFIG */
@@ -831,7 +831,8 @@ let checkins = [];
 let observations = [];
 let weeklyCheckins = [];
 let programDoc = null;   // meta/program: { week1Monday, ... } set by an admin
-let myRole = null;       // "admin" | "member"; set once the access check passes
+let myRole = null;       // "admin" | "sfo" | "member" | "fa"; set once the access check passes
+let myFaId = null;       // an FA's own record id (from users/<uid>.faId); null for everyone else
 let outbox = [];         // photos waiting to upload (mirror of the IndexedDB outbox)
 let startingVisit = new Set(); // visit ids with a GPS check-in in flight
 let unsubs = [];
@@ -963,7 +964,7 @@ document.getElementById("sign-out-btn").addEventListener("click", async () => {
 });
 
 function resetState() {
-  sites = []; checkins = []; observations = []; weeklyCheckins = []; programDoc = null; myRole = null;
+  sites = []; checkins = []; observations = []; weeklyCheckins = []; programDoc = null; myRole = null; myFaId = null;
   loadedKeys = {}; listenErrors = {}; snapFromCache = {};
   pendingCounts = { sites: 0, checkins: 0, observations: 0, weeklyCheckins: 0 }; pendingCheckinIds = new Set();
   addItemDraft = null; setupIncomplete = false;
@@ -988,6 +989,7 @@ async function beginSession(user) {
   if (seq !== authSeq) return; // signed out or switched account while we waited
   if (access.kind !== "ok") { showGate(access.kind, user, access.err); return; }
   myRole = access.role;
+  myFaId = access.faId || null;
   showScreen("main");
   updateFab();
   startListeners();
@@ -1004,6 +1006,7 @@ async function checkAccess(user) {
     const d = snap.exists() ? snap.data() : {};
     const role = d.role || null;
     if (d.active !== false && (role === "admin" || role === "sfo" || role === "member")) return { kind: "ok", role };
+    if (d.active !== false && role === "fa" && d.faId) return { kind: "ok", role, faId: d.faId };
     return { kind: "noaccess" };
   } catch (err) {
     if (err && err.code === "permission-denied") return { kind: "noaccess" };
@@ -1085,14 +1088,17 @@ function startListeners() {
   const docsOf = (snap) => snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   const countPending = (key, snap) => { pendingCounts[key] = snap.docs.filter((d) => d.metadata.hasPendingWrites).length; };
 
+  /* A Field Assistant only asks for their own records; the rules would refuse anything else. */
+  const mine = (name) => query(collection(db, name), where("assistantId", "==", myFaId));
   unsubs = [
-    watch("sites", collection(db, "sites"), (snap) => { sites = docsOf(snap); countPending("sites", snap); }),
-    watch("checkins", query(collection(db, "checkins"), orderBy("order")), (snap) => {
+    watch("sites", isFa() ? mine("sites") : collection(db, "sites"), (snap) => { sites = docsOf(snap); countPending("sites", snap); }),
+    watch("checkins", isFa() ? mine("checkins") : query(collection(db, "checkins"), orderBy("order")), (snap) => {
       checkins = docsOf(snap); countPending("checkins", snap);
+      if (isFa()) checkins.sort((a, b) => (a.order || 0) - (b.order || 0));
       pendingCheckinIds = new Set(snap.docs.filter((d) => d.metadata.hasPendingWrites).map((d) => d.id));
     }),
-    watch("observations", collection(db, "observations"), (snap) => { observations = docsOf(snap); countPending("observations", snap); }),
-    watch("weeklyCheckins", collection(db, "weeklyCheckins"), (snap) => { weeklyCheckins = docsOf(snap); countPending("weeklyCheckins", snap); }),
+    watch("observations", isFa() ? mine("observations") : collection(db, "observations"), (snap) => { observations = docsOf(snap); countPending("observations", snap); }),
+    isFa() ? (loadedKeys.weeklyCheckins = true, () => {}) : watch("weeklyCheckins", collection(db, "weeklyCheckins"), (snap) => { weeklyCheckins = docsOf(snap); countPending("weeklyCheckins", snap); }),
     watch("program", doc(db, "meta", "program"), (snap) => { programDoc = snap.exists() ? snap.data() : null; }),
   ];
 }
@@ -1249,12 +1255,17 @@ function allAssistants() {
 
 const meEmail = () => (auth.currentUser && auth.currentUser.email) || "unknown";
 const isAdmin = () => myRole === "admin";
+const isFa = () => myRole === "fa";
+const faIdOf = (name) => { const n = (name || "").trim(); return n && n !== "N/A" ? slugify(n) : null; };
 function uid() { return (crypto.randomUUID && crypto.randomUUID()) || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10)); }
 
 /* Audit fields. Every document records who made it and when, and who last touched
    it. Timestamps come from the server clock; names come from the signed-in account
    (the security rules check that the name matches). */
-function stampNew(data) { const me = meEmail(); return { ...data, createdAt: serverTimestamp(), createdBy: me, updatedAt: serverTimestamp(), updatedBy: me }; }
+function stampNew(data) {
+  const me = meEmail();
+  const aid = data.assistantId !== undefined ? data.assistantId : data.assistant !== undefined ? faIdOf(data.assistant) : data.siteId ? faIdOf((siteById(data.siteId) || {}).assistant) : null;
+  return { ...data, assistantId: aid, createdAt: serverTimestamp(), createdBy: me, updatedAt: serverTimestamp(), updatedBy: me }; }
 function stampEdit(patch) { return { ...patch, updatedAt: serverTimestamp(), updatedBy: meEmail() }; }
 
 /* Visit identity.
@@ -2843,7 +2854,7 @@ function renderAnalytics() {
       </div>
     </div>
     ${renderCounters(wk)}
-    <button class="report-btn" data-role="open-report">${icon("file-text", 17)} Open weekly check-in</button>
+    ${isFa() ? "" : `<button class="report-btn" data-role="open-report">${icon("file-text", 17)} Open weekly check-in</button>`}
     <div class="sec-title">Overall</div>
     <div class="stat-grid">
       <div class="stat-tile"><div class="num">${total}</div><div class="label">Total visits</div></div>
@@ -2910,7 +2921,7 @@ function renderAnalytics() {
     </div>
   `;
 
-  el.querySelector('[data-role="open-report"]').addEventListener("click", () => openReport(wk));
+  el.querySelector('[data-role="open-report"]')?.addEventListener("click", () => openReport(wk));
   el.querySelector('[data-role="wk-prev"]').addEventListener("click", () => { if (wkIdx > 0) { dashWeek = weeks[wkIdx - 1]; renderAnalytics(); } });
   el.querySelector('[data-role="wk-next"]').addEventListener("click", () => { if (wkIdx >= 0 && wkIdx < weeks.length - 1) { dashWeek = weeks[wkIdx + 1]; renderAnalytics(); } });
   el.querySelectorAll(".risk-row").forEach((r) => r.addEventListener("click", () => openSiteProfile(r.dataset.site)));

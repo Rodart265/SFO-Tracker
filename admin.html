@@ -238,7 +238,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, collection, doc, onSnapshot, writeBatch, serverTimestamp,
-  getDocFromServer, setDoc, updateDoc, deleteDoc
+  getDocFromServer, getDocs, setDoc, updateDoc, deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -264,6 +264,8 @@ function icon(name, size) {
 }
 function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function slugify(name) { return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""); }
+/* The Field Assistant record id for a name; null for blank or the "N/A" office entry. */
+function faId(name) { const n = (name || "").trim(); return n && n !== "N/A" ? slugify(n) : null; }
 function fmtNum(n) { return typeof n === "number" ? n.toLocaleString() : "—"; }
 const SEP = '<i class="sep" aria-hidden="true"></i>';
 const $ = (sel, root) => (root || document).querySelector(sel);
@@ -813,7 +815,7 @@ async function saveSite(site, card, token) {
   }
 
   const fields = {
-    epa: val("epa"), status: val("status"), assistant: val("assistant"), nurseryId: val("nurseryId"),
+    epa: val("epa"), status: val("status"), assistant: val("assistant"), assistantId: faId(val("assistant")), nurseryId: val("nurseryId"),
     potfillingTarget: target, nmName: val("nmName"), nmPhone, lat, lng
   };
 
@@ -841,7 +843,7 @@ async function saveSite(site, card, token) {
     let moved = 0;
     if (patch.assistant && patch.assistant !== (site.assistant || "")) {
       checkins.filter((c) => c.siteId === site.id && c.status === "Pending").forEach((c) => {
-        batch.update(doc(db, "checkins", c.id), { assistant: patch.assistant, updatedAt: serverTimestamp(), updatedBy: who() });
+        batch.update(doc(db, "checkins", c.id), { assistant: patch.assistant, assistantId: faId(patch.assistant), updatedAt: serverTimestamp(), updatedBy: who() });
         moved++;
       });
     }
@@ -1138,6 +1140,7 @@ function renderTeam() {
         <h2>Field Assistant records</h2>
         <p class="hint">Creates one record per Field Assistant named on your sites, supervised by you. Records that already exist are left alone. The office entry (N/A) is skipped. A record is not a login.</p>
         <button class="btn-save" id="fa-create" type="button" style="width:100%;flex:none;">Preview and create</button>
+        <button class="btn-save" id="fa-link" type="button" style="width:100%;flex:none;margin-top:10px;">Link existing records to FAs</button>
         <div class="save-msg" id="fa-msg" role="status"></div>
       </div>
       <details class="add-card" id="add-user">
@@ -1155,6 +1158,7 @@ function renderTeam() {
       </details>`;
     $("#au-save").addEventListener("click", addUserByUid);
     $("#fa-create").addEventListener("click", createFaRecords);
+    $("#fa-link").addEventListener("click", linkExistingRecords);
     $("#team-list").addEventListener("click", (e) => {
       const row = e.target.closest("[data-uid]");
       if (!row) return;
@@ -1244,7 +1248,7 @@ async function saveUser(u, card, isSelf) {
   const msg = $('[data-role="msg"]', card);
   const saveBtn = $('[data-role="save"]', card);
   const val = (f) => $(`[data-field="${f}"]`, card).value.trim();
-  const patch = { name: val("name"), assistant: val("assistant"), updatedAt: serverTimestamp(), updatedBy: who() };
+  const patch = { name: val("name"), assistant: val("assistant"), faId: faId(val("assistant")), updatedAt: serverTimestamp(), updatedBy: who() };
   if (!isSelf) {
     const role = val("role");
     patch.role = role;
@@ -1262,6 +1266,7 @@ async function saveUser(u, card, isSelf) {
   msg.className = "save-msg"; msg.textContent = pendingMsg();
   try {
     await updateDoc(doc(db, "users", u.id), patch);
+    if (patch.faId) { try { await updateDoc(doc(db, "fieldAssistants", patch.faId), { linkedUid: u.id, updatedAt: serverTimestamp(), updatedBy: who() }); } catch (e) { /* record may not exist yet */ } }
     msg.className = "save-msg ok"; msg.textContent = "Saved.";
     setTimeout(() => { if (editingUid === u.id) { closeUserCard(); renderTeamList(); } }, 1000);
   } catch (err) {
@@ -1301,6 +1306,40 @@ async function createFaRecords() {
     msg.className = "save-msg ok"; msg.textContent = "Created " + todo.length + " records.";
   } catch (err) {
     fail("Couldn't create: " + (err.code || err.message));
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* Adds assistantId to older sites, visits and notes so Field Assistants can be limited to their own. Notes take the site's current FA. */
+async function linkExistingRecords() {
+  const msg = $("#fa-msg"), btn = $("#fa-link");
+  const fail = (t) => { msg.className = "save-msg err"; msg.textContent = t; };
+  if (!loaded.sites || !loaded.checkins) return fail("Data is still loading. Try again in a moment.");
+  btn.disabled = true;
+  try {
+    const siteAssistant = {}; sites.forEach((s) => { siteAssistant[s.id] = s.assistant; });
+    const work = [];
+    sites.filter((s) => s.assistantId === undefined).forEach((s) => work.push(["sites", s.id, faId(s.assistant)]));
+    checkins.filter((c) => c.assistantId === undefined).forEach((c) => work.push(["checkins", c.id, faId(c.assistant)]));
+    const obs = await getDocs(collection(db, "observations"));
+    obs.docs.filter((d) => d.data().assistantId === undefined).forEach((d) => work.push(["observations", d.id, faId(siteAssistant[d.data().siteId])]));
+    if (!work.length) { msg.className = "save-msg ok"; msg.textContent = "Everything is already linked."; return; }
+    const by = (c) => work.filter((w) => w[0] === c).length;
+    const ok = await confirmModal({
+      title: "Link " + work.length + " records?",
+      body: by("sites") + " sites, " + by("checkins") + " visits and " + by("observations") + " notes get an FA link. Nothing else changes.",
+      confirmLabel: "Link records"
+    });
+    if (!ok) return;
+    for (let i = 0; i < work.length; i += 400) {
+      const batch = writeBatch(db);
+      work.slice(i, i + 400).forEach(([col, id, fa]) => batch.update(doc(db, col, id), { assistantId: fa, updatedAt: serverTimestamp(), updatedBy: who() }));
+      await batch.commit();
+    }
+    msg.className = "save-msg ok"; msg.textContent = "Linked " + work.length + " records.";
+  } catch (err) {
+    fail("Couldn't link: " + (err.code || err.message));
   } finally {
     btn.disabled = false;
   }
