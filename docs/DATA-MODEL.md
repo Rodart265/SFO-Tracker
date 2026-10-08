@@ -126,3 +126,7 @@ The site entry with assistant `N/A` is the office placeholder, not an FA, and ge
 
 ## assistantId (V2 release A)
 `sites`, `checkins` and `observations` carry `assistantId`: the `fieldAssistants` id of the FA responsible (`slugify(assistant)`; `null` for the N/A office entry). New visits and notes get it automatically; notes take the site's FA at the time. Older records are filled in once with the admin Team tab button "Link existing records to FAs". Reassigning a site moves only its Pending visits; completed visits stay with the FA who did them.
+
+## recordedByRole and review (V2 release B)
+`checkins`, and `observations`, carry `recordedByRole`: the role of whoever typed the record (`fa`, `sfo`, `admin`, `member`). Records without it were entered by the SFO. It is a display label; `createdBy` stays the audit truth.
+`checkins.review` is `{status: "verified" | "followup", by, atMs}`, set by a Verify / Needs follow-up button an SFO or admin sees on started visits. Field Assistants cannot change it (rules). The team list shows capacity (18, the same for every FA), assigned, scheduled and done per week, plus overdue visits, sites not visited this week, open follow-ups and visits whose GPS evidence is missing or far from the site.
