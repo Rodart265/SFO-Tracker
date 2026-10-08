@@ -92,7 +92,9 @@ inferring it from dated visits.
 ## users/{uid}
 | field | type | notes |
 |-------|------|-------|
-| role | string | `admin`, `member`; anything else means no access |
+| role | string | `admin`, `sfo`, `member` (older role, same access as `sfo` for now), `fa` (no access yet, see V2 phase 2); anything else means no access |
+| active | boolean | `false` blocks the account; missing means active |
+| faId | string | for role `fa`: the id of their `fieldAssistants` record (`slugify(name)`); an FA only reads and writes documents whose `assistantId` equals it |
 | email | string | for display in the admin Team tab |
 | name | string | optional display name |
 | assistant | string | optional: the FA this person is |
@@ -108,3 +110,19 @@ On the phone a photo first goes into an IndexedDB outbox (`sfo-outbox`), then up
 and attaches itself to the visit when there is a connection. The photo ID never
 changes, so a retry uses the same public ID and a photo that already uploaded is not
 uploaded twice.
+
+## fieldAssistants/{faId} (V2 phase 1)
+A Field Assistant as a person, separate from any login. `faId` is `slugify(name)`. Created from the admin Team tab; admins write, SFOs and members read.
+
+| field | type | notes |
+|-------|------|-------|
+| name | string | as written on the sites |
+| supervisorUid, supervisorEmail | string | the SFO who supervises this FA |
+| active | boolean | |
+| linkedUid | string or null | the FA's login `users/<uid>`, set when they get one |
+| createdAt/By, updatedAt/By | | audit |
+
+The site entry with assistant `N/A` is the office placeholder, not an FA, and gets no record.
+
+## assistantId (V2 release A)
+`sites`, `checkins` and `observations` carry `assistantId`: the `fieldAssistants` id of the FA responsible (`slugify(assistant)`; `null` for the N/A office entry). New visits and notes get it automatically; notes take the site's FA at the time. Older records are filled in once with the admin Team tab button "Link existing records to FAs". Reassigning a site moves only its Pending visits; completed visits stay with the FA who did them.
