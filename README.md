@@ -81,9 +81,11 @@ Each person needs a document at `users/<their UID>` with a text field `role`:
 | role | can do |
 |------|--------|
 | `admin` | everything: also edit the site directory, `meta` and `users`, and delete visits, notes, weekly check-ins and photos |
+| `sfo` | same as `member` for now; supervises Field Assistants |
+| `fa` | no access yet (limited access arrives in V2 phase 2) |
 | `member` | read everything; create and edit visits, notes and weekly check-ins; add photos |
 
-A signed-in person with no `users` document, or any other role, sees a
+A person whose `users` document has `active: false`, or who has no document or any other role, sees a
 "No access yet" screen with a Try again button. A phone that has signed in once keeps
 working offline; a brand-new phone needs signal the first time.
 

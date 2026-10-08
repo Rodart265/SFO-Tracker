@@ -46,10 +46,13 @@ service cloud.firestore {
     function hasRole(allowed) {
       return signedIn()
         && exists(roleDocPath())
+        && get(roleDocPath()).data.get('active', true) != false
         && get(roleDocPath()).data.role in allowed;
     }
     function isAdmin()  { return hasRole(['admin']); }
-    function isMember() { return hasRole(['member', 'admin']); }
+    // 'fa' is deliberately absent: Field Assistants get no access until their
+    // reads are limited to their own sites (V2 phase 2).
+    function isMember() { return hasRole(['member', 'sfo', 'admin']); }
     function me()       { return request.auth.token.email; }
 
     // Audit fields: who is writing, and that the creation record is never rewritten.
@@ -104,6 +107,12 @@ service cloud.firestore {
     // or change anything. Members can never grant themselves a role.
     match /users/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // ---- Field Assistant records (a person, not a login) -----------------
+    match /fieldAssistants/{faId} {
+      allow read: if isMember();
       allow write: if isAdmin();
     }
 

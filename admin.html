@@ -1119,11 +1119,11 @@ function openVisits(preset) {
 }
 
 /* ============================= TEAM ============================= */
-const ROLE_LABEL = { admin: "Admin", member: "Member", none: "No access" };
-function roleKey(u) { return u.role === "admin" || u.role === "member" ? u.role : "none"; }
+const ROLE_LABEL = { admin: "Admin", sfo: "Senior Field Officer", member: "Member (older role)", fa: "Field Assistant", none: "No access" };
+function roleKey(u) { return ["admin", "sfo", "member", "fa"].includes(u.role) ? u.role : "none"; }
 function roleChip(u) {
   const r = roleKey(u);
-  return chip(r === "admin" ? "ok" : r === "member" ? "mute" : "bad", ROLE_LABEL[r]);
+  return chip(r === "admin" ? "ok" : r === "none" ? "bad" : "mute", ROLE_LABEL[r] + (u.active === false ? " · inactive" : ""));
 }
 
 function renderTeam() {
@@ -1134,6 +1134,12 @@ function renderTeam() {
       <div id="team-banner"></div>
       <div id="team-edit-slot"></div>
       <div id="team-list"></div>
+      <div class="edit-card" id="fa-card">
+        <h2>Field Assistant records</h2>
+        <p class="hint">Creates one record per Field Assistant named on your sites, supervised by you. Records that already exist are left alone. The office entry (N/A) is skipped. A record is not a login.</p>
+        <button class="btn-save" id="fa-create" type="button" style="width:100%;flex:none;">Preview and create</button>
+        <div class="save-msg" id="fa-msg" role="status"></div>
+      </div>
       <details class="add-card" id="add-user">
         <summary>Add by UID</summary>
         <div class="inner">
@@ -1142,12 +1148,13 @@ function renderTeam() {
           <div class="field"><label for="au-email">Email</label><input id="au-email" type="email" autocomplete="off" inputmode="email"></div>
           <div class="field"><label for="au-name">Name</label><input id="au-name" type="text" autocomplete="off"></div>
           <div class="field"><label for="au-role">Role</label>
-            <select id="au-role"><option value="member">Member</option><option value="admin">Admin</option></select></div>
+            <select id="au-role"><option value="sfo">Senior Field Officer</option><option value="fa">Field Assistant</option><option value="member">Member (older role)</option><option value="admin">Admin</option></select></div>
           <button class="btn-save" id="au-save" type="button" style="width:100%;flex:none;">Add team member</button>
           <div class="save-msg" id="au-msg" role="status"></div>
         </div>
       </details>`;
     $("#au-save").addEventListener("click", addUserByUid);
+    $("#fa-create").addEventListener("click", createFaRecords);
     $("#team-list").addEventListener("click", (e) => {
       const row = e.target.closest("[data-uid]");
       if (!row) return;
@@ -1203,11 +1210,18 @@ function renderUserSlot() {
         <div class="field"><label for="u-role">Role</label>
           <select id="u-role" data-field="role" ${isSelf ? "disabled" : ""}>
             <option value="admin" ${r === "admin" ? "selected" : ""}>Admin</option>
-            <option value="member" ${r === "member" ? "selected" : ""}>Member</option>
+            <option value="sfo" ${r === "sfo" ? "selected" : ""}>Senior Field Officer</option>
+            <option value="fa" ${r === "fa" ? "selected" : ""}>Field Assistant</option>
+            <option value="member" ${r === "member" ? "selected" : ""}>Member (older role)</option>
             <option value="none" ${r === "none" ? "selected" : ""}>No access</option>
           </select>
           ${isSelf ? `<div class="field-note">You can't change your own role. Ask another admin.</div>` : ""}
         </div>
+        <div class="field"><label for="u-active">Account</label>
+          <select id="u-active" data-field="active" ${isSelf ? "disabled" : ""}>
+            <option value="true" ${u.active === false ? "" : "selected"}>Active</option>
+            <option value="false" ${u.active === false ? "selected" : ""}>Inactive (blocked)</option>
+          </select></div>
         <div class="field"><label for="u-assistant">Linked assistant</label>
           <select id="u-assistant" data-field="assistant">
             <option value="" ${u.assistant ? "" : "selected"}>None</option>
@@ -1234,6 +1248,7 @@ async function saveUser(u, card, isSelf) {
   if (!isSelf) {
     const role = val("role");
     patch.role = role;
+    patch.active = val("active") !== "false";
     if (role === "none" && roleKey(u) !== "none") {
       const ok = await confirmModal({
         title: "Remove access?",
@@ -1255,6 +1270,42 @@ async function saveUser(u, card, isSelf) {
   }
 }
 
+async function createFaRecords() {
+  const msg = $("#fa-msg"), btn = $("#fa-create");
+  const fail = (t) => { msg.className = "save-msg err"; msg.textContent = t; };
+  if (!loaded.sites) return fail("Sites are still loading. Try again in a moment.");
+  const counts = {};
+  sites.forEach((s) => { const a = (s.assistant || "").trim(); if (a && a !== "N/A") counts[a] = (counts[a] || 0) + 1; });
+  const names = Object.keys(counts).sort();
+  if (!names.length) return fail("No Field Assistants found on the sites.");
+  btn.disabled = true;
+  try {
+    const todo = [];
+    for (const n of names) {
+      const snap = await getDocFromServer(doc(db, "fieldAssistants", slugify(n)));
+      if (!snap.exists()) todo.push(n);
+    }
+    if (!todo.length) { msg.className = "save-msg ok"; msg.textContent = "All " + names.length + " records already exist."; return; }
+    const ok = await confirmModal({
+      title: "Create " + todo.length + " Field Assistant records?",
+      body: todo.map((n) => n + " (" + counts[n] + " sites)").join(", ") + ". You will be their supervisor.",
+      confirmLabel: "Create"
+    });
+    if (!ok) return;
+    const batch = writeBatch(db);
+    todo.forEach((n) => batch.set(doc(db, "fieldAssistants", slugify(n)), {
+      name: n, supervisorUid: auth.currentUser.uid, supervisorEmail: who(), active: true, linkedUid: null,
+      createdAt: serverTimestamp(), createdBy: who(), updatedAt: serverTimestamp(), updatedBy: who()
+    }));
+    await batch.commit();
+    msg.className = "save-msg ok"; msg.textContent = "Created " + todo.length + " records.";
+  } catch (err) {
+    fail("Couldn't create: " + (err.code || err.message));
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 async function addUserByUid() {
   const msg = $("#au-msg"), btn = $("#au-save");
   const uid = $("#au-uid").value.trim(), email = $("#au-email").value.trim(), name = $("#au-name").value.trim(), role = $("#au-role").value;
@@ -1268,7 +1319,7 @@ async function addUserByUid() {
   msg.className = "save-msg"; msg.textContent = pendingMsg();
   try {
     await setDoc(doc(db, "users", uid), {
-      role, email, name,
+      role, email, name, active: true,
       createdAt: serverTimestamp(), updatedAt: serverTimestamp(), updatedBy: who()
     });
     msg.className = "save-msg ok"; msg.textContent = "Added " + email + " as " + ROLE_LABEL[role].toLowerCase() + ".";

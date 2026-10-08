@@ -1001,8 +1001,9 @@ async function beginSession(user) {
 async function checkAccess(user) {
   try {
     const snap = await getDoc(doc(db, "users", user.uid));
-    const role = snap.exists() ? snap.data().role : null;
-    if (role === "admin" || role === "member") return { kind: "ok", role };
+    const d = snap.exists() ? snap.data() : {};
+    const role = d.role || null;
+    if (d.active !== false && (role === "admin" || role === "sfo" || role === "member")) return { kind: "ok", role };
     return { kind: "noaccess" };
   } catch (err) {
     if (err && err.code === "permission-denied") return { kind: "noaccess" };

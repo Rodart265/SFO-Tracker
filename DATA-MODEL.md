@@ -1,0 +1,124 @@
+# SFO Tracker data model (V1.0)
+
+Every write goes through the signed-in person's Firebase Auth account. `email`
+below always means `auth.currentUser.email`. Timestamps marked **server** are
+`serverTimestamp()`; timestamps marked **ms** are plain numbers
+(`Date.now()`), used where the device clock at the moment of capture is the
+evidence.
+
+## sites/{siteId}
+`siteId` is `slugify(name)`. Written by admins only.
+
+| field | type | notes |
+|-------|------|-------|
+| name | string | |
+| epa | string | Chilaza / Ming'ongo / Mpingu / Office |
+| assistant | string | field assistant (FA) name |
+| nurseryId | string | |
+| potfillingTarget | number or null | |
+| nmName, nmPhone | string | nursery manager; phone as `+265XXXXXXXXX` |
+| lat, lng | number or null | GPS of the nursery |
+| status | string | `active` (default when missing), `paused`, `closed` |
+| createdAt, createdBy | server, email | set once on creation |
+| updatedAt, updatedBy | server, email | set on every write |
+
+## checkins/{visitId}
+New visits use a deterministic ID so the same visit can't be created twice,
+even from two phones working offline:
+
+`visitId = <date>_<siteId>_<assistantSlug>_<purposeSlug>` (lowercase, a-z0-9 and hyphens)
+
+The app refuses to add or edit a visit into a collision with an existing one. If
+two phones add the very same visit while both are offline they write the same
+document, so the second sync overwrites the first with identical content rather
+than creating a copy.
+
+Older visits keep their old random IDs; the app also detects duplicates by
+comparing `date + siteId + assistant + purpose` across all visits.
+
+| field | type | notes |
+|-------|------|-------|
+| siteId, epa, assistant, purpose | string | |
+| date | `YYYY-MM-DD` | the one fact people set by hand |
+| day | string | Monday to Friday, derived from `date` |
+| week | number | program week, derived from `date` and `meta/program.week1Monday` |
+| status | string | `Pending`, `Completed`, `Rescheduled`, `Skipped` |
+| statusNote | string | reason for skip or reschedule |
+| rescheduledFrom | `YYYY-MM-DD` or "" | |
+| checklistItems, checkedItems | string[], boolean[] | |
+| order | number | |
+| startedAt, startedBy | server, email | set when "Start visit" is tapped. A visit counts as started once `startedBy` or `evidence.start` exists (`startedAt` reads as empty offline until the server confirms). The start check-in cannot be overwritten by a member. |
+| completedAt, completedBy | server, email | set when marked Completed; cleared if reopened |
+| evidence | map | see below |
+| photos | array of map | `{ path (Cloudinary public ID), url, takenAtMs, takenBy }`; at most 20, only ever grows for members |
+| createdAt, createdBy | server, email | set once |
+| updatedAt, updatedBy | server, email | every write |
+
+### evidence
+```
+evidence: {
+  start: { lat, lng, accuracyM, capturedAtMs, distanceM, radiusM, result },
+  end:   { ...same shape, optional }
+}
+```
+`result` is one of:
+
+| result | meaning |
+|--------|---------|
+| `verified` | fix is within `radiusM` of the site (accuracy is allowed for) |
+| `far` | fix is farther than `radiusM` from the site |
+| `no-site-gps` | the site has no coordinates to compare with |
+| `no-fix` | GPS timed out or was unavailable |
+| `denied` | the person refused location permission |
+| `unsupported` | the device has no geolocation |
+
+`lat`, `lng`, `accuracyM`, `distanceM` are `null` when there was no fix.
+`radiusM` defaults to 300.
+
+## observations/{id}
+Notes, issues, actions and follow-ups. New ones carry `author` (email, the creator,
+never changes), `createdAt/createdBy` and `updatedAt/updatedBy`; every later edit
+(status change, report bucket) refreshes `updatedAt/updatedBy`. Older notes without
+the audit fields keep working.
+
+## weeklyCheckins/{week}
+Unchanged, plus `createdAt`, `createdBy` (first save) and `updatedBy`.
+
+## meta/program
+`{ week1Monday: "YYYY-MM-DD", updatedAt, updatedBy }`. Admin-set. All phones read
+it, so week numbers agree everywhere. When missing, the app falls back to
+inferring it from dated visits.
+
+## users/{uid}
+| field | type | notes |
+|-------|------|-------|
+| role | string | `admin`, `sfo`, `member` (older role, same access as `sfo` for now), `fa` (no access yet, see V2 phase 2); anything else means no access |
+| active | boolean | `false` blocks the account; missing means active |
+| email | string | for display in the admin Team tab |
+| name | string | optional display name |
+| assistant | string | optional: the FA this person is |
+| createdAt, updatedAt, updatedBy | | |
+
+## Photos (Cloudinary)
+JPEG photos, resized on the phone to at most 1280 px on the long side, uploaded with an
+unsigned Cloudinary preset (`PHOTO_HOST` in `index.html`). In `checkins.photos`, `url` is
+the Cloudinary `secure_url` and `path` is its public ID (`sfo-visits/<visitId>_<photoId>`).
+Deleting a visit does not delete its photos from Cloudinary; remove them in its Media Library.
+
+On the phone a photo first goes into an IndexedDB outbox (`sfo-outbox`), then uploads
+and attaches itself to the visit when there is a connection. The photo ID never
+changes, so a retry uses the same public ID and a photo that already uploaded is not
+uploaded twice.
+
+## fieldAssistants/{faId} (V2 phase 1)
+A Field Assistant as a person, separate from any login. `faId` is `slugify(name)`. Created from the admin Team tab; admins write, SFOs and members read.
+
+| field | type | notes |
+|-------|------|-------|
+| name | string | as written on the sites |
+| supervisorUid, supervisorEmail | string | the SFO who supervises this FA |
+| active | boolean | |
+| linkedUid | string or null | the FA's login `users/<uid>`, set when they get one |
+| createdAt/By, updatedAt/By | | audit |
+
+The site entry with assistant `N/A` is the office placeholder, not an FA, and gets no record.
