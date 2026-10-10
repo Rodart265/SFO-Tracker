@@ -190,6 +190,7 @@ a{color:inherit;text-decoration:none;}
 .toast.open{opacity:1;transform:translate(-50%,0);pointer-events:auto;}
 .toast.error{border-left-color:var(--flag);}
 .toast button{color:var(--flag-soft);font-size:14px;font-weight:700;min-height:44px;min-width:56px;padding:0 10px;}
+#dialog-msg{white-space:pre-line;}
 .ro-note{font-size:13px;margin-top:6px;}
 .ev-by{font-size:12px;color:var(--ink-3,#6b7266);margin:6px 0 0;}
 .ev-review{display:flex;gap:8px;margin-top:6px;}
@@ -599,6 +600,7 @@ button{min-height:44px;}
         <h1 class="headline" id="top-title">Today</h1>
         <div class="actions">
           <button class="icon-btn" id="install-btn" title="Install app" aria-label="Install app" style="display:none;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3" /> <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /> <path d="m7 10 5 5 5-5" /></svg></button>
+          <button class="icon-btn" id="profile-btn" title="My profile" aria-label="My profile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></button>
           <button class="icon-btn" id="sign-out-btn" title="Sign out" aria-label="Sign out"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 17 5-5-5-5" /> <path d="M21 12H9" /> <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /></svg></button>
         </div>
       </div>
@@ -837,7 +839,7 @@ let observations = [];
 let weeklyCheckins = [];
 let programDoc = null;   // meta/program: { week1Monday, ... } set by an admin
 let myRole = null;       // "admin" | "sfo" | "member" | "fa"; set once the access check passes
-let myFaId = null, mySfoUid = null, myFaName = null;
+let myFaId = null, mySfoUid = null, myFaName = null, myName = "", mySupervisor = "";
 let faVisits = [], obsOwn = [], tasksForMe = []; // FA-owned visits (read-only for an SFO); notes an FA owns; tasks an SFO assigned to this FA       // an FA's own record id (from users/<uid>.faId); null for everyone else
 let outbox = [];         // photos waiting to upload (mirror of the IndexedDB outbox)
 let startingVisit = new Set(); // visit ids with a GPS check-in in flight
@@ -960,6 +962,17 @@ document.getElementById("forgot-btn").addEventListener("click", async () => {
     authInfo.textContent = "If an account exists for " + email + ", a password reset email is on its way. Check spam too.";
   } catch (err) { authError.textContent = authMessage(err); }
 });
+const ROLE_NAME = { admin: "Admin", sfo: "Senior Field Officer (SFO)", member: "Senior Field Officer (SFO)", fa: "Field Assistant (FA)" };
+document.getElementById("profile-btn").addEventListener("click", () => {
+  const lines = [`Name: ${myName || (auth.currentUser && auth.currentUser.email) || ""}`, `Email: ${(auth.currentUser && auth.currentUser.email) || ""}`, `Role: ${ROLE_NAME[myRole] || "No role"}`];
+  if (isFa()) {
+    lines.push(`Supervisor: ${mySupervisor || "not set yet"}`, `Sites: ${sites.filter((s) => s.id !== "n-a").length}`);
+  } else {
+    const fas = allAssistants().filter((n) => n && n !== "N/A");
+    lines.push(`Field Assistants: ${fas.length ? fas.length + " (" + fas.join(", ") + ")" : "none yet"}`);
+  }
+  openDialog({ title: "My profile", message: lines.join("\n"), confirmLabel: "Close", hideCancel: true });
+});
 document.getElementById("sign-out-btn").addEventListener("click", async () => {
   const n = pendingTotal();
   let message = "You'll need to sign in again to use the tracker.";
@@ -970,7 +983,7 @@ document.getElementById("sign-out-btn").addEventListener("click", async () => {
 });
 
 function resetState() {
-  sites = []; checkins = []; observations = []; weeklyCheckins = []; programDoc = null; myRole = null; myFaId = null; mySfoUid = null; myFaName = null; faVisits = []; obsOwn = []; tasksForMe = [];
+  sites = []; checkins = []; observations = []; weeklyCheckins = []; programDoc = null; myRole = null; myFaId = null; mySfoUid = null; myFaName = null; myName = ""; mySupervisor = ""; faVisits = []; obsOwn = []; tasksForMe = [];
   loadedKeys = {}; listenErrors = {}; snapFromCache = {};
   pendingCounts = { sites: 0, checkins: 0, observations: 0, weeklyCheckins: 0 }; pendingCheckinIds = new Set();
   addItemDraft = null; setupIncomplete = false;
@@ -998,6 +1011,9 @@ async function beginSession(user) {
   myFaId = access.faId || null;
   mySfoUid = access.sfoUid || null;
   myFaName = access.faName || null;
+  myName = access.name || "";
+  mySupervisor = access.supervisor || "";
+  applyRoleLabels();
   showScreen("main");
   updateFab();
   startListeners();
@@ -1013,11 +1029,11 @@ async function checkAccess(user) {
     const snap = await getDoc(doc(db, "users", user.uid));
     const d = snap.exists() ? snap.data() : {};
     const role = d.role || null;
-    if (d.active !== false && (role === "admin" || role === "sfo" || role === "member")) return { kind: "ok", role };
+    if (d.active !== false && (role === "admin" || role === "sfo" || role === "member")) return { kind: "ok", role, name: d.name || "" };
     if (d.active !== false && role === "fa" && d.faId) {
-      let sfoUid = null;
-      try { const fs = await getDoc(doc(db, "fieldAssistants", d.faId)); sfoUid = fs.exists() ? fs.data().supervisorUid || null : null; } catch (e) { /* offline with nothing cached */ }
-      return { kind: "ok", role, faId: d.faId, faName: d.assistant || null, sfoUid };
+      let sfoUid = null, supervisor = "";
+      try { const fs = await getDoc(doc(db, "fieldAssistants", d.faId)); if (fs.exists()) { const f = fs.data(); sfoUid = f.supervisorUid || null; supervisor = f.supervisorName || f.supervisorEmail || ""; } } catch (e) { /* offline with nothing cached */ }
+      return { kind: "ok", role, faId: d.faId, faName: d.assistant || null, sfoUid, name: d.name || "", supervisor };
     }
     return { kind: "noaccess" };
   } catch (err) {
@@ -1276,6 +1292,11 @@ function allAssistants() {
 const meEmail = () => (auth.currentUser && auth.currentUser.email) || "unknown";
 const isAdmin = () => myRole === "admin";
 const isFa = () => myRole === "fa";
+const sitesLabel = () => (isFa() ? "My sites" : "Sites & Team");
+function applyRoleLabels() {
+  const s = document.querySelector('[data-tab="sites"] span');
+  if (s) s.textContent = sitesLabel();
+}
 const faIdOf = (name) => { const n = (name || "").trim(); return n && n !== "N/A" ? slugify(n) : null; };
 function uid() { return (crypto.randomUUID && crypto.randomUUID()) || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10)); }
 
@@ -1804,6 +1825,7 @@ function openDialog(o) {
       document.getElementById("dialog-label").textContent = o.inputLabel || "";
     }
     ok.textContent = o.confirmLabel || "OK"; cancel.textContent = o.cancelLabel || "Cancel";
+    cancel.hidden = !!o.hideCancel;
     ok.className = o.danger ? "btn-danger" : "btn-primary";
     const opener = document.activeElement;
     /* Escape closes; Tab stays inside the dialog so keyboard and screen-reader
@@ -1811,7 +1833,7 @@ function openDialog(o) {
     const onKey = (e) => {
       if (e.key === "Escape") { finish(false); return; }
       if (e.key !== "Tab") return;
-      const stops = [o.inputType ? input : null, cancel, ok].filter(Boolean);
+      const stops = [o.inputType ? input : null, o.hideCancel ? null : cancel, ok].filter(Boolean);
       const first = stops[0], last = stops[stops.length - 1];
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
@@ -1883,7 +1905,7 @@ document.querySelectorAll(".nav-btn").forEach((btn) => {
     document.getElementById("site-profile-screen").classList.add("hidden");
     document.getElementById("report-screen").classList.add("hidden");
     document.getElementById("add-checkin-screen").classList.add("hidden");
-    document.getElementById("top-title").textContent = { today: "Today", schedule: "Schedule", analytics: "Dashboard", sites: "Sites & Team" }[activeTab];
+    document.getElementById("top-title").textContent = { today: "Today", schedule: "Schedule", analytics: "Dashboard", sites: sitesLabel() }[activeTab];
     updateFab();
     render();
   });
@@ -2783,13 +2805,13 @@ function renderSitesTeam() {
 
   const totalHits = filtered.length + noteHits.length + visitHits.length;
 
-  const isTeam = sitesView === "team";
+  const isTeam = !isFa() && sitesView === "team";
   el.innerHTML = `
     ${errorBanner()}
-    <div class="seg-top" role="group" aria-label="Show">
+    ${isFa() ? "" : `<div class="seg-top" role="group" aria-label="Show">
       <button type="button" data-view="sites" class="${isTeam ? "" : "active"}" aria-pressed="${!isTeam}">Sites</button>
       <button type="button" data-view="team" class="${isTeam ? "active" : ""}" aria-pressed="${isTeam}">Team</button>
-    </div>
+    </div>`}
     <div class="search-bar">${icon("search", 16)}<input id="site-search-input" type="search" aria-label="${isTeam ? "Search team" : "Search sites, staff, notes and issues"}" placeholder="${isTeam ? "Search field assistants…" : "Search sites, staff, notes, issues…"}" value="${esc(siteSearch)}"></div>
     <div class="pill-row" role="group" aria-label="Filter by EPA">${epaOptions.map((e) => `<button class="filter-pill ${siteFilterEpa === e ? "active" : ""}" data-epa="${esc(e)}" aria-pressed="${siteFilterEpa === e}">${esc(e)}</button>`).join("")}</div>
 

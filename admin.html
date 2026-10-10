@@ -1309,7 +1309,7 @@ async function createFaRecords() {
     if (!ok) return;
     const batch = writeBatch(db);
     todo.forEach((n) => batch.set(doc(db, "fieldAssistants", slugify(n)), {
-      name: n, supervisorUid: auth.currentUser.uid, supervisorEmail: who(), active: true, linkedUid: null,
+      name: n, supervisorUid: auth.currentUser.uid, supervisorEmail: who(), supervisorName: ((users.find((x) => x.id === auth.currentUser.uid) || {}).name) || who(), active: true, linkedUid: null,
       createdAt: serverTimestamp(), createdBy: who(), updatedAt: serverTimestamp(), updatedBy: who()
     }));
     await batch.commit();
@@ -1325,7 +1325,7 @@ async function setSupervisor(id, uid) {
   const msg = $("#fa-msg");
   try {
     const u = users.find((x) => x.id === uid);
-    await updateDoc(doc(db, "fieldAssistants", id), { supervisorUid: uid || null, supervisorEmail: (u && u.email) || "", updatedAt: serverTimestamp(), updatedBy: who() });
+    await updateDoc(doc(db, "fieldAssistants", id), { supervisorUid: uid || null, supervisorEmail: (u && u.email) || "", supervisorName: (u && (u.name || u.email)) || "", updatedAt: serverTimestamp(), updatedBy: who() });
     msg.className = "save-msg ok"; msg.textContent = "Saved. Tap \"Sync records with assignments\" so this FA's visits and notes follow the new supervisor.";
   } catch (err) { msg.className = "save-msg err"; msg.textContent = "Couldn't save: " + (err.code || err.message); }
 }
@@ -1355,6 +1355,12 @@ async function linkExistingRecords() {
       Object.keys(w).forEach((k) => { if (d[k] !== w[k]) diff[k] = w[k]; });
       if (Object.keys(diff).length) work.push([col, d.id, diff]);
     });
+    faRecords.forEach((f) => {
+      const u = users.find((x) => x.id === f.supervisorUid), diff = {};
+      if (u && f.supervisorName !== (u.name || u.email || "")) diff.supervisorName = u.name || u.email || "";
+      if (u && u.email && f.supervisorEmail !== u.email) diff.supervisorEmail = u.email;
+      if (Object.keys(diff).length) work.push(["fieldAssistants", f.id, diff]);
+    });
     check("sites", sites);
     check("checkins", checkins);
     const obs = await getDocs(collection(db, "observations"));
@@ -1363,7 +1369,7 @@ async function linkExistingRecords() {
     const by = (c) => work.filter((w) => w[0] === c).length;
     const ok = await confirmModal({
       title: "Update " + work.length + " records?",
-      body: by("sites") + " sites, " + by("checkins") + " visits and " + by("observations") + " notes get their FA, owner and supervisor tags. Nothing else changes.",
+      body: by("sites") + " sites, " + by("checkins") + " visits, " + by("observations") + " notes and " + by("fieldAssistants") + " FA records get their FA, owner and supervisor tags. Nothing else changes.",
       confirmLabel: "Update records"
     });
     if (!ok) return;
