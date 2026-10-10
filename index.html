@@ -190,6 +190,7 @@ a{color:inherit;text-decoration:none;}
 .toast.open{opacity:1;transform:translate(-50%,0);pointer-events:auto;}
 .toast.error{border-left-color:var(--flag);}
 .toast button{color:var(--flag-soft);font-size:14px;font-weight:700;min-height:44px;min-width:56px;padding:0 10px;}
+.ro-note{font-size:13px;margin-top:6px;}
 .ev-by{font-size:12px;color:var(--ink-3,#6b7266);margin:6px 0 0;}
 .ev-review{display:flex;gap:8px;margin-top:6px;}
 .ev-review button{flex:1;min-height:36px;border:1px solid var(--line);border-radius:10px;background:var(--paper);font:inherit;font-size:13px;}
@@ -836,7 +837,8 @@ let observations = [];
 let weeklyCheckins = [];
 let programDoc = null;   // meta/program: { week1Monday, ... } set by an admin
 let myRole = null;       // "admin" | "sfo" | "member" | "fa"; set once the access check passes
-let myFaId = null;       // an FA's own record id (from users/<uid>.faId); null for everyone else
+let myFaId = null, mySfoUid = null, myFaName = null;
+let faVisits = [], obsOwn = [], tasksForMe = []; // FA-owned visits (read-only for an SFO); notes an FA owns; tasks an SFO assigned to this FA       // an FA's own record id (from users/<uid>.faId); null for everyone else
 let outbox = [];         // photos waiting to upload (mirror of the IndexedDB outbox)
 let startingVisit = new Set(); // visit ids with a GPS check-in in flight
 let unsubs = [];
@@ -968,7 +970,7 @@ document.getElementById("sign-out-btn").addEventListener("click", async () => {
 });
 
 function resetState() {
-  sites = []; checkins = []; observations = []; weeklyCheckins = []; programDoc = null; myRole = null; myFaId = null;
+  sites = []; checkins = []; observations = []; weeklyCheckins = []; programDoc = null; myRole = null; myFaId = null; mySfoUid = null; myFaName = null; faVisits = []; obsOwn = []; tasksForMe = [];
   loadedKeys = {}; listenErrors = {}; snapFromCache = {};
   pendingCounts = { sites: 0, checkins: 0, observations: 0, weeklyCheckins: 0 }; pendingCheckinIds = new Set();
   addItemDraft = null; setupIncomplete = false;
@@ -994,6 +996,8 @@ async function beginSession(user) {
   if (access.kind !== "ok") { showGate(access.kind, user, access.err); return; }
   myRole = access.role;
   myFaId = access.faId || null;
+  mySfoUid = access.sfoUid || null;
+  myFaName = access.faName || null;
   showScreen("main");
   updateFab();
   startListeners();
@@ -1010,7 +1014,11 @@ async function checkAccess(user) {
     const d = snap.exists() ? snap.data() : {};
     const role = d.role || null;
     if (d.active !== false && (role === "admin" || role === "sfo" || role === "member")) return { kind: "ok", role };
-    if (d.active !== false && role === "fa" && d.faId) return { kind: "ok", role, faId: d.faId };
+    if (d.active !== false && role === "fa" && d.faId) {
+      let sfoUid = null;
+      try { const fs = await getDoc(doc(db, "fieldAssistants", d.faId)); sfoUid = fs.exists() ? fs.data().supervisorUid || null : null; } catch (e) { /* offline with nothing cached */ }
+      return { kind: "ok", role, faId: d.faId, faName: d.assistant || null, sfoUid };
+    }
     return { kind: "noaccess" };
   } catch (err) {
     if (err && err.code === "permission-denied") return { kind: "noaccess" };
@@ -1093,15 +1101,23 @@ function startListeners() {
   const countPending = (key, snap) => { pendingCounts[key] = snap.docs.filter((d) => d.metadata.hasPendingWrites).length; };
 
   /* A Field Assistant only asks for their own records; the rules would refuse anything else. */
-  const mine = (name) => query(collection(db, name), where("assistantId", "==", myFaId));
+  const scoped = myRole !== "admin"; // admins read everything; everyone else asks only for what the rules allow
+  const uid = auth.currentUser && auth.currentUser.uid;
+  const ref = (name) => isFa()
+    ? query(collection(db, name), where("assistantId", "==", myFaId), ...(name === "sites" ? [] : [where("ownerType", "==", "fa")]))
+    : scoped ? query(collection(db, name), where("sfoUid", "==", uid)) : collection(db, name);
   unsubs = [
-    watch("sites", isFa() ? mine("sites") : collection(db, "sites"), (snap) => { sites = docsOf(snap); countPending("sites", snap); }),
-    watch("checkins", isFa() ? mine("checkins") : query(collection(db, "checkins"), orderBy("order")), (snap) => {
-      checkins = docsOf(snap); countPending("checkins", snap);
-      if (isFa()) checkins.sort((a, b) => (a.order || 0) - (b.order || 0));
+    watch("sites", ref("sites"), (snap) => { sites = docsOf(snap); countPending("sites", snap); }),
+    watch("checkins", scoped ? ref("checkins") : query(collection(db, "checkins"), orderBy("order")), (snap) => {
+      const all = docsOf(snap); countPending("checkins", snap);
+      if (scoped) all.sort((a, b) => (a.order || 0) - (b.order || 0));
+      faVisits = all.filter((c) => c.ownerType === "fa");
+      checkins = isFa() ? all : all.filter((c) => c.ownerType !== "fa");
       pendingCheckinIds = new Set(snap.docs.filter((d) => d.metadata.hasPendingWrites).map((d) => d.id));
     }),
-    watch("observations", isFa() ? mine("observations") : collection(db, "observations"), (snap) => { observations = docsOf(snap); countPending("observations", snap); }),
+    watch("observations", ref("observations"), (snap) => { obsOwn = docsOf(snap); observations = [...obsOwn, ...tasksForMe]; countPending("observations", snap); }),
+    ...(isFa() && myFaName ? [watch("tasks", query(collection(db, "observations"), where("assistantId", "==", myFaId), where("ownerType", "==", "sfo"), where("type", "==", "followUp"), where("assignedTo", "==", myFaName)),
+      (snap) => { tasksForMe = docsOf(snap); observations = [...obsOwn, ...tasksForMe]; })] : []),
     isFa() ? (loadedKeys.weeklyCheckins = true, () => {}) : watch("weeklyCheckins", collection(db, "weeklyCheckins"), (snap) => { weeklyCheckins = docsOf(snap); countPending("weeklyCheckins", snap); }),
     watch("program", doc(db, "meta", "program"), (snap) => { programDoc = snap.exists() ? snap.data() : null; }),
   ];
@@ -1269,7 +1285,11 @@ function uid() { return (crypto.randomUUID && crypto.randomUUID()) || (Date.now(
 function stampNew(data) {
   const me = meEmail();
   const aid = data.assistantId !== undefined ? data.assistantId : data.assistant !== undefined ? faIdOf(data.assistant) : data.siteId ? faIdOf((siteById(data.siteId) || {}).assistant) : null;
-  return { ...data, assistantId: aid, recordedByRole: myRole, createdAt: serverTimestamp(), createdBy: me, updatedAt: serverTimestamp(), updatedBy: me }; }
+  const myUid = (auth.currentUser && auth.currentUser.uid) || null;
+  /* Every visit and note belongs to whoever made it. An FA's belong to the FA and are
+     tagged with the SFO who supervises him; an SFO's are private to that SFO. */
+  return { ...data, assistantId: aid, recordedByRole: myRole,
+    ownerType: isFa() ? "fa" : "sfo", ownerUid: myUid, sfoUid: isFa() ? mySfoUid : myUid, createdAt: serverTimestamp(), createdBy: me, updatedAt: serverTimestamp(), updatedBy: me }; }
 function stampEdit(patch) { return { ...patch, updatedAt: serverTimestamp(), updatedBy: meEmail() }; }
 
 /* Visit identity.
@@ -2521,11 +2541,28 @@ function wireEditForm(panelInner, id, checkin) {
 }
 
 /* 13) SITE PROFILE */
+/* An FA's visit as the SFO sees it: look, never edit. Only the review mark and a task's done mark can change. */
+function renderFaVisitReadOnly(c) {
+  const notes = observationsForCheckin(c.id);
+  return `<div class="visit-card ro">
+    <div class="badge-row"><span class="date-tag">${c.date ? esc(fmtDayDate(c.date)) : "No date"}</span>
+      <span class="status-pill active-${esc((c.status || "Pending").toLowerCase())}" style="min-width:0;">${esc(c.status || "Pending")}</span></div>
+    <p class="card-who">${esc(c.assistant)}</p>
+    ${c.purpose ? `<p class="card-sub">${esc(c.purpose)}</p>` : ""}
+    ${renderEvidence(c)}${renderPhotoStrip(c)}
+    ${notes.map((o) => `<div class="ro-note"><b>${esc(OBS_LABEL[o.type] || o.type)}</b> ${esc(o.text || "")}${o.assignedTo ? ` · for ${esc(o.assignedTo)}` : ""}${isUnresolved(o) ? ` <button type="button" class="btn-link" data-obs-done="${esc(o.id)}">Mark done</button>` : obsStatus(o) === "Resolved" ? " · done" : ""}</div>`).join("")}
+  </div>`;
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-obs-done]");
+  if (b) setObservationStatus(b.dataset.obsDone, "Resolved");
+});
 function renderSiteProfile() {
   const el = document.getElementById("site-profile-screen");
   const site = siteById(selectedSiteId);
   const epaClass = EPA_CLASS[site.epa] || "office";
   const history = checkinsForSite(site.id);
+  const faHist = faVisits.filter((c) => c.siteId === site.id).sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
   const openIssues = openIssuesForSite(site.id).length;
   const resolvedIssues = observationsForSite(site.id).filter((o) => o.type === "issue" && obsStatus(o) === "Resolved").length;
   const openFups = observationsForSite(site.id).filter((o) => o.type === "followUp" && isUnresolved(o)).length;
@@ -2545,6 +2582,7 @@ function renderSiteProfile() {
       </div>
     </div>
     <div class="sp-body">
+      ${!isFa() && faHist.length ? `<div class="sp-card"><div class="sec-title">Visits by the FA (read-only)</div>${faHist.map(renderFaVisitReadOnly).join("")}</div>` : ""}
       <div class="sp-card">
         <div class="nm-row">
           <div class="nm-avatar">${initials(site.nmName)}</div>
@@ -2655,8 +2693,8 @@ function teamRows(q) {
   const wk = currentWeek();
   return allAssistants().map((fa) => {
     const mine = sites.filter((s) => s.assistant === fa && s.id !== "n-a");
-    const epa = (mine[0] && mine[0].epa) || (checkins.find((c) => c.assistant === fa) || {}).epa || "";
-    const visits = checkins.filter((c) => c.assistant === fa && c.week === wk);
+    const epa = (mine[0] && mine[0].epa) || (faVisits.find((c) => c.assistant === fa) || {}).epa || "";
+    const visits = faVisits.filter((c) => c.assistant === fa && c.week === wk);
     const completed = visits.filter((c) => c.status === "Completed");
     const active = mine.filter((s) => siteStatus(s) === "active");
     const visitedIds = new Set(completed.map((c) => c.siteId));
@@ -2666,7 +2704,7 @@ function teamRows(q) {
       done: completed.length, total: visits.length,
       issues: mine.reduce((n, s) => n + openIssuesForSite(s.id).length, 0),
       assigned: active.length,
-      overdue: checkins.filter((c) => c.assistant === fa && isOverdue(c)).length,
+      overdue: faVisits.filter((c) => c.assistant === fa && isOverdue(c)).length,
       notVisited: active.filter((s) => !visitedIds.has(s.id)).length,
       followUps: observations.filter((o) => o.type === "followUp" && isUnresolved(o) && mineIds.has(o.siteId)).length,
       weak: completed.filter((c) => !(c.evidence && c.evidence.start) || (c.evidence.start && c.evidence.start.result === "far")).length,

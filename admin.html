@@ -347,6 +347,7 @@ let sites = [];
 let checkins = [];
 let observations = [];
 let users = [];
+let faRecords = [];
 let programDoc = null;
 let loaded = {};
 let errs = {};
@@ -563,6 +564,7 @@ function startListeners() {
     listen("checkins", collection(db, "checkins"), (s) => { checkins = s.docs.map((d) => ({ id: d.id, ...d.data() })); }),
     listen("observations", collection(db, "observations"), (s) => { observations = s.docs.map((d) => ({ id: d.id, ...d.data() })); }),
     listen("users", collection(db, "users"), (s) => { users = s.docs.map((d) => ({ id: d.id, ...d.data() })); }),
+    listen("fieldAssistants", collection(db, "fieldAssistants"), (s) => { faRecords = s.docs.map((d) => ({ id: d.id, ...d.data() })); }),
     listen("program", doc(db, "meta", "program"), (s) => { programDoc = s.exists() ? s.data() : null; })
   ];
 }
@@ -1139,8 +1141,14 @@ function renderTeam() {
       <div class="edit-card" id="fa-card">
         <h2>Field Assistant records</h2>
         <p class="hint">Creates one record per Field Assistant named on your sites, supervised by you. Records that already exist are left alone. The office entry (N/A) is skipped. A record is not a login.</p>
+        ${faRecords.slice().sort((a, b) => a.name.localeCompare(b.name)).map((f) => `
+          <div class="field"><label for="sup-${esc(f.id)}">${esc(f.name)}: supervisor</label>
+            <select id="sup-${esc(f.id)}" data-sup="${esc(f.id)}">
+              <option value="">Not assigned</option>
+              ${users.filter((u) => ["admin", "sfo", "member"].includes(u.role) && u.active !== false).map((u) => `<option value="${esc(u.id)}" ${f.supervisorUid === u.id ? "selected" : ""}>${esc(u.name || u.email || u.id)}</option>`).join("")}
+            </select></div>`).join("")}
         <button class="btn-save" id="fa-create" type="button" style="width:100%;flex:none;">Preview and create</button>
-        <button class="btn-save" id="fa-link" type="button" style="width:100%;flex:none;margin-top:10px;">Link existing records to FAs</button>
+        <button class="btn-save" id="fa-link" type="button" style="width:100%;flex:none;margin-top:10px;">Sync records with assignments</button>
         <div class="save-msg" id="fa-msg" role="status"></div>
       </div>
       <details class="add-card" id="add-user">
@@ -1159,6 +1167,7 @@ function renderTeam() {
     $("#au-save").addEventListener("click", addUserByUid);
     $("#fa-create").addEventListener("click", createFaRecords);
     $("#fa-link").addEventListener("click", linkExistingRecords);
+    document.querySelectorAll("[data-sup]").forEach((sel) => sel.addEventListener("change", () => setSupervisor(sel.dataset.sup, sel.value)));
     $("#team-list").addEventListener("click", (e) => {
       const row = e.target.closest("[data-uid]");
       if (!row) return;
@@ -1226,7 +1235,7 @@ function renderUserSlot() {
             <option value="true" ${u.active === false ? "" : "selected"}>Active</option>
             <option value="false" ${u.active === false ? "selected" : ""}>Inactive (blocked)</option>
           </select></div>
-        <div class="field"><label for="u-assistant">Linked assistant</label>
+        <div class="field"><label for="u-assistant">Field Assistant record (FA logins only)</label>
           <select id="u-assistant" data-field="assistant">
             <option value="" ${u.assistant ? "" : "selected"}>None</option>
             ${assistants.map((fa) => `<option value="${esc(fa)}" ${fa === u.assistant ? "selected" : ""}>${esc(fa)}</option>`).join("")}
@@ -1252,6 +1261,7 @@ async function saveUser(u, card, isSelf) {
   if (!isSelf) {
     const role = val("role");
     patch.role = role;
+    if (role !== "fa") { patch.faId = null; patch.assistant = ""; } // only an FA login points at an FA record
     patch.active = val("active") !== "false";
     if (role === "none" && roleKey(u) !== "none") {
       const ok = await confirmModal({
@@ -1311,35 +1321,60 @@ async function createFaRecords() {
   }
 }
 
-/* Adds assistantId to older sites, visits and notes so Field Assistants can be limited to their own. Notes take the site's current FA. */
+async function setSupervisor(id, uid) {
+  const msg = $("#fa-msg");
+  try {
+    const u = users.find((x) => x.id === uid);
+    await updateDoc(doc(db, "fieldAssistants", id), { supervisorUid: uid || null, supervisorEmail: (u && u.email) || "", updatedAt: serverTimestamp(), updatedBy: who() });
+    msg.className = "save-msg ok"; msg.textContent = "Saved. Tap \"Sync records with assignments\" so this FA's visits and notes follow the new supervisor.";
+  } catch (err) { msg.className = "save-msg err"; msg.textContent = "Couldn't save: " + (err.code || err.message); }
+}
+
+/* Brings every site, visit and note in line with the assignments: who the FA is, who made the record
+   (older ones were entered by the SFO), and which SFO supervises it. Safe to run again after any change. */
 async function linkExistingRecords() {
   const msg = $("#fa-msg"), btn = $("#fa-link");
   const fail = (t) => { msg.className = "save-msg err"; msg.textContent = t; };
-  if (!loaded.sites || !loaded.checkins) return fail("Data is still loading. Try again in a moment.");
+  if (!loaded.sites || !loaded.checkins || !loaded.fieldAssistants) return fail("Data is still loading. Try again in a moment.");
   btn.disabled = true;
   try {
+    const me = auth.currentUser.uid;
+    const supOf = {}; faRecords.forEach((f) => { supOf[f.id] = f.supervisorUid || null; });
+    const uidByEmail = {}; users.forEach((u) => { if (u.email) uidByEmail[u.email.toLowerCase()] = u.id; });
     const siteAssistant = {}; sites.forEach((s) => { siteAssistant[s.id] = s.assistant; });
+    const want = (col, d) => {
+      const assistantId = d.assistantId !== undefined ? d.assistantId : faId(col === "checkins" ? d.assistant : siteAssistant[d.siteId]);
+      if (col === "sites") return { assistantId: faId(d.assistant), sfoUid: supOf[faId(d.assistant)] || null };
+      const ownerType = d.ownerType || (d.recordedByRole === "fa" ? "fa" : "sfo");
+      const ownerUid = d.ownerUid || uidByEmail[String(d.createdBy || "").toLowerCase()] || me;
+      return { assistantId, ownerType, ownerUid, sfoUid: ownerType === "fa" ? (supOf[assistantId] || null) : ownerUid };
+    };
     const work = [];
-    sites.filter((s) => s.assistantId === undefined).forEach((s) => work.push(["sites", s.id, faId(s.assistant)]));
-    checkins.filter((c) => c.assistantId === undefined).forEach((c) => work.push(["checkins", c.id, faId(c.assistant)]));
+    const check = (col, docs) => docs.forEach((d) => {
+      const w = want(col, d), diff = {};
+      Object.keys(w).forEach((k) => { if (d[k] !== w[k]) diff[k] = w[k]; });
+      if (Object.keys(diff).length) work.push([col, d.id, diff]);
+    });
+    check("sites", sites);
+    check("checkins", checkins);
     const obs = await getDocs(collection(db, "observations"));
-    obs.docs.filter((d) => d.data().assistantId === undefined).forEach((d) => work.push(["observations", d.id, faId(siteAssistant[d.data().siteId])]));
-    if (!work.length) { msg.className = "save-msg ok"; msg.textContent = "Everything is already linked."; return; }
+    check("observations", obs.docs.map((d) => ({ id: d.id, ...d.data() })));
+    if (!work.length) { msg.className = "save-msg ok"; msg.textContent = "Everything already matches the assignments."; return; }
     const by = (c) => work.filter((w) => w[0] === c).length;
     const ok = await confirmModal({
-      title: "Link " + work.length + " records?",
-      body: by("sites") + " sites, " + by("checkins") + " visits and " + by("observations") + " notes get an FA link. Nothing else changes.",
-      confirmLabel: "Link records"
+      title: "Update " + work.length + " records?",
+      body: by("sites") + " sites, " + by("checkins") + " visits and " + by("observations") + " notes get their FA, owner and supervisor tags. Nothing else changes.",
+      confirmLabel: "Update records"
     });
     if (!ok) return;
     for (let i = 0; i < work.length; i += 400) {
       const batch = writeBatch(db);
-      work.slice(i, i + 400).forEach(([col, id, fa]) => batch.update(doc(db, col, id), { assistantId: fa, updatedAt: serverTimestamp(), updatedBy: who() }));
+      work.slice(i, i + 400).forEach(([col, id, diff]) => batch.update(doc(db, col, id), { ...diff, updatedAt: serverTimestamp(), updatedBy: who() }));
       await batch.commit();
     }
-    msg.className = "save-msg ok"; msg.textContent = "Linked " + work.length + " records.";
+    msg.className = "save-msg ok"; msg.textContent = "Updated " + work.length + " records.";
   } catch (err) {
-    fail("Couldn't link: " + (err.code || err.message));
+    fail("Couldn't update: " + (err.code || err.message));
   } finally {
     btn.disabled = false;
   }
