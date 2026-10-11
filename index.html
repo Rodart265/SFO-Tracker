@@ -573,6 +573,35 @@ button{min-height:44px;}
 .data-flag{color:var(--status-pending-fg);font-size:13px;font-weight:700;}
 .sp-card .field-hint{font-size:13px;margin-left:0;}
 .coords{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:var(--ink-soft);margin-top:4px;overflow-wrap:anywhere;}
+
+/* ============ V1.1 additions ============ */
+.site-row .meta{flex-wrap:wrap;row-gap:2px;}
+/* Last-visited labels: age decides the colour. */
+.lv{font-size:13px;font-weight:700;}
+.lv-ok{color:var(--status-completed-fg);}
+.lv-warn{color:var(--status-pending-fg);}
+.lv-bad{color:var(--obs-issue);}
+.lv-never{color:var(--ink-faint);}
+.sort-row{display:flex;align-items:center;gap:8px;margin:0 0 12px;}
+.sort-row .lbl{font-size:13px;font-weight:700;color:var(--ink-faint);}
+.sort-row button{min-height:44px;border:1px solid var(--line);background:#fff;border-radius:var(--radius-sm);padding:6px 12px;font-size:13px;font-weight:650;color:var(--ink-soft);}
+.sort-row button.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+/* Profile screen */
+.acct-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:14px;}
+.acct-top{display:flex;align-items:center;gap:12px;}
+.acct-top .nm-avatar{width:52px;height:52px;font-size:17px;}
+.acct-name{font-size:20px;line-height:1.1;font-family:"Archivo",sans-serif;font-stretch:72%;font-weight:800;overflow-wrap:anywhere;}
+.acct-email{font-size:13px;color:var(--ink-soft);margin-top:2px;overflow-wrap:anywhere;}
+.acct-rows{margin-top:12px;border-top:1px solid var(--line);}
+.acct-row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #F2F0E8;font-size:13.5px;}
+.acct-row:last-child{border-bottom:none;}
+.acct-row span:first-child{color:var(--ink-soft);font-weight:600;}
+.acct-row span:last-child{font-weight:700;text-align:right;overflow-wrap:anywhere;}
+.acct-actions{display:flex;flex-direction:column;gap:10px;margin-top:22px;}
+.acct-actions button{width:100%;}
+.limit-strip{background:#fff;border:1px solid var(--line);border-left:4px solid var(--leaf-soft);border-radius:var(--radius-md);padding:11px 14px;margin:0 0 12px;font-size:13.5px;line-height:1.4;}
+.limit-strip b{font-weight:750;}
+.limit-strip.full{border-left-color:var(--flag);}
 </style>
 </head>
 <body>
@@ -598,11 +627,6 @@ button{min-height:44px;}
     <div id="top-bar">
       <div class="row1">
         <h1 class="headline" id="top-title">Today</h1>
-        <div class="actions">
-          <button class="icon-btn" id="install-btn" title="Install app" aria-label="Install app" style="display:none;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3" /> <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /> <path d="m7 10 5 5 5-5" /></svg></button>
-          <button class="icon-btn" id="profile-btn" title="My profile" aria-label="My profile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></button>
-          <button class="icon-btn" id="sign-out-btn" title="Sign out" aria-label="Sign out"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 17 5-5-5-5" /> <path d="M21 12H9" /> <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /></svg></button>
-        </div>
       </div>
       <div id="sync-pill" aria-live="polite"><span class="dot"></span><span id="sync-text">Loading…</span></div>
     </div>
@@ -611,7 +635,7 @@ button{min-height:44px;}
     <div id="screen-today" class="screen"></div>
     <div id="screen-schedule" class="screen hidden"></div>
     <div id="screen-analytics" class="screen hidden"></div>
-    <div id="screen-sites" class="screen hidden"></div>
+    <div id="screen-profile" class="screen hidden"></div>
     </main>
 
     <button id="fab" title="Add site visit" aria-label="Add site visit"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14" /> <path d="M12 5v14" /></svg><span>Add visit</span></button>
@@ -626,7 +650,7 @@ button{min-height:44px;}
       <button class="nav-btn active" data-tab="today" aria-current="page"><span>Today</span></button>
       <button class="nav-btn" data-tab="schedule" aria-current="false"><span>Schedule</span></button>
       <button class="nav-btn" data-tab="analytics" aria-current="false"><span>Dashboard</span></button>
-      <button class="nav-btn" data-tab="sites" aria-current="false"><span>Sites &amp; Team</span></button>
+      <button class="nav-btn" data-tab="profile" aria-current="false"><span>Profile</span></button>
     </div>
   </nav>
 
@@ -712,7 +736,9 @@ function icon(name, size) {
 }
 
 /* 3) REFERENCE + CHECKLISTS + REAL SITE SEED */
-const REFERENCE = {"epas": ["Chilaza", "Ming'ongo", "Mpingu", "Office"], "faByEpa": {"Chilaza": ["Alfred Golowa", "Austin Bonongwe", "Davie James", "Honest Gondwe", "Richard Lipenga"], "Ming'ongo": ["Aubrey Kuyacha", "Tadala Mphwina"], "Mpingu": ["Martha Jacob", "Prince Mkumbwa"], "Office": ["N/A"]}, "sitesByFa": {"Alfred Golowa": ["Kango", "Mtolongo", "Kafunde", "Likanga", "Masula", "Palawo", "Sinumbe"], "Austin Bonongwe": ["Kanyoni", "Lundu", "Chamkondo", "Mpakiza", "Mwaza", "Kanyambwe", "Zambo"], "Davie James": ["Katakungwa", "Mngongonda", "Nkhwangwa", "Kanjawala", "Santhe", "Khanda", "Mpingo", "Muyala"], "Honest Gondwe": ["Chimwala", "Chisikwa Caleb", "Dambo", "Dzoole", "Ngalazuka", "Kadyaudzu", "Nyemba"], "Richard Lipenga": ["Chibungo", "Kabwana", "Phulamazira", "Mnjeza 2", "Mzungu", "Songole", "Zindo"], "Aubrey Kuyacha": ["Chilinda", "Chimsolo", "Chishasha", "Mkanda-Aloni", "Mniu", "Kalasang'anga", "Kombe", "Kudziwe"], "Tadala Mphwina": ["Mbwemba", "Mdondwe", "Madetsa", "Mandala", "Mchepa", "Mphunda"], "Martha Jacob": ["Bingu", "Chalenya", "Kanongona", "Ndelendele", "Ndoliro", "Mkanda"], "Prince Mkumbwa": ["Kamkundi", "Mkombe", "Ntandula", "Kuchata", "Mpombe", "Sinda"], "N/A": ["N/A"]}, "purposes": ["Routine Audit & Seedling Management", "Routine Audit & Nursery Management", "Data Integrity & Progress Check", "Data Integrity Follow-up", "Weekly Reporting & Office Admin"]};
+const REFERENCE = {"epas": ["Chilaza", "Ming'ongo", "Mpingu", "Office"], "faByEpa": {"Office": ["N/A"]}, "sitesByFa": {"N/A": ["N/A"]}, "purposes": ["Routine Audit & Seedling Management", "Routine Audit & Nursery Management", "Data Integrity & Progress Check", "Data Integrity Follow-up", "Weekly Reporting & Office Admin"]};
+/* Names of people and their sites come from Firestore (fieldAssistants, sites). Only the
+   fixed vocabulary lives here, so no staff names ship in this public file. */
 const PURPOSE_CHECKLIST = {"Routine Audit & Seedling Management": ["Potfilling count", "Seedling health", "NM attendance"], "Routine Audit & Nursery Management": ["Potfilling count", "Seedling health", "NM attendance"], "Data Integrity & Progress Check": ["Physical pot count vs reported status"], "Data Integrity Follow-up": ["Verify resolved potfilling gap", "Updated logs"], "Weekly Reporting & Office Admin": ["Submit weekly report to DS/Manager", "Team check-ins"]};
 /* SITES_SEED and LEGACY_SEED_VISITS used to live here. They contained real names
    and phone numbers of nursery managers, which meant that data shipped in this
@@ -722,7 +748,14 @@ const PURPOSE_CHECKLIST = {"Routine Audit & Seedling Management": ["Potfilling c
    script's header comment for setup). */
 const SEP = '<i class="sep" aria-hidden="true"></i>';
 const STATUSES = ["Pending", "Completed", "Rescheduled", "Skipped"];
-const DAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+const DAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+/* Visit limits. The programme week runs Monday to Saturday. A Field Assistant is expected
+   in the field every day of it; an SFO covers four days of his own choosing. These are
+   soft limits: the app warns and asks for confirmation, it never blocks a visit.
+   MAX_VISITS_PER_DAY catches a day that has more visits than one person can do. */
+const FA_VISIT_DAYS = 6, SFO_VISIT_DAYS = 4, MAX_VISITS_PER_DAY = 3;
+/* A site goes amber after this many days without a completed visit, red after STALE_RED_DAYS. */
+const STALE_AMBER_DAYS = 14, STALE_RED_DAYS = 21;
 const EPA_CLASS = { "Chilaza": "chilaza", "Ming'ongo": "mingongo", "Mpingu": "mpingu", "Office": "office" };
 const OBS_TYPES = ["observation", "issue", "action", "followUp"];
 const OBS_LABEL = { observation: "Observation", issue: "Issue", action: "Action", followUp: "Follow-up" };
@@ -776,7 +809,7 @@ function mondayOfISO(iso) { return addDaysISO(iso, -((new Date(iso + "T00:00:00"
 function weekdayName(iso) {
   if (!validISO(iso)) return null;
   const n = new Date(iso + "T00:00:00").getDay();
-  return n >= 1 && n <= 5 ? DAY_ORDER[n - 1] : null; // null on weekends
+  return n >= 1 && n <= 6 ? DAY_ORDER[n - 1] : null; // null on Sunday
 }
 /* Order of trust: the admin-set date in meta/program (so every phone agrees),
    then the hard-coded override, then a majority vote of dated visits. */
@@ -810,10 +843,10 @@ function currentWeek() {
   return open ?? weeks[weeks.length - 1];
 }
 /* The weekday a check-in actually belongs under: the real weekday of its date
-   when it has one (Mon-Fri), otherwise the planned weekday it was seeded with. */
+   when it has one (Mon-Sat), otherwise the planned weekday it was seeded with. */
 function effectiveDay(c) { return (c.date && weekdayName(c.date)) || c.day; }
 /* A date is the one fact people set by hand. Day and week follow from it, so
-   the three can no longer disagree. Weekend dates leave the day alone. */
+   the three can no longer disagree. A Sunday date leaves the day alone. */
 function applyDateToDraft(draft) {
   if (!validISO(draft.date)) return draft;
   const wd = weekdayName(draft.date);
@@ -872,6 +905,8 @@ let deferredInstallPrompt = null;
 /* Set when the seed check ran and found setup unfinished. updateSyncPill reads it
    so the first data snapshot can't overwrite the message with "Synced". */
 let setupIncomplete = false;
+let lastServerSyncMs = 0;  // when a snapshot last arrived straight from the server
+let sitesView = "sites", siteSearch = "", siteFilterEpa = "All", sitesSort = "name";
 
 /* 5) AUTH + ACCESS GATE
    Three things can stop someone reaching the schedule, and each gets its own
@@ -963,24 +998,25 @@ document.getElementById("forgot-btn").addEventListener("click", async () => {
   } catch (err) { authError.textContent = authMessage(err); }
 });
 const ROLE_NAME = { admin: "Admin", sfo: "Senior Field Officer (SFO)", member: "Senior Field Officer (SFO)", fa: "Field Assistant (FA)" };
-document.getElementById("profile-btn").addEventListener("click", () => {
-  const lines = [`Name: ${myName || (auth.currentUser && auth.currentUser.email) || ""}`, `Email: ${(auth.currentUser && auth.currentUser.email) || ""}`, `Role: ${ROLE_NAME[myRole] || "No role"}`];
-  if (isFa()) {
-    lines.push(`Supervisor: ${mySupervisor || "not set yet"}`, `Sites: ${sites.filter((s) => s.id !== "n-a").length}`);
-  } else {
-    const fas = allAssistants().filter((n) => n && n !== "N/A");
-    lines.push(`Field Assistants: ${fas.length ? fas.length + " (" + fas.join(", ") + ")" : "none yet"}`);
-  }
-  openDialog({ title: "My profile", message: lines.join("\n"), confirmLabel: "Close", hideCancel: true });
-});
-document.getElementById("sign-out-btn").addEventListener("click", async () => {
+/* Sign out, with a warning when changes are still waiting to sync. Used by the Profile tab. */
+async function confirmSignOut() {
   const n = pendingTotal();
   let message = "You'll need to sign in again to use the tracker.";
   if (!navigator.onLine) message = "You're offline. If you sign out you may not be able to sign back in until you have signal." + (n ? ` ${plural(n, "change")} still waiting to sync.` : "");
   else if (n) message = `${plural(n, "change")} still waiting to sync. Stay signed in until that finishes.`;
   const r = await openDialog({ title: "Sign out?", message, confirmLabel: "Sign out", danger: true, cancelLabel: "Stay signed in" });
   if (r.ok) signOut(auth);
-});
+}
+/* The sign-in form must not keep the last person's email or password after a sign-out
+   (the phone may be shared), nor a stale "reset email sent" line. */
+function clearAuthForm() {
+  const email = document.getElementById("auth-email"), pw = document.getElementById("auth-password");
+  if (email) email.value = "";
+  if (pw) { pw.value = ""; pw.type = "password"; }
+  const t = document.getElementById("pw-toggle");
+  if (t) { t.textContent = "Show"; t.setAttribute("aria-pressed", "false"); }
+  authError.textContent = ""; authInfo.textContent = "";
+}
 
 function resetState() {
   sites = []; checkins = []; observations = []; weeklyCheckins = []; programDoc = null; myRole = null; myFaId = null; mySfoUid = null; myFaName = null; myName = ""; mySupervisor = ""; faVisits = []; obsOwn = []; tasksForMe = [];
@@ -989,6 +1025,7 @@ function resetState() {
   addItemDraft = null; setupIncomplete = false;
   selectedSiteId = null; addDraft = null; reportWeek = null;
   openDrawerId = null; openEditId = null; editDraft = null; noteComposerFor = null;
+  activeTab = "today"; weekPicked = false; sitesView = "sites"; siteSearch = ""; siteFilterEpa = "All"; sitesSort = "name"; lastServerSyncMs = 0;
   ["site-profile-screen", "add-checkin-screen", "report-screen"].forEach((id) => document.getElementById(id).classList.add("hidden"));
 }
 
@@ -997,7 +1034,7 @@ onAuthStateChanged(auth, (user) => {
   stopListeners();
   resetState();
   stopPhotoSync();
-  if (!user) { showScreen("auth"); return; }
+  if (!user) { clearAuthForm(); showScreen("auth"); return; }
   beginSession(user);
 });
 
@@ -1059,7 +1096,7 @@ async function checkSetup() {
     console.warn("Setup check failed:", err.code || err);
     setupIncomplete = false; // unknown, so don't claim setup is unfinished
   }
-  updateSyncPill(); render();
+  updateSyncPill(); renderFromData();
 }
 
 /* 7) FIRESTORE LISTENERS */
@@ -1074,7 +1111,7 @@ function onListenError(name) {
     console.error("Listener failed (" + name + "):", err);
     listenErrors[name] = (err && err.code) || "error";
     updateSyncPill();
-    render();
+    renderFromData();
   };
 }
 /* A visible state for every screen, so nothing sits blank: loading while the first
@@ -1109,8 +1146,9 @@ function startListeners() {
     onData(snap);
     loadedKeys[key] = true; delete listenErrors[key];
     snapFromCache[key] = snap.metadata.fromCache;
+    if (!snap.metadata.fromCache && !snap.metadata.hasPendingWrites) lastServerSyncMs = Date.now();
     updateSyncPill();
-    render();
+    renderFromData();
     if (key === "checkins" && outbox.length) flushPhotos();
   }, onListenError(key));
   const docsOf = (snap) => snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -1134,7 +1172,7 @@ function startListeners() {
     watch("observations", ref("observations"), (snap) => { obsOwn = docsOf(snap); observations = [...obsOwn, ...tasksForMe]; countPending("observations", snap); }),
     ...(isFa() && myFaName ? [watch("tasks", query(collection(db, "observations"), where("assistantId", "==", myFaId), where("ownerType", "==", "sfo"), where("type", "==", "followUp"), where("assignedTo", "==", myFaName)),
       (snap) => { tasksForMe = docsOf(snap); observations = [...obsOwn, ...tasksForMe]; })] : []),
-    isFa() ? (loadedKeys.weeklyCheckins = true, () => {}) : watch("weeklyCheckins", collection(db, "weeklyCheckins"), (snap) => { weeklyCheckins = docsOf(snap); countPending("weeklyCheckins", snap); }),
+    isFa() ? (loadedKeys.weeklyCheckins = true, () => {}) : watch("weeklyCheckins", scoped ? query(collection(db, "weeklyCheckins"), where("sfoUid", "==", uid)) : collection(db, "weeklyCheckins"), (snap) => { weeklyCheckins = docsOf(snap); countPending("weeklyCheckins", snap); }),
     watch("program", doc(db, "meta", "program"), (snap) => { programDoc = snap.exists() ? snap.data() : null; }),
   ];
 }
@@ -1167,7 +1205,9 @@ function updateSyncPill() {
   if (n) { setSyncText(`Syncing ${plural(n, "change")}…`, "syncing"); return; }
   const waiting = CORE_KEYS.some((k) => loadedKeys[k] === undefined || snapFromCache[k]);
   if (waiting) { setSyncText("Connecting…", "syncing"); return; }
-  setSyncText("Synced · " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), "synced");
+  /* The time of the last snapshot the server itself confirmed, not "now": a pill that
+     always shows the current time says "Synced" even when nothing has arrived for hours. */
+  setSyncText("Synced · " + new Date(lastServerSyncMs || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), "synced");
 }
 window.addEventListener("online", () => { setSyncText("Syncing…", "syncing"); flushPhotos(); });
 window.addEventListener("offline", () => updateSyncPill());
@@ -1204,8 +1244,9 @@ function relTime(ts) {
    being resolved, and a check-in being marked Completed. Resolving is the
    only observation "edit" that counts as a distinct event; other edits to a
    check-in (ticking a checklist box, changing notes) don't get their own
-   entry, since `updatedAt` is overwritten by any edit and can't distinguish
-   "just completed" from "checklist ticked five minutes later." */
+   entry. A completed visit is dated by `completedAt` (set once, when it was
+   marked done); `updatedAt` is only the fallback for visits completed before
+   that field existed, since any later edit moves it. */
 function buildActivityFeed(limit) {
   const events = [];
   observations.forEach((o) => {
@@ -1223,8 +1264,9 @@ function buildActivityFeed(limit) {
     }
   });
   checkins.forEach((c) => {
-    if (c.status === "Completed" && c.updatedAt?.seconds) {
-      events.push({ ts: c.updatedAt.seconds, siteId: c.siteId, color: "var(--status-completed-fg)", text: "<b>Visit</b> completed" });
+    const doneAt = c.completedAt?.seconds || c.updatedAt?.seconds; // completedAt is set once, on completion; updatedAt moves with every later edit
+    if (c.status === "Completed" && doneAt) {
+      events.push({ ts: doneAt, siteId: c.siteId, color: "var(--status-completed-fg)", text: "<b>Visit</b> completed" });
     }
   });
   events.sort((a, b) => b.ts - a.ts);
@@ -1235,12 +1277,53 @@ function buildActivityFeed(limit) {
    Flags sites worth a second look. Each factor is independent and cheap to
    explain; the score is just how many fired, so "two problems" outranks
    "one problem" without pretending to be a precise model. */
-const STALE_VISIT_DAYS = 21;
+/* --- Last visited ---
+   "Visited" means a Completed visit. A pending or skipped one is a plan, not a visit.
+   An SFO sees his own visits and his Field Assistants' (both count: the site was seen);
+   an FA sees his own; an admin sees everyone's. */
+function allVisitsList() { return isFa() ? checkins : [...checkins, ...faVisits]; }
+function visitISO(c) {
+  if (validISO(c.date)) return c.date;
+  const sec = c.completedAt?.seconds || c.updatedAt?.seconds;
+  return sec ? isoFromDate(new Date(sec * 1000)) : null;
+}
+/* { iso, days, by } for the most recent completed visit to a site, or null if none. */
+function lastVisitInfo(siteId) {
+  let best = null;
+  allVisitsList().forEach((c) => {
+    if (c.siteId !== siteId || c.status !== "Completed") return;
+    const iso = visitISO(c);
+    if (iso && (!best || iso > best.iso)) best = { iso, by: c.ownerType === "fa" ? c.assistant : "SFO" };
+  });
+  if (!best) return null;
+  best.days = Math.max(0, daysBetweenISO(best.iso, todayISO()));
+  return best;
+}
+function ageLabel(days) {
+  if (days === 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 14) return `${days} days ago`;
+  const w = Math.floor(days / 7);
+  return days < 60 ? `${w} weeks ago` : `${Math.floor(days / 30)} months ago`;
+}
+/* Colour follows age: green until STALE_AMBER_DAYS, amber until STALE_RED_DAYS, then red. */
+function lastVisitLabel(siteId) {
+  const lv = lastVisitInfo(siteId);
+  if (!lv) return { text: "Never visited", cls: "lv-never", days: Infinity };
+  const cls = lv.days >= STALE_RED_DAYS ? "lv-bad" : lv.days >= STALE_AMBER_DAYS ? "lv-warn" : "lv-ok";
+  return { text: "Last visited " + ageLabel(lv.days), cls, days: lv.days };
+}
+function lastVisitHTML(siteId) {
+  const l = lastVisitLabel(siteId);
+  return `<span class="lv ${l.cls}">${esc(l.text)}</span>`;
+}
+
+/* --- Risk ---
+   Flags sites worth a second look. Each factor is independent and cheap to
+   explain; the score is just how many fired, so "two problems" outranks
+   "one problem" without pretending to be a precise model. */
 function computeSiteRisk() {
-  const iso = todayISO();
   return sites.filter((s) => s.id !== "n-a").map((s) => {
-    const history = checkinsForSite(s.id);
-    const datedVisits = history.filter((c) => c.date).sort((a, b) => b.date.localeCompare(a.date));
     const allIssuesForSite = observations.filter((o) => o.siteId === s.id && o.type === "issue");
     const factors = [];
 
@@ -1249,12 +1332,9 @@ function computeSiteRisk() {
     const overdueFup = observations.some((o) => o.siteId === s.id && o.type === "followUp" && isUnresolved(o) && isDueOrOverdue(o));
     if (overdueFup) factors.push({ key: "followup", label: "Follow-up overdue" });
 
-    if (!history.length) {
-      factors.push({ key: "never", label: "Never visited" });
-    } else if (datedVisits.length) {
-      const daysSince = Math.floor((new Date(iso) - new Date(datedVisits[0].date)) / 86400000);
-      if (daysSince > STALE_VISIT_DAYS) factors.push({ key: "stale", label: `No visit in ${daysSince}d` });
-    }
+    const lv = lastVisitInfo(s.id);
+    if (!lv) factors.push({ key: "never", label: "Never visited" });
+    else if (lv.days >= STALE_RED_DAYS) factors.push({ key: "stale", label: `No visit in ${lv.days}d` });
 
     if (allIssuesForSite.length >= 3) factors.push({ key: "repeat", label: `${allIssuesForSite.length} issues logged (recurring)` });
 
@@ -1292,11 +1372,9 @@ function allAssistants() {
 const meEmail = () => (auth.currentUser && auth.currentUser.email) || "unknown";
 const isAdmin = () => myRole === "admin";
 const isFa = () => myRole === "fa";
+/* Sites, team and account live under the Profile tab. */
 const sitesLabel = () => (isFa() ? "My sites" : "Sites & Team");
-function applyRoleLabels() {
-  const s = document.querySelector('[data-tab="sites"] span');
-  if (s) s.textContent = sitesLabel();
-}
+function applyRoleLabels() { /* the tab is always "Profile"; what's inside it depends on the role */ }
 const faIdOf = (name) => { const n = (name || "").trim(); return n && n !== "N/A" ? slugify(n) : null; };
 function uid() { return (crypto.randomUUID && crypto.randomUUID()) || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10)); }
 
@@ -1320,7 +1398,12 @@ function stampEdit(patch) { return { ...patch, updatedAt: serverTimestamp(), upd
    Older visits keep their random IDs, so duplicates are also detected by comparing
    the four fields, which is what the admin page's duplicate check does too. */
 function normKey(s) { return String(s || "").trim().toLowerCase(); }
-function visitIdFor(d) { return [d.date, d.siteId, slugify(d.assistant || ""), slugify(d.purpose || "")].join("_"); }
+/* The ID ends with a short code for whoever is creating it. Without that, an SFO's visit
+   and an FA's visit for the same site, day and purpose got the same ID: the second
+   write silently replaced the first, or was refused because the first belonged to
+   someone else. Older visits keep the IDs they have. */
+function ownerCode() { const u = (auth.currentUser && auth.currentUser.uid) || ""; return u.slice(0, 6).toLowerCase(); }
+function visitIdFor(d) { return [d.date, d.siteId, slugify(d.assistant || ""), slugify(d.purpose || ""), ownerCode()].join("_"); }
 function findDuplicateVisit(d, ignoreId) {
   if (!validISO(d.date)) return null;
   return checkins.find((c) => c.id !== ignoreId && c.date === d.date && c.siteId === d.siteId &&
@@ -1328,6 +1411,62 @@ function findDuplicateVisit(d, ignoreId) {
 }
 function dupMessage(dup) {
   return `That visit is already on the schedule (${siteLabel(dup.siteId)}, ${fmtDayDate(dup.date)}, ${dup.assistant}).`;
+}
+
+/* --- Visit limits (soft) ---
+   The programme week is Monday to Saturday. A Field Assistant is in the field every
+   day (FA_VISIT_DAYS = 6). An SFO covers SFO_VISIT_DAYS = 4 days, whichever four he
+   picks, so the app only objects when a fifth distinct day would be added. A day with
+   more than MAX_VISITS_PER_DAY visits, or a Sunday, is queried too. All of it asks
+   "add anyway?"; nothing is blocked, because a real week sometimes needs the exception.
+   Admins schedule on behalf of others, so no limit applies to them. */
+function visitLimitDays() { return isFa() ? FA_VISIT_DAYS : isAdmin() ? Infinity : SFO_VISIT_DAYS; }
+function activeVisits() { return checkins.filter((c) => c.status !== "Skipped"); }
+/* Dates (Mon-Sat) with a visit in the week containing `iso`, and visits per date. */
+function weekLoad(iso, ignoreId) {
+  const mon = mondayOfISO(iso), sat = addDaysISO(mon, 5);
+  const perDay = {};
+  activeVisits().forEach((c) => {
+    if (c.id === ignoreId || !validISO(c.date) || c.date < mon || c.date > sat) return;
+    perDay[c.date] = (perDay[c.date] || 0) + 1;
+  });
+  return { mon, sat, perDay, days: Object.keys(perDay).sort() };
+}
+/* A plain-language reason this visit goes past a limit, or "" when it is fine. */
+function limitProblem(draft, ignoreId) {
+  if (isAdmin() || !validISO(draft.date)) return "";
+  if (!weekdayName(draft.date)) return `${fmtDayDate(draft.date)} is a Sunday. The week runs Monday to Saturday.`;
+  const load = weekLoad(draft.date, ignoreId);
+  const onDay = load.perDay[draft.date] || 0;
+  if (onDay + 1 > MAX_VISITS_PER_DAY) return `You already have ${onDay} visits on ${fmtDayDate(draft.date)}. More than ${MAX_VISITS_PER_DAY} in a day is hard to do properly.`;
+  const limit = visitLimitDays();
+  if (!onDay && load.days.length + 1 > limit) {
+    return isFa()
+      ? `That would be day ${load.days.length + 1} this week, and the week has ${limit} working days.`
+      : `You already have visits planned on ${load.days.length} days this week (${load.days.map((d) => weekdayName(d).slice(0, 3)).join(", ")}). Your plan is ${limit} field days. This would be a ${load.days.length + 1}th.`;
+  }
+  return "";
+}
+/* Resolves true when there is no problem or the person chooses to go ahead. */
+async function confirmLimits(draft, ignoreId) {
+  const problem = limitProblem(draft, ignoreId);
+  if (!problem) return true;
+  const r = await openDialog({ title: "Over the weekly limit", message: problem, confirmLabel: "Add anyway", cancelLabel: "Change it" });
+  return !!r.ok;
+}
+/* A one-line summary for the top of Today and Schedule. */
+function limitStripHTML(iso) {
+  if (isAdmin()) return "";
+  const load = weekLoad(iso || todayISO());
+  const limit = visitLimitDays();
+  const used = load.days.length;
+  const today = load.perDay[todayISO()] || 0;
+  const todayBit = today ? ` · ${plural(today, "visit")} today` : "";
+  let text;
+  if (isFa()) text = `<b>${used} of ${limit}</b> days with visits this week (Mon–Sat)${todayBit}`;
+  else if (used >= limit) text = `<b>${used} of ${limit}</b> field days chosen this week: ${esc(load.days.map((d) => weekdayName(d).slice(0, 3)).join(", "))}${todayBit}`;
+  else text = `<b>${used} of ${limit}</b> field days chosen this week. ${limit - used} still to pick${todayBit}`;
+  return `<div class="limit-strip${used >= limit ? " full" : ""}" role="status">${text}</div>`;
 }
 
 /* 9) MUTATIONS
@@ -1380,6 +1519,10 @@ function saveCheckin(id, patch) {
   return guardedWrite("save this check-in", () => updateDoc(doc(db, "checkins", id), stampEdit(patch)));
 }
 function createCheckin(data) {
+  if (!loadedKeys.checkins) {
+    showToast("Still loading your schedule. Try again in a moment.", { kind: "error" });
+    return Promise.resolve(false);
+  }
   const id = visitIdFor(data);
   if (checkins.some((c) => c.id === id)) {
     showToast("That visit is already on the schedule.", { kind: "error" });
@@ -1421,6 +1564,7 @@ async function changeStatus(c, newStatus) {
       const moved = applyDateToDraft({ date: r.value, day: c.day, week: c.week });
       const dup = findDuplicateVisit({ ...c, date: moved.date }, c.id);
       if (dup) { showToast(dupMessage(dup), { kind: "error" }); return; }
+      if (!(await confirmLimits({ date: moved.date }, c.id))) return;
       Object.assign(patch, { date: moved.date, day: moved.day, week: moved.week, rescheduledFrom: c.date || "" });
     }
   } else if (newStatus === "Skipped") {
@@ -1474,10 +1618,30 @@ function addStandaloneObservation(siteId, week, type, text) {
 function setObservationBucket(id, bucket) {
   return guardedWrite("update this item", () => updateDoc(doc(db, "observations", id), stampEdit({ bucket })));
 }
+/* One weekly check-in per SFO per week: id `${uid}_${week}`, with sfoUid on it so the rules
+   and the listener can tell whose it is. Before this, every SFO shared one document per
+   week and overwrote each other. An admin who still has a legacy shared document
+   (no sfoUid) sees it as the starting point, and the first save copies it into his own. */
+function deepMerge(a, b) {
+  const out = { ...a };
+  Object.keys(b || {}).forEach((k) => {
+    out[k] = (b[k] && typeof b[k] === "object" && !Array.isArray(b[k]) && a && a[k] && typeof a[k] === "object" && !Array.isArray(a[k])) ? deepMerge(a[k], b[k]) : b[k];
+  });
+  return out;
+}
+const myUidNow = () => (auth.currentUser && auth.currentUser.uid) || "";
+const ownWeekly = (week) => weeklyCheckins.find((w) => w.week === week && w.sfoUid === myUidNow());
+const legacyWeekly = (week) => (isAdmin() ? weeklyCheckins.find((w) => w.week === week && !w.sfoUid) : null);
 function saveWeeklyCheckin(week, patch) {
-  const isNew = !weeklyCheckins.some((w) => w.week === week);
+  const uidNow = myUidNow();
+  const isNew = !ownWeekly(week);
+  let data = patch;
+  if (isNew && legacyWeekly(week)) {
+    const { id, createdAt, createdBy, updatedAt, updatedBy, ...rest } = legacyWeekly(week);
+    data = deepMerge(rest, patch);
+  }
   const extra = isNew ? { createdAt: serverTimestamp(), createdBy: meEmail() } : {};
-  return guardedWrite("save the weekly check-in", () => setDoc(doc(db, "weeklyCheckins", String(week)), stampEdit({ ...patch, week, ...extra }), { merge: true }));
+  return guardedWrite("save the weekly check-in", () => setDoc(doc(db, "weeklyCheckins", `${uidNow}_${week}`), stampEdit({ ...data, week, sfoUid: uidNow, ...extra }), { merge: true }));
 }
 function setObservationStatus(id, status) {
   return guardedWrite("update this note's status", () => {
@@ -1616,9 +1780,8 @@ function renderEvidence(c) {
   }
   return html;
 }
-async function reviewVisit(id, status) {
-  try { await updateDoc(doc(db, "checkins", id), stampEdit({ review: { status, by: meEmail(), atMs: Date.now() } })); }
-  catch (err) { showToast("Couldn't save the review: " + (err.code || err.message)); }
+function reviewVisit(id, status) {
+  return guardedWrite("save the review", () => updateDoc(doc(db, "checkins", id), stampEdit({ review: { status, by: meEmail(), atMs: Date.now() } })));
 }
 document.addEventListener("click", (e) => {
   const b = e.target.closest("[data-review]");
@@ -1901,11 +2064,11 @@ document.querySelectorAll(".nav-btn").forEach((btn) => {
     document.getElementById("screen-today").classList.toggle("hidden", activeTab !== "today");
     document.getElementById("screen-schedule").classList.toggle("hidden", activeTab !== "schedule");
     document.getElementById("screen-analytics").classList.toggle("hidden", activeTab !== "analytics");
-    document.getElementById("screen-sites").classList.toggle("hidden", activeTab !== "sites");
+    document.getElementById("screen-profile").classList.toggle("hidden", activeTab !== "profile");
     document.getElementById("site-profile-screen").classList.add("hidden");
     document.getElementById("report-screen").classList.add("hidden");
     document.getElementById("add-checkin-screen").classList.add("hidden");
-    document.getElementById("top-title").textContent = { today: "Today", schedule: "Schedule", analytics: "Dashboard", sites: sitesLabel() }[activeTab];
+    document.getElementById("top-title").textContent = { today: "Today", schedule: "Schedule", analytics: "Dashboard", profile: "Profile" }[activeTab];
     updateFab();
     render();
   });
@@ -1926,16 +2089,35 @@ function closeSiteProfile() {
 function labelIconButtons() {
   document.querySelectorAll("[title]:not([aria-label])").forEach((el) => el.setAttribute("aria-label", el.getAttribute("title")));
 }
-function render() {
+/* Two ways in. render() is for something the person just did, and draws at once.
+   renderFromData() is for a snapshot arriving from Firestore: if a field is being typed
+   in, redrawing the screen would throw the half-typed text and the keyboard away, so it
+   waits until the field loses focus. A data render also leaves the Add-visit form alone;
+   that form is built from the draft the person is filling in, not from live data. */
+function renderNow(fromData) {
   if (activeTab === "today") renderToday();
   else if (activeTab === "schedule") renderSchedule();
   else if (activeTab === "analytics") renderAnalytics();
-  else renderSitesTeam();
+  else renderProfile();
   if (selectedSiteId) renderSiteProfile();
-  if (addDraft) renderAddCheckin();
+  if (addDraft && !fromData) renderAddCheckin();
   if (reportWeek !== null) renderReport();
   labelIconButtons();
 }
+function render() { renderDeferred = false; renderNow(false); }
+let renderDeferred = false;
+function typingInApp() {
+  const a = document.activeElement;
+  return !!a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && !!a.closest(".screen, #add-checkin-screen, #site-profile-screen, #report-screen");
+}
+function renderFromData() {
+  if (typingInApp()) { renderDeferred = true; return; }
+  renderDeferred = false; renderNow(true);
+}
+document.addEventListener("focusout", () => {
+  if (!renderDeferred) return;
+  setTimeout(() => { if (renderDeferred && !typingInApp()) { renderDeferred = false; renderNow(true); } }, 0);
+});
 
 /* 11a) THIS-WEEK COUNTERS
    The operational numbers, not analytics: what was planned, what happened, and
@@ -2040,6 +2222,7 @@ function renderToday() {
       <div class="today-stat ${overdue.length ? "warn" : ""}"><div class="num">${overdue.length}</div><div class="lbl">Overdue</div></div>
     </div>
 
+    ${limitStripHTML(iso)}
     ${mine.length ? `
       <div class="sec-title">Today's visits</div>
       ${mine.map(renderCheckinCard).join("")}
@@ -2125,6 +2308,7 @@ function renderSchedule() {
   el.innerHTML = `
     ${errorBanner()}
     <div id="week-strip" role="group" aria-label="Choose a week">${stripHtml}</div>
+    ${(() => { const st = programStart(); return st ? limitStripHTML(addDaysISO(st, 7 * (selectedWeek - 1))) : ""; })()}
     ${dayNames.length ? "" : `<div class="empty-state"><b>Nothing planned for week ${selectedWeek}</b>Tap Add visit to plan one.</div>`}
     ${dayNames.map((d) => `
       <div class="day-label"${selectedWeek === currentWeek() && d === todayDayName() ? ' id="day-today"' : ""}>${esc(d)}</div>
@@ -2547,6 +2731,8 @@ function wireEditForm(panelInner, id, checkin) {
       const problem = visitDraftProblem(draft, id);
       if (problem) { editFormError = problem; refresh(); return; }
       editFormError = "";
+      /* Only ask about limits when the date actually moved; saving a typo fix on an old visit shouldn't. */
+      if (draft.date !== checkin.date && !(await confirmLimits(draft, id))) return;
       if (!(await saveCheckin(id, pickEditable(draft)))) return;
       showToast("Changes saved");
       openEditId = null; editDraft = null; render();
@@ -2638,6 +2824,8 @@ function renderSiteProfile() {
         </div>
       </div>` : ""}
 
+      <div class="sp-card"><div class="target-label">Last visited</div><div style="margin-top:4px;">${(() => { const l = lastVisitInfo(site.id); return l ? `<span class="lv ${lastVisitLabel(site.id).cls}">${esc(fmtDayDate(l.iso))} · ${esc(ageLabel(l.days))}</span> <span class="field-hint" style="margin:0;">by ${esc(l.by)}</span>` : `<span class="lv lv-never">Never visited</span>`; })()}</div></div>
+
       <div class="sp-stats">
         <div class="sp-stat"><div class="num">${history.length}</div><div class="lbl">Visits</div></div>
         <div class="sp-stat"><div class="num">${completedCount}</div><div class="lbl">Completed</div></div>
@@ -2692,24 +2880,28 @@ function renderHistoryItem(c) {
 }
 
 /* 14) SITES & TEAM SCREEN */
-let siteSearch = "";
-let siteFilterEpa = "All";
-/* Highlights the matched substring without ever putting raw user text into
-   the DOM: escape first, then wrap the match. */
+/* Highlights the matched substring without ever putting raw user text into the DOM.
+   The match is found in the raw text and each piece is escaped on its own, so a search
+   for "amp" can't land inside an "&amp;" entity and break the markup. */
 function highlight(text, q) {
-  const safe = esc(text);
-  if (!q) return safe;
-  const safeQ = esc(q).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return safe.replace(new RegExp(safeQ, "ig"), (m) => `<mark>${m}</mark>`);
+  const raw = String(text ?? "");
+  if (!q) return esc(raw);
+  const lower = raw.toLowerCase(), needle = q.toLowerCase();
+  let out = "", i = 0;
+  for (;;) {
+    const at = lower.indexOf(needle, i);
+    if (at < 0) break;
+    out += esc(raw.slice(i, at)) + "<mark>" + esc(raw.slice(at, at + needle.length)) + "</mark>";
+    i = at + needle.length;
+  }
+  return out + esc(raw.slice(i));
 }
 
-let sitesView = "sites"; // "sites" | "team"
 const siteStatus = (s) => (s.status === "paused" || s.status === "closed" ? s.status : "active");
 function statusChipHTML(s) {
   const st = siteStatus(s);
   return st === "paused" ? '<span class="chip chip-warn">Paused</span>' : st === "closed" ? '<span class="chip chip-bad">Closed</span>' : "";
 }
-const WEEKLY_CAPACITY = 18; // visits one FA could theoretically handle in a week; the same for every FA
 /* One row per field assistant: who they are, where, and how their week is going. */
 function teamRows(q) {
   const wk = currentWeek();
@@ -2726,6 +2918,7 @@ function teamRows(q) {
       done: completed.length, total: visits.length,
       issues: mine.reduce((n, s) => n + openIssuesForSite(s.id).length, 0),
       assigned: active.length,
+      days: new Set(faVisits.filter((c) => c.assistant === fa && c.status !== "Skipped" && validISO(c.date) && mondayOfISO(c.date) === mondayOfISO(todayISO())).map((c) => c.date)).size,
       overdue: faVisits.filter((c) => c.assistant === fa && isOverdue(c)).length,
       notVisited: active.filter((s) => !visitedIds.has(s.id)).length,
       followUps: observations.filter((o) => o.type === "followUp" && isUnresolved(o) && mineIds.has(o.siteId)).length,
@@ -2751,7 +2944,7 @@ function renderTeamList(q) {
             ${r.issues ? `<span class="issue-flag">${icon("triangle-alert", 12)} ${r.issues}</span>` : ""}
           </div>
           <div class="meta">
-            <span>Capacity ${WEEKLY_CAPACITY} · Assigned ${r.assigned} · Scheduled ${r.total} · Done ${r.done}</span>
+            <span>Days with visits this week ${r.days}/${FA_VISIT_DAYS} · Sites ${r.assigned} · Scheduled ${r.total} · Done ${r.done}</span>
           </div>
           ${(r.overdue || r.notVisited || r.followUps || r.weak) ? `<div class="meta">${[
             r.overdue ? r.overdue + " overdue" : "", r.notVisited ? r.notVisited + " not visited this week" : "",
@@ -2762,8 +2955,10 @@ function renderTeamList(q) {
   }).join("");
 }
 
+/* The Sites / Team lists live inside the Profile tab, in #profile-sites. */
 function renderSitesTeam() {
-  const el = document.getElementById("screen-sites");
+  const el = document.getElementById("profile-sites");
+  if (!el) return;
   const gate = screenGate("sites and team");
   if (gate) { el.innerHTML = gate; return; }
   const epaOptions = ["All", ...REFERENCE.epas.filter((e) => e !== "Office")];
@@ -2779,7 +2974,10 @@ function renderSitesTeam() {
       (s.nmName || "").toLowerCase().includes(q) ||
       (s.epa || "").toLowerCase().includes(q));
   }
-  filtered.sort((a, b) => (siteStatus(a) === "closed") - (siteStatus(b) === "closed") || a.name.localeCompare(b.name));
+  const byName = (a, b) => (siteStatus(a) === "closed") - (siteStatus(b) === "closed") || a.name.localeCompare(b.name);
+  /* "Longest unvisited" puts never-visited sites first, then the oldest last visit. */
+  if (sitesSort === "unvisited") filtered.sort((a, b) => (siteStatus(a) === "closed") - (siteStatus(b) === "closed") || lastVisitLabel(b.id).days - lastVisitLabel(a.id).days || byName(a, b));
+  else filtered.sort(byName);
 
   /* Notes matter as much as sites here: three weeks later you remember what
      you wrote, not which check-in you wrote it on. */
@@ -2808,7 +3006,7 @@ function renderSitesTeam() {
   const isTeam = !isFa() && sitesView === "team";
   el.innerHTML = `
     ${errorBanner()}
-    ${isFa() ? "" : `<div class="seg-top" role="group" aria-label="Show">
+    ${isFa() ? `<div class="sec-title" style="margin-top:4px;">My sites</div>` : `<div class="seg-top" role="group" aria-label="Show">
       <button type="button" data-view="sites" class="${isTeam ? "" : "active"}" aria-pressed="${!isTeam}">Sites</button>
       <button type="button" data-view="team" class="${isTeam ? "active" : ""}" aria-pressed="${isTeam}">Team</button>
     </div>`}
@@ -2816,6 +3014,9 @@ function renderSitesTeam() {
     <div class="pill-row" role="group" aria-label="Filter by EPA">${epaOptions.map((e) => `<button class="filter-pill ${siteFilterEpa === e ? "active" : ""}" data-epa="${esc(e)}" aria-pressed="${siteFilterEpa === e}">${esc(e)}</button>`).join("")}</div>
 
     ${isTeam ? renderTeamList(q) : `
+    ${filtered.length > 1 ? `<div class="sort-row" role="group" aria-label="Sort sites"><span class="lbl">Sort</span>
+      <button type="button" data-sort="name" class="${sitesSort === "name" ? "active" : ""}" aria-pressed="${sitesSort === "name"}">A–Z</button>
+      <button type="button" data-sort="unvisited" class="${sitesSort === "unvisited" ? "active" : ""}" aria-pressed="${sitesSort === "unvisited"}">Longest unvisited</button></div>` : ""}
     ${q && totalHits === 0 ? `<div class="empty-state">Nothing matches “${esc(siteSearch.trim())}”.</div>` : ""}
     ${!q && !filtered.length ? `<div class="empty-state"><b>No sites yet</b>An admin adds sites on the admin page.</div>` : ""}
 
@@ -2837,6 +3038,7 @@ function renderSitesTeam() {
                 ${issues ? `<span class="issue-flag">${icon("triangle-alert", 12)} ${issues}</span>` : ""}
                 ${noGps ? '<span class="data-flag">No GPS</span>' : ""}
               </div>
+              <div class="meta">${lastVisitHTML(s.id)}</div>
             </div>
             ${icon("chevron-right", 17)}
           </button>`;
@@ -2881,6 +3083,7 @@ function renderSitesTeam() {
   `;
 
   el.querySelectorAll(".seg-top button").forEach((b) => b.addEventListener("click", () => { sitesView = b.dataset.view; renderSitesTeam(); }));
+  el.querySelectorAll("[data-sort]").forEach((b) => b.addEventListener("click", () => { sitesSort = b.dataset.sort; renderSitesTeam(); }));
   el.querySelectorAll("[data-fa]").forEach((r) => r.addEventListener("click", () => {
     sitesView = "sites"; siteSearch = r.dataset.fa; siteFilterEpa = "All"; renderSitesTeam();
   }));
@@ -2897,6 +3100,52 @@ function renderSitesTeam() {
   el.querySelectorAll(".filter-pill").forEach((p) => p.addEventListener("click", () => { siteFilterEpa = p.dataset.epa; renderSitesTeam(); }));
   el.querySelectorAll(".site-row").forEach((r) => r.addEventListener("click", () => openSiteProfile(r.dataset.site)));
   el.querySelectorAll(".res-card").forEach((r) => r.addEventListener("click", () => openSiteProfile(r.dataset.site)));
+}
+
+/* 14b) PROFILE TAB
+   Account, sign-out and install live here, with the Sites / Team lists underneath
+   (an FA sees "My sites"). The lists draw into #profile-sites on their own, so
+   typing in the search box redraws only that part. */
+function acctRowsHTML() {
+  const rows = [["Role", ROLE_NAME[myRole] || "No role"]];
+  if (isFa()) {
+    rows.push(["Supervisor", mySupervisor || "Not set yet"]);
+    rows.push(["Sites", String(sites.filter((s) => s.id !== "n-a").length)]);
+  } else if (!isAdmin()) {
+    const fas = allAssistants().length;
+    rows.push(["Field Assistants", fas ? String(fas) : "None yet"]);
+    rows.push(["Field days per week", String(SFO_VISIT_DAYS) + " of your choice"]);
+  }
+  if (isFa()) rows.push(["Field days per week", `${FA_VISIT_DAYS} (Mon–Sat)`]);
+  return rows.map(([k, v]) => `<div class="acct-row"><span>${esc(k)}</span><span>${esc(v)}</span></div>`).join("");
+}
+function renderProfile() {
+  const el = document.getElementById("screen-profile");
+  const user = auth.currentUser;
+  const email = (user && user.email) || "";
+  const name = myName || email.split("@")[0] || "Account";
+  const n = pendingTotal();
+  el.innerHTML = `
+    <div class="acct-card">
+      <div class="acct-top">
+        <span class="nm-avatar" aria-hidden="true">${esc(initials(myName || name))}</span>
+        <div>
+          <div class="acct-name">${esc(name)}</div>
+          <div class="acct-email">${esc(email)}</div>
+        </div>
+      </div>
+      <div class="acct-rows">${acctRowsHTML()}</div>
+    </div>
+    <div class="acct-actions">
+      ${deferredInstallPrompt ? `<button class="btn-outline" type="button" data-act="install">${icon("download", 16)} Install app</button>` : ""}
+      <button class="btn-outline" type="button" data-act="signout">${icon("log-out", 16)} Sign out${n ? ` (${plural(n, "change")} waiting to sync)` : ""}</button>
+    </div>
+    <div id="profile-sites" style="margin-top:22px;"></div>
+  `;
+  el.querySelector('[data-act="signout"]').addEventListener("click", confirmSignOut);
+  const inst = el.querySelector('[data-act="install"]');
+  if (inst) inst.addEventListener("click", installApp);
+  renderSitesTeam();
 }
 
 /* 15) ANALYTICS SCREEN */
@@ -3072,6 +3321,7 @@ function renderAddCheckin() {
       const problem = visitDraftProblem(draft, null);
       if (problem) { addFormError = problem; refresh(); return; }
       addFormError = "";
+      if (!(await confirmLimits(draft, null))) return;
       if (!(await createCheckin({ ...draft }))) return;
       showToast("Visit added");
       closeAddCheckin();
@@ -3084,7 +3334,7 @@ document.getElementById("fab").addEventListener("click", openAddCheckin);
 window.addEventListener("scroll", () => document.getElementById("fab").classList.toggle("compact", window.scrollY > 60), { passive: true });
 
 /* 16b) WEEKLY CHECK-IN
-   One doc per week in `weeklyCheckins` (id = String(week)). Mon–Thu the SFO
+   One doc per SFO per week in `weeklyCheckins` (id = `${uid}_${week}`). Mon–Thu the SFO
    fills it in; Friday's call with the DS just reads what's there.
    - Seedlings target is derived (sum of the FA's site potfilling targets).
    - Potfilling % and Planting % come from the tech team's KoBo dashboard and
@@ -3101,7 +3351,7 @@ function weeklyCheckinFor(week) {
     week, personalSustainability: { score: null, vacations: "", lastReportSubmitted: null },
     topPriorities: [], faPercents: {},
   };
-  const found = weeklyCheckins.find((w) => w.week === week);
+  const found = ownWeekly(week) || legacyWeekly(week);
   if (!found) return base;
   return {
     ...base, ...found,
@@ -3125,7 +3375,7 @@ function observationsForWeek(week) {
     .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 }
 function allReportWeeks() {
-  const fromDrafts = weeklyCheckins.map((w) => w.week).filter((w) => typeof w === "number");
+  const fromDrafts = weeklyCheckins.filter((w) => w.sfoUid === myUidNow() || !w.sfoUid).map((w) => w.week).filter((w) => typeof w === "number");
   const candidates = [...weeksWithData(), ...fromDrafts, selectedWeek, selectedWeek + 1];
   return [...new Set(candidates)].sort((a, b) => a - b);
 }
@@ -3435,12 +3685,14 @@ function renderReport() {
 }
 
 /* 17) INSTALL PROMPT + SERVICE WORKER */
-window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferredInstallPrompt = e; document.getElementById("install-btn").style.display = "flex"; });
-document.getElementById("install-btn").addEventListener("click", async () => {
+window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferredInstallPrompt = e; if (activeTab === "profile" && !typingInApp()) renderProfile(); });
+window.addEventListener("appinstalled", () => { deferredInstallPrompt = null; if (activeTab === "profile") renderProfile(); });
+async function installApp() {
   if (!deferredInstallPrompt) return;
   deferredInstallPrompt.prompt(); await deferredInstallPrompt.userChoice;
-  deferredInstallPrompt = null; document.getElementById("install-btn").style.display = "none";
-});
+  deferredInstallPrompt = null;
+  if (activeTab === "profile") renderProfile();
+}
 if ("serviceWorker" in navigator) {
   /* The service worker takes over as soon as a new version installs, but the
      page already on screen keeps running the old code until it reloads. */
