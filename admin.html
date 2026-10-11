@@ -1434,7 +1434,15 @@ async function linkExistingRecords() {
       if (col === "sites") return { assistantId: faId(d.assistant), sfoUid: supOf[faId(d.assistant)] || null };
       const ownerType = d.ownerType || (d.recordedByRole === "fa" ? "fa" : "sfo");
       const ownerUid = d.ownerUid || uidByEmail[String(d.createdBy || "").toLowerCase()] || me;
-      return { assistantId, ownerType, ownerUid, sfoUid: ownerType === "fa" ? (supOf[assistantId] || null) : ownerUid };
+      const out = { assistantId, ownerType, ownerUid, sfoUid: ownerType === "fa" ? (supOf[assistantId] || null) : ownerUid };
+      /* A task assigned to a Field Assistant is matched by his id, not his name. Older tasks only
+         carry the name, so this adds the id (using the id his sites already carry). */
+      if (col === "observations" && typeof d.assignedTo === "string" && d.assignedTo.trim()) {
+        const asg = sites.find((x) => x.assistant === d.assignedTo && x.assistantId);
+        const aid = asg ? asg.assistantId : faId(d.assignedTo);
+        if (aid) out.assignedToId = aid;
+      }
+      return out;
     };
     const work = [];
     const check = (col, docs) => docs.forEach((d) => {
@@ -1466,7 +1474,7 @@ async function linkExistingRecords() {
     const by = (c) => work.filter((w) => w[0] === c).length;
     const ok = await confirmModal({
       title: "Update " + (work.length + weeklyCopies.length) + " records?",
-      body: by("sites") + " sites, " + by("checkins") + " visits, " + by("observations") + " notes and " + by("fieldAssistants") + " FA records get their FA, owner and supervisor tags." + (weeklyCopies.length ? " " + weeklyCopies.length + " shared weekly check-in" + (weeklyCopies.length === 1 ? "" : "s") + " will be copied into your own (the old ones stay)." : "") + " Nothing else changes.",
+      body: by("sites") + " sites, " + by("checkins") + " visits, " + by("observations") + " notes and " + by("fieldAssistants") + " FA records get their FA, owner and supervisor tags (and tasks get the id of the FA they are assigned to)." + (weeklyCopies.length ? " " + weeklyCopies.length + " shared weekly check-in" + (weeklyCopies.length === 1 ? "" : "s") + " will be copied into your own (the old ones stay)." : "") + " Nothing else changes.",
       confirmLabel: "Update records"
     });
     if (!ok) return;

@@ -1,7 +1,7 @@
 /* Bump CACHE_NAME on every deploy. It is what tells an installed phone that there is
    a new version: the activate handler deletes every cache with a different name, and
    the page shows "A new version is ready" when the new worker takes over. */
-const CACHE_NAME = "sfo-field-tracker-v19";
+const CACHE_NAME = "sfo-field-tracker-v20";
 
 /* Must all download, or the worker doesn't install (the old version keeps running). */
 const APP_SHELL = ["./", "./index.html", "./manifest.json"];
@@ -18,8 +18,15 @@ const CACHEABLE_CROSS_ORIGIN = ["https://fonts.googleapis.com", "https://fonts.g
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
-    await cache.addAll(APP_SHELL);
-    await Promise.allSettled([...OPTIONAL_FILES, ...SDK_FILES].map((u) => cache.add(u)));
+    /* cache: "reload" skips the browser's own HTTP cache. GitHub Pages lets a browser keep a
+       file for about 10 minutes, so without it a release made soon after a visit could install
+       a new worker that stores the OLD index.html, and phones would say "new version ready"
+       while still running the old code. */
+    await Promise.all(APP_SHELL.map((u) => cache.add(new Request(u, { cache: "reload" }))));
+    await Promise.allSettled([
+      ...OPTIONAL_FILES.map((u) => cache.add(new Request(u, { cache: "reload" }))),
+      ...SDK_FILES.map((u) => cache.add(u)),
+    ]);
   })());
   self.skipWaiting();
 });
@@ -44,12 +51,13 @@ self.addEventListener("fetch", (event) => {
   const sameOrigin = url.origin === self.location.origin;
   if (!sameOrigin && !CACHEABLE_CROSS_ORIGIN.includes(url.origin)) return; // Firebase Auth / Firestore and Cloudinary photo calls go straight to the network
   /* The admin pages need a live connection anyway; never serve them stale. */
-  if (sameOrigin && (url.pathname.endsWith("/admin.html") || url.pathname.endsWith("/admin-sync.html"))) return;
+  if (sameOrigin && url.pathname.endsWith("/admin.html")) return;
 
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
     const cached = await cache.match(req, { ignoreSearch: req.mode === "navigate" });
-    const fromNetwork = () => fetch(req).then((response) => {
+    /* Our own files are refreshed past the browser's HTTP cache, for the same reason as at install. */
+    const fromNetwork = () => fetch(sameOrigin ? new Request(req, { cache: "reload" }) : req).then((response) => {
       if (worthCaching(response, !sameOrigin)) cache.put(req, response.clone());
       return response;
     });

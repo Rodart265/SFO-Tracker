@@ -354,6 +354,16 @@ a{color:inherit;text-decoration:none;}
 .composer-extra input[type="date"]{width:100%;border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;background:#fff;color:var(--ink);}
 .composer-extra .picker-btn{padding:10px 12px;font-size:13.5px;}
 
+/* ---- FA task cards (Today) ---- */
+.task-card{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-left:6px solid var(--obs-followUp);border-radius:var(--radius-md);padding:12px 12px 12px 14px;margin-bottom:9px;}
+.task-main{flex:1;min-width:0;}
+.task-site{font-size:13px;font-weight:700;color:var(--ink-soft);}
+.task-text{font-size:15px;color:var(--ink);line-height:1.4;margin-top:2px;overflow-wrap:anywhere;}
+.task-meta{font-size:13px;color:var(--ink-soft);margin-top:4px;}
+.task-late{color:var(--obs-issue);font-weight:700;}
+.task-done{flex-shrink:0;min-width:96px;min-height:48px;border-radius:var(--radius-sm);background:var(--leaf);color:#fff;font-size:14px;font-weight:700;padding:0 14px;}
+.task-done:disabled{opacity:.5;}
+
 /* ---- Add check-in overlay ---- */
 #add-checkin-screen{position:fixed;inset:0;background:var(--paper);z-index:40;display:flex;flex-direction:column;overflow-y:auto;}
 .ac-top{background:var(--ink);color:#fff;
@@ -684,7 +694,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
-  collection, doc, getDoc, addDoc, updateDoc, setDoc, deleteDoc, onSnapshot,
+  collection, doc, getDoc, getDocFromServer, addDoc, updateDoc, setDoc, deleteDoc, onSnapshot,
   query, where, orderBy, serverTimestamp, arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -1170,7 +1180,7 @@ function startListeners() {
       pendingCheckinIds = new Set(snap.docs.filter((d) => d.metadata.hasPendingWrites).map((d) => d.id));
     }),
     watch("observations", ref("observations"), (snap) => { obsOwn = docsOf(snap); observations = [...obsOwn, ...tasksForMe]; countPending("observations", snap); }),
-    ...(isFa() && myFaName ? [watch("tasks", query(collection(db, "observations"), where("assistantId", "==", myFaId), where("ownerType", "==", "sfo"), where("type", "==", "followUp"), where("assignedTo", "==", myFaName)),
+    ...(isFa() ? [watch("tasks", query(collection(db, "observations"), where("assistantId", "==", myFaId), where("ownerType", "==", "sfo"), where("type", "==", "followUp"), where("assignedToId", "==", myFaId)),
       (snap) => { tasksForMe = docsOf(snap); observations = [...obsOwn, ...tasksForMe]; })] : []),
     isFa() ? (loadedKeys.weeklyCheckins = true, () => {}) : watch("weeklyCheckins", scoped ? query(collection(db, "weeklyCheckins"), where("sfoUid", "==", uid)) : collection(db, "weeklyCheckins"), (snap) => { weeklyCheckins = docsOf(snap); countPending("weeklyCheckins", snap); }),
     watch("program", doc(db, "meta", "program"), (snap) => { programDoc = snap.exists() ? snap.data() : null; }),
@@ -1376,6 +1386,11 @@ const isFa = () => myRole === "fa";
 const sitesLabel = () => (isFa() ? "My sites" : "Sites & Team");
 function applyRoleLabels() { /* the tab is always "Profile"; what's inside it depends on the role */ }
 const faIdOf = (name) => { const n = (name || "").trim(); return n && n !== "N/A" ? slugify(n) : null; };
+/* The Field Assistant record id for a name: the id the sites already carry, else the slug. */
+function assistantIdFor(name) {
+  const s = sites.find((x) => x.assistant === name && x.assistantId);
+  return s ? s.assistantId : faIdOf(name);
+}
 function uid() { return (crypto.randomUUID && crypto.randomUUID()) || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10)); }
 
 /* Audit fields. Every document records who made it and when, and who last touched
@@ -1491,10 +1506,32 @@ function reportWriteError(action, err) {
    offline (or on a very weak connection) a plain `await` hangs and leaves the
    form stuck. The change is already saved on the phone and visible by then, so
    after a short wait it counts as queued. A later rejection still tells the person. */
+/* An FA's new records must name his supervisor, and the rules compare that with his
+   record. If an admin changed the supervisor while he was signed in, this phone still
+   holds the old one and every write is refused until he signs out and in. On a refused
+   write, read his record from the server and, if the supervisor really changed, retry once. */
+async function refreshSupervisor() {
+  if (!isFa() || !myFaId || !navigator.onLine) return false;
+  try {
+    const snap = await getDocFromServer(doc(db, "fieldAssistants", myFaId));
+    if (!snap.exists()) return false;
+    const f = snap.data();
+    mySupervisor = f.supervisorName || f.supervisorEmail || mySupervisor;
+    const next = f.supervisorUid || null;
+    if (next === mySfoUid) return false;
+    mySfoUid = next;
+    return true;
+  } catch (e) { return false; }
+}
 async function guardedWrite(action, fn) {
-  let pending;
-  try { pending = Promise.resolve(fn()); }
-  catch (err) { reportWriteError(action, err); return false; }
+  const run = () => { try { return Promise.resolve(fn()); } catch (err) { return Promise.reject(err); } };
+  const attempt = () => {
+    const p = run();
+    return isFa()
+      ? p.catch(async (err) => { if (err && err.code === "permission-denied" && await refreshSupervisor()) return run(); throw err; })
+      : p;
+  };
+  const pending = attempt();
   try {
     const outcome = await new Promise((resolve, reject) => {
       const t = setTimeout(() => resolve("queued"), navigator.onLine ? 4000 : 0);
@@ -1605,6 +1642,9 @@ async function writeObservation(siteId, checkinId, type, text, meta) {
   if (TRACKED_TYPES.includes(type)) {
     record.status = "Open";
     record.assignedTo = (meta && meta.assignedTo) || "";
+    /* The id, not the name, is what the rules and the FA's phone match on, so a name
+       change can't orphan a task. */
+    record.assignedToId = record.assignedTo ? assistantIdFor(record.assignedTo) : null;
     record.dueDate = (meta && meta.dueDate) || "";
     record.resolvedAt = null;
     record.resolvedBy = "";
@@ -1665,7 +1705,7 @@ function setObservationStatus(id, status) {
    isn't verified. Times are the phone's clock in ms (that is the evidence); audit
    times elsewhere come from the server. */
 const SITE_RADIUS_M = 300;        // how close counts as "at the site"
-const ACCURACY_CREDIT_M = 150;    // a vague fix gets at most this much benefit of the doubt
+const ACCURACY_CREDIT_M = 50;     // a vague fix gets at most this much benefit of the doubt (was 150: too generous, 450 m away could read as 'at the site')
 const GPS_TIMEOUT_MS = 20000;
 const GPS_GOOD_M = 30;            // stop waiting once the fix is this good
 function haversineM(lat1, lng1, lat2, lng2) {
@@ -2171,7 +2211,27 @@ function renderToday() {
   const done = mine.filter((c) => c.status === "Completed").length;
   const pending = mine.filter((c) => c.status === "Pending").length;
   const overdue = overdueCheckins();
-  const dueFollowUps = openFollowUps().filter(isDueOrOverdue)
+  /* An FA's open tasks (follow-ups assigned to him, with or without a due date) get their
+     own section with a Mark done button, so they are shown there and left out of the
+     attention list below. Tasks recorded before assignedToId existed match by name. */
+  const myTasks = isFa()
+    ? observations.filter((o) => o.type === "followUp" && isUnresolved(o) &&
+        (o.assignedToId === myFaId || (!o.assignedToId && myFaName && o.assignedTo === myFaName)))
+        .sort((a, b) => (a.dueDate || "9999").localeCompare(b.dueDate || "9999") || (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+    : [];
+  const myTaskIds = new Set(myTasks.map((o) => o.id));
+  const taskCardHTML = (o) => {
+    const late = o.dueDate && o.dueDate < iso;
+    return `<div class="task-card">
+      <div class="task-main">
+        <div class="task-site">${esc(siteLabel(o.siteId))}</div>
+        <div class="task-text">${esc(o.text)}</div>
+        <div class="task-meta">${o.dueDate ? `<span class="${late ? "task-late" : ""}">${late ? "Overdue · due " : "Due "}${esc(fmtShortDate(o.dueDate))}</span>` : "<span>No due date</span>"}</div>
+      </div>
+      <button type="button" class="task-done" data-obs-done="${esc(o.id)}">Mark done</button>
+    </div>`;
+  };
+  const dueFollowUps = openFollowUps().filter((o) => isDueOrOverdue(o) && !myTaskIds.has(o.id))
     .sort((a, b) => (a.dueDate || "").localeCompare(b.dueDate || ""));
   const openIssues = observations.filter((o) => o.type === "issue" && isUnresolved(o))
     .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
@@ -2231,6 +2291,7 @@ function renderToday() {
       ${checkins.length ? `<div class="empty-state" style="padding:26px 20px;"><b>No visits scheduled for today</b>${nextUp ? `Next up: ${esc(siteLabel(nextUp.siteId))}, ${esc(fmtDayDate(nextUp.date))}.` : "Nothing else is scheduled."}</div>` : emptyScheduleHTML()}
     `}
 
+    ${myTasks.length ? `<div class="sec-title">My tasks</div>${myTasks.map(taskCardHTML).join("")}` : ""}
     <div class="sec-title">Needs your attention</div>
     ${attention.length ? attention.map((a) => `
       <button class="attn-card" data-site="${esc(a.siteId)}" style="--accent:${a.accent};--accent-bg:${a.accentBg}">
@@ -2761,9 +2822,13 @@ function renderFaVisitReadOnly(c) {
     ${notes.map((o) => `<div class="ro-note"><b>${esc(OBS_LABEL[o.type] || o.type)}</b> ${esc(o.text || "")}${o.assignedTo ? ` · for ${esc(o.assignedTo)}` : ""}${isUnresolved(o) ? ` <button type="button" class="btn-link" data-obs-done="${esc(o.id)}">Mark done</button>` : obsStatus(o) === "Resolved" ? " · done" : ""}</div>`).join("")}
   </div>`;
 }
-document.addEventListener("click", (e) => {
+document.addEventListener("click", async (e) => {
   const b = e.target.closest("[data-obs-done]");
-  if (b) setObservationStatus(b.dataset.obsDone, "Resolved");
+  if (!b) return;
+  b.disabled = true;
+  const ok = await setObservationStatus(b.dataset.obsDone, "Resolved");
+  if (ok) showToast("Marked done");
+  else b.disabled = false;
 });
 function renderSiteProfile() {
   const el = document.getElementById("site-profile-screen");
@@ -3281,11 +3346,20 @@ function openAddCheckin() {
   const today = todayISO();
   const dayName = todayDayName();
   addFormError = "";
+  /* An FA only reads his own sites, so everything in `sites` is his: start the form with
+     his name, and with his EPA when all his sites are in one. */
+  let startEpa = "", startAssistant = "";
+  if (isFa()) {
+    const own = sites.filter((s) => s.id !== "n-a" && s.status !== "closed");
+    startAssistant = (own.find((s) => s.assistant) || {}).assistant || myFaName || "";
+    const epas = [...new Set(own.map((s) => s.epa).filter(Boolean))];
+    if (epas.length === 1) startEpa = epas[0];
+  }
   addDraft = {
     week: currentWeek(),
     day: DAY_ORDER.includes(dayName) ? dayName : "Monday",
     date: today,
-    epa: "", assistant: "", siteId: "", purpose: "",
+    epa: startEpa, assistant: startAssistant, siteId: "", purpose: "",
     checklistItems: [], checkedItems: [], status: "Pending",
   };
   document.getElementById("add-checkin-screen").classList.remove("hidden");
