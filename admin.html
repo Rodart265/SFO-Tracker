@@ -1179,6 +1179,7 @@ function renderTeam() {
       <div class="edit-card" id="fa-card">
         <h2>Field Assistant records</h2>
         <p class="hint">Creates one record per Field Assistant named on your sites, supervised by you. Records that already exist are left alone. The office entry (N/A) is skipped. A record is not a login.</p>
+        <div class="save-msg" id="fa-sup-msg" role="status"></div>
         <div id="fa-supervisors"></div>
         <button class="btn-save" id="fa-create" type="button" style="width:100%;flex:none;">Preview and create</button>
         <button class="btn-save" id="fa-link" type="button" style="width:100%;flex:none;margin-top:10px;">Sync records with assignments</button>
@@ -1373,17 +1374,51 @@ async function createFaRecords() {
   }
 }
 
+/* Who is named as supervisor, as the FA's own phone will show it. The FA can't read the
+   users collection, so the label has to be stored on his record. */
+function supLabel(u) { return (u && (u.name || u.email)) || ""; }
+
+/* Point everything that belongs to one Field Assistant at his supervisor: his sites and
+   the visits and notes he made. An SFO's phone only reads records carrying his sfoUid, so
+   without this the SFO sees nothing even though the assignment saved. Returns the number
+   of records changed. */
+async function retagFa(faKey, supUid) {
+  const edits = [];
+  sites.forEach((x) => { if (faId(x.assistant) === faKey && (x.sfoUid || null) !== (supUid || null)) edits.push(["sites", x.id, { sfoUid: supUid || null, assistantId: faKey }]); });
+  const mine = (d) => d.ownerType === "fa" && (d.assistantId === faKey || (d.assistantId === undefined && faId(d.assistant) === faKey));
+  checkins.forEach((d) => { if (mine(d) && (d.sfoUid || null) !== (supUid || null)) edits.push(["checkins", d.id, { sfoUid: supUid || null }]); });
+  observations.forEach((d) => { if (mine(d) && (d.sfoUid || null) !== (supUid || null)) edits.push(["observations", d.id, { sfoUid: supUid || null }]); });
+  for (let i = 0; i < edits.length; i += 400) {
+    const batch = writeBatch(db);
+    edits.slice(i, i + 400).forEach(([col, id, diff]) => batch.update(doc(db, col, id), { ...diff, updatedAt: serverTimestamp(), updatedBy: who() }));
+    await batch.commit();
+  }
+  return edits.length;
+}
 async function setSupervisor(id, uid) {
-  const msg = $("#fa-msg");
+  const msg = $("#fa-sup-msg");
+  const fa = faRecords.find((f) => f.id === id);
+  const name = fa ? fa.name : id;
+  msg.className = "save-msg"; msg.textContent = "Saving " + name + "…";
   try {
     const u = users.find((x) => x.id === uid);
-    await updateDoc(doc(db, "fieldAssistants", id), { supervisorUid: uid || null, supervisorEmail: (u && u.email) || "", supervisorName: (u && (u.name || u.email)) || "", updatedAt: serverTimestamp(), updatedBy: who() });
-    msg.className = "save-msg ok"; msg.textContent = "Saved. Tap \"Sync records with assignments\" so this FA's visits and notes follow the new supervisor.";
-  } catch (err) { msg.className = "save-msg err"; msg.textContent = "Couldn't save: " + (err.code || err.message); }
+    await updateDoc(doc(db, "fieldAssistants", id), { supervisorUid: uid || null, supervisorEmail: (u && u.email) || "", supervisorName: supLabel(u), updatedAt: serverTimestamp(), updatedBy: who() });
+  } catch (err) {
+    msg.className = "save-msg err"; msg.textContent = "Couldn't save the supervisor for " + name + ": " + (err.code || err.message) + ". The picker may show a choice that was not saved.";
+    return;
+  }
+  try {
+    const n = await retagFa(id, uid || null);
+    msg.className = "save-msg ok";
+    msg.textContent = uid
+      ? name + " now reports to " + (supLabel(u0(uid)) || "that person") + "." + (n ? " Updated " + n + " site/visit/note record" + (n === 1 ? "" : "s") + " so they show on the supervisor's phone." : "") + (supLabel(u0(uid)) ? "" : " That account has no name or email on file, so " + name + "'s app will only say \"Assigned\". Add a name under its entry above.")
+      : name + " has no supervisor now.";
+  } catch (err) {
+    msg.className = "save-msg err";
+    msg.textContent = "Supervisor saved, but updating " + name + "'s records failed: " + (err.code || err.message) + ". Tap \"Sync records with assignments\" to retry.";
+  }
 }
-
-/* Brings every site, visit and note in line with the assignments: who the FA is, who made the record
-   (older ones were entered by the SFO), and which SFO supervises it. Safe to run again after any change. */
+const u0 = (uid) => users.find((x) => x.id === uid);
 async function linkExistingRecords() {
   const msg = $("#fa-msg"), btn = $("#fa-link");
   const fail = (t) => { msg.className = "save-msg err"; msg.textContent = t; };
