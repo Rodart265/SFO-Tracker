@@ -1,4 +1,4 @@
-# SFO Tracker data model (V1.0)
+# SFO Tracker data model (V1.1)
 
 Every write goes through the signed-in person's Firebase Auth account. `email`
 below always means `auth.currentUser.email`. Timestamps marked **server** are
@@ -14,6 +14,8 @@ evidence.
 | name | string | |
 | epa | string | Chilaza / Ming'ongo / Mpingu / Office |
 | assistant | string | field assistant (FA) name |
+| assistantId | string or null | `slugify(assistant)`; `null` for the N/A office entry |
+| sfoUid | string or null | uid of the SFO who supervises that FA. An SFO's phone only reads sites whose `sfoUid` is his, so the admin site form sets it from the FA record every time a site is saved. `null` when the FA has no supervisor yet. |
 | nurseryId | string | |
 | potfillingTarget | number or null | |
 | nmName, nmPhone | string | nursery manager; phone as `+265XXXXXXXXX` |
@@ -26,21 +28,25 @@ evidence.
 New visits use a deterministic ID so the same visit can't be created twice,
 even from two phones working offline:
 
-`visitId = <date>_<siteId>_<assistantSlug>_<purposeSlug>` (lowercase, a-z0-9 and hyphens)
+`visitId = <date>_<siteId>_<assistantSlug>_<purposeSlug>_<ownerCode>` (lowercase, a-z0-9 and hyphens)
 
-The app refuses to add or edit a visit into a collision with an existing one. If
-two phones add the very same visit while both are offline they write the same
-document, so the second sync overwrites the first with identical content rather
-than creating a copy.
+`ownerCode` is the first six characters of the creator's uid. Without it an SFO's visit
+and an FA's visit for the same site, day and purpose got the same ID, and one write
+replaced or was refused by the other. With it, each person's visit is a separate
+document, and two phones of the same person that add the same visit while offline still
+write one document.
 
-Older visits keep their old random IDs; the app also detects duplicates by
-comparing `date + siteId + assistant + purpose` across all visits.
+The app refuses to add or edit a visit into a collision with one of the person's own
+visits, and won't create a visit before the person's schedule has loaded.
+
+Visits created before V1.1 have no owner code (and the oldest have random IDs); the app
+also detects duplicates by comparing `date + siteId + assistant + purpose`.
 
 | field | type | notes |
 |-------|------|-------|
 | siteId, epa, assistant, purpose | string | |
 | date | `YYYY-MM-DD` | the one fact people set by hand |
-| day | string | Monday to Friday, derived from `date` |
+| day | string | Monday to Saturday, derived from `date`. A Sunday date leaves the stored day alone. |
 | week | number | program week, derived from `date` and `meta/program.week1Monday` |
 | status | string | `Pending`, `Completed`, `Rescheduled`, `Skipped` |
 | statusNote | string | reason for skip or reschedule |
@@ -81,8 +87,33 @@ never changes), `createdAt/createdBy` and `updatedAt/updatedBy`; every later edi
 (status change, report bucket) refreshes `updatedAt/updatedBy`. Older notes without
 the audit fields keep working.
 
-## weeklyCheckins/{week}
-Unchanged, plus `createdAt`, `createdBy` (first save) and `updatedBy`.
+## weeklyCheckins/{sfoUid}_{week}
+One document per SFO per week, with `sfoUid` on it (the rules and the app's query both
+match on it). Same content as before, plus `createdAt`, `createdBy` (first save) and
+`updatedBy`. Before V1.1 there was one shared document per week (id = the week number, no
+`sfoUid`), which let two SFOs overwrite each other. Those are readable by admins only. The
+admin button "Sync records with assignments" copies each into the signed-in admin's own
+document (`migratedFrom` names the old id; the old one is kept), and until then an admin's
+first save of a week starts from the shared one.
+
+## Weekly visit limits (soft)
+The programme week is Monday to Saturday. A Field Assistant is expected in the field on
+all six days; an SFO on four days of his own choosing. The app counts days with a visit
+(Pending, Completed or Rescheduled, not Skipped) in the Monday-to-Saturday week of the
+visit's date, and asks "Add anyway?" when a visit would be an extra day, a fourth-plus
+visit in one day (`MAX_VISITS_PER_DAY` = 3), or on a Sunday. Nothing is stored for this and
+the rules do not enforce it. Admins are not limited. Constants: `FA_VISIT_DAYS`,
+`SFO_VISIT_DAYS`, `MAX_VISITS_PER_DAY` in `index.html`.
+
+## Last visited
+Not stored; computed. A site's last visit is its most recent Completed visit, dated by the
+visit's `date` (or `completedAt` when it has none), counting visits by the SFO and by his
+FAs. Green under 14 days, amber from 14, red from 21 (`STALE_AMBER_DAYS`, `STALE_RED_DAYS`).
+A site with none is "Never visited" and shows in the attention list.
+
+## Evidence clock check
+`evidence.start.capturedAtMs` is the phone's clock; `startedAt` is the server's. The admin
+Visits tab flags a visit ("Phone clock off") when they differ by more than 48 hours.
 
 ## meta/program
 `{ week1Monday: "YYYY-MM-DD", updatedAt, updatedBy }`. Admin-set. All phones read
@@ -92,7 +123,7 @@ inferring it from dated visits.
 ## users/{uid}
 | field | type | notes |
 |-------|------|-------|
-| role | string | `admin`, `sfo`, `member` (older role, same access as `sfo` for now), `fa` (no access yet, see V2 phase 2); anything else means no access |
+| role | string | `admin`, `sfo`, `member` (older role, same access as `sfo` for now), `fa` (Field Assistant, needs `faId`); anything else means no access |
 | active | boolean | `false` blocks the account; missing means active |
 | faId | string | for role `fa`: the id of their `fieldAssistants` record (`slugify(name)`); an FA only reads and writes documents whose `assistantId` equals it |
 | email | string | for display in the admin Team tab |
@@ -125,11 +156,11 @@ A Field Assistant as a person, separate from any login. `faId` is `slugify(name)
 The site entry with assistant `N/A` is the office placeholder, not an FA, and gets no record.
 
 ## assistantId (V2 release A)
-`sites`, `checkins` and `observations` carry `assistantId`: the `fieldAssistants` id of the FA responsible (`slugify(assistant)`; `null` for the N/A office entry). New visits and notes get it automatically; notes take the site's FA at the time. Older records are filled in once with the admin Team tab button "Link existing records to FAs". Reassigning a site moves only its Pending visits; completed visits stay with the FA who did them.
+`sites`, `checkins` and `observations` carry `assistantId`: the `fieldAssistants` id of the FA responsible (`slugify(assistant)`; `null` for the N/A office entry). New visits and notes get it automatically; notes take the site's FA at the time. Older records are filled in once with the admin Team tab button "Link existing records to FAs". Reassigning a site moves only its Pending visits made by an SFO or admin; completed visits, and pending visits an FA made himself (`ownerType` `fa`), stay with the FA who made them. The admin site form says how many were left.
 
 ## recordedByRole and review (V2 release B)
 `checkins`, and `observations`, carry `recordedByRole`: the role of whoever typed the record (`fa`, `sfo`, `admin`, `member`). Records without it were entered by the SFO. It is a display label; `createdBy` stays the audit truth.
-`checkins.review` is `{status: "verified" | "followup", by, atMs}`, set by a Verify / Needs follow-up button an SFO or admin sees on started visits. Field Assistants cannot change it (rules). The team list shows capacity (18, the same for every FA), assigned, scheduled and done per week, plus overdue visits, sites not visited this week, open follow-ups and visits whose GPS evidence is missing or far from the site.
+`checkins.review` is `{status: "verified" | "followup", by, atMs}`, set by a Verify / Needs follow-up button an SFO or admin sees on started visits. Field Assistants cannot change it (rules). The team list shows days with visits this week (of 6), assigned sites, scheduled and done per week, plus overdue visits, sites not visited this week, open follow-ups and visits whose GPS evidence is missing or far from the site.
 
 ## Ownership (V2 release C)
 `checkins` and `observations` carry `ownerType` (`fa` or `sfo`), `ownerUid`, `assistantId` and `sfoUid`; `sites` carry `assistantId` and `sfoUid`. An FA's records belong to the FA and are tagged with the SFO who supervises him (`fieldAssistants/<id>.supervisorUid`). An SFO's records belong to that SFO and are never shown to FAs. An SFO reads his own and his FAs' records and writes only his own; on an FA's visit he can change only `review`, and on any note only the done mark. An FA can also read and mark done a follow-up an SFO assigned to him (`assignedTo` equals his name). The admin Team tab sets each FA's supervisor, and "Sync records with assignments" re-tags older or reassigned records. The older `member` role is treated like an SFO.
