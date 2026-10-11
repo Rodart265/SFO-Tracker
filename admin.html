@@ -85,6 +85,7 @@ input:disabled,select:disabled{background:var(--chip-mute-bg);color:var(--ink-so
 .site-row .name{font-size:19px;line-height:1.1;overflow-wrap:anywhere;}
 .site-row .meta{font-size:13px;color:var(--ink-soft);margin-top:3px;overflow-wrap:anywhere;}
 .site-row .flag{color:var(--issue);font-size:12px;font-weight:700;margin-left:8px;white-space:nowrap;}
+.site-row .flag.ok{color:var(--chip-ok-fg);}
 .sep{display:inline-block;width:1px;height:.85em;background:currentColor;opacity:.35;margin:0 .6em;vertical-align:-.1em;}
 
 /* Chips */
@@ -278,7 +279,7 @@ const EPAS = ["Chilaza", "Ming'ongo", "Mpingu", "Office"];
 const SITE_STATUSES = ["active", "paused", "closed"];
 const VISIT_STATUSES = ["Pending", "Completed", "Rescheduled", "Skipped"];
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const DAY_SHORT = { Monday: "Mon", Tuesday: "Tue", Wednesday: "Wed", Thursday: "Thu", Friday: "Fri" };
+const DAY_SHORT = { Monday: "Mon", Tuesday: "Tue", Wednesday: "Wed", Thursday: "Thu", Friday: "Fri", Saturday: "Sat" };
 
 /* Malawi numbers: +265 followed by 9 digits. Accepts 0999…, 999…, 265999…, +265 999…, 00265… */
 function normalizePhone(raw) {
@@ -303,7 +304,7 @@ function mondayOfISO(iso) { return addDaysISO(iso, -((new Date(iso + "T00:00:00"
 function weekdayName(iso) {
   if (!validISO(iso)) return null;
   const n = new Date(iso + "T00:00:00").getDay();
-  return n >= 1 && n <= 5 ? DAY_NAMES[n] : null; // null on weekends
+  return n >= 1 && n <= 6 ? DAY_NAMES[n] : null; // Monday to Saturday; null on Sunday
 }
 function todayISO() { return isoFromDate(new Date()); }
 
@@ -341,13 +342,14 @@ function currentWeek(anchor) {
 }
 
 /* ============================= STATE ============================= */
-const KEYS = ["sites", "checkins", "observations", "users", "program"];
-const KEY_LABEL = { sites: "sites", checkins: "visits", observations: "observations", users: "team", program: "program settings" };
+const KEYS = ["sites", "checkins", "observations", "users", "fieldAssistants", "program"];
+const KEY_LABEL = { sites: "sites", checkins: "visits", observations: "observations", users: "team", fieldAssistants: "field assistants", program: "program settings" };
 let sites = [];
 let checkins = [];
 let observations = [];
 let users = [];
 let faRecords = [];
+let weeklyDocs = [];       // weeklyCheckins, read only so "Sync records" can move legacy shared documents
 let programDoc = null;
 let loaded = {};
 let errs = {};
@@ -367,11 +369,11 @@ let vf = VF_DEFAULT();
 let weekSig = "";
 
 function resetState() {
-  sites = []; checkins = []; observations = []; users = []; programDoc = null;
+  sites = []; checkins = []; observations = []; users = []; faRecords = []; weeklyDocs = []; programDoc = null;
   loaded = {}; errs = {};
   siteCardMode = null; editingSiteId = null; siteSearch = ""; importRows = null;
   editingUid = null; programDirty = false; vf = VF_DEFAULT(); weekSig = "";
-  built = {};
+  built = {}; faSig = "";
   ["sites", "import", "visits", "team", "program", "oversight"].forEach((t) => { $("#panel-" + t).innerHTML = ""; });
   if (modalResolve) closeModal(false);
 }
@@ -565,6 +567,7 @@ function startListeners() {
     listen("observations", collection(db, "observations"), (s) => { observations = s.docs.map((d) => ({ id: d.id, ...d.data() })); }),
     listen("users", collection(db, "users"), (s) => { users = s.docs.map((d) => ({ id: d.id, ...d.data() })); }),
     listen("fieldAssistants", collection(db, "fieldAssistants"), (s) => { faRecords = s.docs.map((d) => ({ id: d.id, ...d.data() })); }),
+    onSnapshot(collection(db, "weeklyCheckins"), (s) => { weeklyDocs = s.docs.map((d) => ({ id: d.id, ...d.data() })); }, () => {}),
     listen("program", doc(db, "meta", "program"), (s) => { programDoc = s.exists() ? s.data() : null; })
   ];
 }
@@ -660,6 +663,20 @@ function renderSiteList() {
     (s.name || "").toLowerCase().includes(q) || (s.nurseryId || "").toLowerCase().includes(q) || (s.nmName || "").toLowerCase().includes(q));
   filtered.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
 
+  /* Most recent completed visit per site, by anyone. */
+  const lastBySite = {};
+  checkins.forEach((c) => {
+    if (c.status !== "Completed") return;
+    const d = validISO(c.date) ? c.date : (c.completedAt && c.completedAt.seconds ? isoFromDate(new Date(c.completedAt.seconds * 1000)) : null);
+    if (d && (!lastBySite[c.siteId] || d > lastBySite[c.siteId])) lastBySite[c.siteId] = d;
+  });
+  const lastVisitText = (id) => {
+    const d = lastBySite[id];
+    if (!d) return `<span class="flag">Never visited</span>`;
+    const days = Math.max(0, daysBetweenISO(d, todayISO()));
+    const txt = days === 0 ? "today" : days === 1 ? "yesterday" : days + " days ago";
+    return `<span class="flag${days >= 21 ? "" : " ok"}">Last visited ${txt}</span>`;
+  };
   listEl.innerHTML = filtered.map((s) => {
     const flags = [];
     if (!s.nmPhone) flags.push("No phone");
@@ -672,7 +689,7 @@ function renderSiteList() {
         <div style="flex:1;min-width:0;">
           <div class="name">${esc(s.name)} ${statusChip}</div>
           <div class="meta">${esc(s.assistant || "No assistant")}${SEP}${esc(s.epa || "No EPA")}${SEP}${esc(s.nmName || "No manager on file")}${SEP}target ${fmtNum(s.potfillingTarget)}
-            ${flags.map((f) => `<span class="flag">${esc(f)}</span>`).join("")}
+            ${flags.map((f) => `<span class="flag">${esc(f)}</span>`).join("")}${lastVisitText(s.id)}
           </div>
         </div>
         ${icon("chevron-right", 16)}
@@ -696,7 +713,7 @@ function renderEditSlot() {
   const token = ++cardToken;
   const assistants = knownAssistants();
   if (site.assistant && !assistants.includes(site.assistant) && site.assistant !== "N/A") assistants.push(site.assistant);
-  const pendingCount = isNew ? 0 : checkins.filter((c) => c.siteId === site.id && c.status === "Pending").length;
+  const pendingCount = isNew ? 0 : checkins.filter((c) => c.siteId === site.id && c.status === "Pending" && c.ownerType !== "fa").length;
   const epas = [...EPAS];
   if (site.epa && !epas.includes(site.epa)) epas.push(site.epa);
   const status = SITE_STATUSES.includes(site.status) ? site.status : "active";
@@ -816,8 +833,12 @@ async function saveSite(site, card, token) {
     if (!Number.isFinite(lng) || lng < -180 || lng > 180) return fail("Longitude must be a number from -180 to 180.");
   }
 
+  /* sfoUid is what lets an SFO's phone read this site at all (the rules and the app's
+     query both match on it), so it must follow the field assistant's supervisor. */
+  const faRec = faRecords.find((f) => f.id === faId(val("assistant")));
+  const sfoUid = (faRec && faRec.supervisorUid) || null;
   const fields = {
-    epa: val("epa"), status: val("status"), assistant: val("assistant"), assistantId: faId(val("assistant")), nurseryId: val("nurseryId"),
+    epa: val("epa"), status: val("status"), assistant: val("assistant"), assistantId: faId(val("assistant")), sfoUid, nurseryId: val("nurseryId"),
     potfillingTarget: target, nmName: val("nmName"), nmPhone, lat, lng
   };
 
@@ -842,16 +863,24 @@ async function saveSite(site, card, token) {
     const patch = { ...fields, updatedAt: serverTimestamp(), updatedBy: who() };
     const batch = writeBatch(db);
     batch.update(doc(db, "sites", site.id), patch);
-    let moved = 0;
+    let moved = 0, left = 0;
     if (patch.assistant && patch.assistant !== (site.assistant || "")) {
+      /* A visit an FA made belongs to that FA (ownerType "fa"): his phone only reads his
+         own visits, so re-pointing it at someone else would make it vanish for him. Those
+         stay where they are; only visits made by an SFO or admin move with the site. */
       checkins.filter((c) => c.siteId === site.id && c.status === "Pending").forEach((c) => {
+        if (c.ownerType === "fa") { left++; return; }
         batch.update(doc(db, "checkins", c.id), { assistant: patch.assistant, assistantId: faId(patch.assistant), updatedAt: serverTimestamp(), updatedBy: who() });
         moved++;
       });
     }
     await batch.commit();
     msg.className = "save-msg ok";
-    msg.textContent = moved ? `Saved. Moved ${moved} pending visit${moved === 1 ? "" : "s"} to ${patch.assistant}.` : "Saved.";
+    let note = "Saved.";
+    if (moved) note = `Saved. Moved ${moved} pending visit${moved === 1 ? "" : "s"} to ${patch.assistant}.`;
+    if (left) note += ` ${left} pending visit${left === 1 ? " made" : "s made"} by the previous assistant ${left === 1 ? "was" : "were"} left with them.`;
+    if (patch.assistant && !sfoUid) note += ` ${patch.assistant} has no supervisor yet, so no SFO will see this site until one is set.`;
+    msg.textContent = note;
     closeLater();
   } catch (err) {
     saveBtn.disabled = false;
@@ -973,9 +1002,18 @@ function renderImportPreview() {
 
 /* ============================= VISITS ============================= */
 function startOf(c) { return c.evidence && c.evidence.start ? c.evidence.start : null; }
+/* The start fix carries the phone's clock; startedAt is the server's. A gap of more than
+   two days means the phone's date was wrong (or changed), so the fix can't vouch for when
+   the visit happened. */
+const CLOCK_GAP_MS = 48 * 3600 * 1000;
+function clockMismatch(c) {
+  const s = startOf(c);
+  const server = c.startedAt && c.startedAt.seconds ? c.startedAt.seconds * 1000 : null;
+  return !!s && Number.isFinite(s.capturedAtMs) && server !== null && Math.abs(server - s.capturedAtMs) > CLOCK_GAP_MS;
+}
 function isFlagged(c) {
   const s = startOf(c);
-  return (c.status === "Completed" && !s) || (!!s && s.result === "far");
+  return (c.status === "Completed" && !s) || (!!s && s.result === "far") || clockMismatch(c);
 }
 function evidenceChip(c) {
   const s = startOf(c);
@@ -1083,7 +1121,7 @@ function renderVisitList() {
         <div class="v-main">
           <div class="name">${esc(siteName(c))}</div>
           <div class="meta">${esc(when)}${SEP}${esc(c.assistant || "No assistant")}${SEP}${esc(c.purpose || "No purpose")}</div>
-          <div class="chips">${statusChip(c.status)}${evidenceChip(c)}</div>
+          <div class="chips">${statusChip(c.status)}${evidenceChip(c)}${clockMismatch(c) ? chip("warn", "Phone clock off") : ""}</div>
         </div>
         <button class="btn-del" type="button" data-del="${esc(c.id)}" aria-label="Delete visit: ${esc(siteName(c))}, ${esc(c.date || "no date")}">Delete</button>
       </div>`;
@@ -1141,12 +1179,7 @@ function renderTeam() {
       <div class="edit-card" id="fa-card">
         <h2>Field Assistant records</h2>
         <p class="hint">Creates one record per Field Assistant named on your sites, supervised by you. Records that already exist are left alone. The office entry (N/A) is skipped. A record is not a login.</p>
-        ${faRecords.slice().sort((a, b) => a.name.localeCompare(b.name)).map((f) => `
-          <div class="field"><label for="sup-${esc(f.id)}">${esc(f.name)}: supervisor</label>
-            <select id="sup-${esc(f.id)}" data-sup="${esc(f.id)}">
-              <option value="">Not assigned</option>
-              ${users.filter((u) => ["admin", "sfo", "member"].includes(u.role) && u.active !== false).map((u) => `<option value="${esc(u.id)}" ${f.supervisorUid === u.id ? "selected" : ""}>${esc(u.name || u.email || u.id)}</option>`).join("")}
-            </select></div>`).join("")}
+        <div id="fa-supervisors"></div>
         <button class="btn-save" id="fa-create" type="button" style="width:100%;flex:none;">Preview and create</button>
         <button class="btn-save" id="fa-link" type="button" style="width:100%;flex:none;margin-top:10px;">Sync records with assignments</button>
         <div class="save-msg" id="fa-msg" role="status"></div>
@@ -1167,7 +1200,7 @@ function renderTeam() {
     $("#au-save").addEventListener("click", addUserByUid);
     $("#fa-create").addEventListener("click", createFaRecords);
     $("#fa-link").addEventListener("click", linkExistingRecords);
-    document.querySelectorAll("[data-sup]").forEach((sel) => sel.addEventListener("change", () => setSupervisor(sel.dataset.sup, sel.value)));
+    $("#fa-supervisors").addEventListener("change", (e) => { const sel = e.target.closest("[data-sup]"); if (sel) setSupervisor(sel.dataset.sup, sel.value); });
     $("#team-list").addEventListener("click", (e) => {
       const row = e.target.closest("[data-uid]");
       if (!row) return;
@@ -1179,6 +1212,25 @@ function renderTeam() {
   }
   $("#team-banner").innerHTML = errHTML(["users"]);
   renderTeamList();
+  renderFaSupervisors();
+}
+/* The supervisor pickers are drawn from live data, so a Field Assistant record created
+   (or a user added) after this tab was first opened shows up without a reload. Skipped
+   while one of the pickers is open, so a snapshot can't close it under the person's thumb. */
+let faSig = "";
+function renderFaSupervisors() {
+  const host = $("#fa-supervisors");
+  if (!host) return;
+  const sups = users.filter((u) => ["admin", "sfo", "member"].includes(u.role) && u.active !== false);
+  const sig = JSON.stringify([faRecords.map((f) => [f.id, f.name, f.supervisorUid || ""]), sups.map((u) => [u.id, u.name || u.email || ""])]);
+  if (sig === faSig || host.contains(document.activeElement)) return;
+  faSig = sig;
+  host.innerHTML = faRecords.length ? faRecords.slice().sort((a, b) => (a.name || "").localeCompare(b.name || "")).map((f) => `
+    <div class="field"><label for="sup-${esc(f.id)}">${esc(f.name)}: supervisor</label>
+      <select id="sup-${esc(f.id)}" data-sup="${esc(f.id)}">
+        <option value="">Not assigned</option>
+        ${sups.map((u) => `<option value="${esc(u.id)}" ${f.supervisorUid === u.id ? "selected" : ""}>${esc(u.name || u.email || u.id)}</option>`).join("")}
+      </select></div>`).join("") : `<p class="hint">No Field Assistant records yet.</p>`;
 }
 
 function renderTeamList() {
@@ -1365,11 +1417,21 @@ async function linkExistingRecords() {
     check("checkins", checkins);
     const obs = await getDocs(collection(db, "observations"));
     check("observations", obs.docs.map((d) => ({ id: d.id, ...d.data() })));
-    if (!work.length) { msg.className = "save-msg ok"; msg.textContent = "Everything already matches the assignments."; return; }
+    /* Weekly check-ins used to be one shared document per week (id "3"), so every SFO
+       edited the same page. They are now per SFO ("<uid>_3", with sfoUid). Each legacy
+       document is copied once into the signed-in admin's own, and the old one is kept. */
+    const weeklyCopies = [];
+    weeklyDocs.filter((w) => !w.sfoUid && Number.isFinite(w.week)).forEach((w) => {
+      const newId = me + "_" + w.week;
+      if (weeklyDocs.some((x) => x.id === newId)) return;
+      const { id, createdAt, createdBy, updatedAt, updatedBy, ...rest } = w;
+      weeklyCopies.push([newId, { ...rest, sfoUid: me, migratedFrom: id, originalCreatedBy: createdBy || "", createdAt: serverTimestamp(), createdBy: who(), updatedAt: serverTimestamp(), updatedBy: who() }]);
+    });
+    if (!work.length && !weeklyCopies.length) { msg.className = "save-msg ok"; msg.textContent = "Everything already matches the assignments."; return; }
     const by = (c) => work.filter((w) => w[0] === c).length;
     const ok = await confirmModal({
-      title: "Update " + work.length + " records?",
-      body: by("sites") + " sites, " + by("checkins") + " visits, " + by("observations") + " notes and " + by("fieldAssistants") + " FA records get their FA, owner and supervisor tags. Nothing else changes.",
+      title: "Update " + (work.length + weeklyCopies.length) + " records?",
+      body: by("sites") + " sites, " + by("checkins") + " visits, " + by("observations") + " notes and " + by("fieldAssistants") + " FA records get their FA, owner and supervisor tags." + (weeklyCopies.length ? " " + weeklyCopies.length + " shared weekly check-in" + (weeklyCopies.length === 1 ? "" : "s") + " will be copied into your own (the old ones stay)." : "") + " Nothing else changes.",
       confirmLabel: "Update records"
     });
     if (!ok) return;
@@ -1378,7 +1440,12 @@ async function linkExistingRecords() {
       work.slice(i, i + 400).forEach(([col, id, diff]) => batch.update(doc(db, col, id), { ...diff, updatedAt: serverTimestamp(), updatedBy: who() }));
       await batch.commit();
     }
-    msg.className = "save-msg ok"; msg.textContent = "Updated " + work.length + " records.";
+    for (let i = 0; i < weeklyCopies.length; i += 400) {
+      const batch = writeBatch(db);
+      weeklyCopies.slice(i, i + 400).forEach(([id, data]) => batch.set(doc(db, "weeklyCheckins", id), data));
+      await batch.commit();
+    }
+    msg.className = "save-msg ok"; msg.textContent = "Updated " + (work.length + weeklyCopies.length) + " records.";
   } catch (err) {
     fail("Couldn't update: " + (err.code || err.message));
   } finally {
@@ -1563,7 +1630,7 @@ function renderOversight() {
     mismatchCard = dqCard({
       title: "Visits whose day or week disagrees with their date", badge: String(mism.length), ok: !mism.length,
       sub: mism.length ? "Stored day or week doesn't match what the date implies." : "Every dated visit agrees with its date.",
-      lines: mism.slice(0, 5).map((m) => `${siteName(m.c)}, ${m.c.date}: stored ${m.c.day || "no day"}, week ${Number.isFinite(m.c.week) ? m.c.week : "none"}; date implies ${m.expDay || "weekend"}, week ${m.expWeek}`)
+      lines: mism.slice(0, 5).map((m) => `${siteName(m.c)}, ${m.c.date}: stored ${m.c.day || "no day"}, week ${Number.isFinite(m.c.week) ? m.c.week : "none"}; date implies ${m.expDay || "Sunday"}, week ${m.expWeek}`)
         .concat(mism.length > 5 ? [`and ${mism.length - 5} more`] : []),
       action: mism.length ? { key: "mismatch", label: `Review ${mism.length} in Visits` } : null
     });
