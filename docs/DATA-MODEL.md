@@ -53,10 +53,10 @@ also detects duplicates by comparing `date + siteId + assistant + purpose`.
 | rescheduledFrom | `YYYY-MM-DD` or "" | |
 | checklistItems, checkedItems | string[], boolean[] | |
 | order | number | |
-| startedAt, startedBy | server, email | set when "Start visit" is tapped. A visit counts as started once `startedBy` or `evidence.start` exists (`startedAt` reads as empty offline until the server confirms). The start check-in cannot be overwritten by a member. |
+| startedAt, startedBy | server, email | set when "Start visit" is tapped. A visit counts as started once `startedBy` or `evidence.start` exists (`startedAt` reads as empty offline until the server confirms). The start check-in cannot be overwritten by a member, must carry the server's time in `startedAt` when it is first written, and cannot be present when a visit is created. |
 | completedAt, completedBy | server, email | set when marked Completed; cleared if reopened |
 | evidence | map | see below |
-| photos | array of map | `{ path (Cloudinary public ID), url, takenAtMs, takenBy }`; at most 20, only ever grows for members |
+| photos | array of map | `{ path (Cloudinary public ID), url, takenAtMs, takenBy }`; the app stops at 10 per visit (`MAX_PHOTOS`), the rules allow up to 20; only ever grows for members |
 | createdAt, createdBy | server, email | set once |
 | updatedAt, updatedBy | server, email | every write |
 
@@ -71,7 +71,7 @@ evidence: {
 
 | result | meaning |
 |--------|---------|
-| `verified` | fix is within `radiusM` of the site (accuracy is allowed for) |
+| `verified` | fix is within `radiusM` of the site, allowing at most 50 m for a poor GPS fix (`ACCURACY_CREDIT_M`) |
 | `far` | fix is farther than `radiusM` from the site |
 | `no-site-gps` | the site has no coordinates to compare with |
 | `no-fix` | GPS timed out or was unavailable |
@@ -82,7 +82,7 @@ evidence: {
 `radiusM` defaults to 300.
 
 ## observations/{id}
-Notes, issues, actions and follow-ups. New ones carry `author` (email, the creator,
+Notes, issues, actions and follow-ups. Issues and follow-ups carry `assignedTo` (the person's name, for display) and `assignedToId` (the Field Assistant's id, `null` when unassigned). The id is what the rules and an FA's phone match on, so a name change cannot orphan a task. Tasks created before `assignedToId` existed get it from the admin Team tab button "Sync records with assignments"; until then an FA does not see them. New ones carry `author` (email, the creator,
 never changes), `createdAt/createdBy` and `updatedAt/updatedBy`; every later edit
 (status change, report bucket) refreshes `updatedAt/updatedBy`. Older notes without
 the audit fields keep working.
@@ -143,7 +143,7 @@ changes, so a retry uses the same public ID and a photo that already uploaded is
 uploaded twice.
 
 ## fieldAssistants/{faId} (V2 phase 1)
-A Field Assistant as a person, separate from any login. `faId` is `slugify(name)`. Created from the admin Team tab; admins write, SFOs and members read.
+A Field Assistant as a person, separate from any login. `faId` is `slugify(name)`. Created from the admin Team tab; only admins write. An SFO (or member) reads the Field Assistants he supervises, and an FA reads only his own record.
 
 | field | type | notes |
 |-------|------|-------|
@@ -156,11 +156,11 @@ A Field Assistant as a person, separate from any login. `faId` is `slugify(name)
 The site entry with assistant `N/A` is the office placeholder, not an FA, and gets no record.
 
 ## assistantId (V2 release A)
-`sites`, `checkins` and `observations` carry `assistantId`: the `fieldAssistants` id of the FA responsible (`slugify(assistant)`; `null` for the N/A office entry). New visits and notes get it automatically; notes take the site's FA at the time. Older records are filled in once with the admin Team tab button "Link existing records to FAs". Reassigning a site moves only its Pending visits made by an SFO or admin; completed visits, and pending visits an FA made himself (`ownerType` `fa`), stay with the FA who made them. The admin site form says how many were left.
+`sites`, `checkins` and `observations` carry `assistantId`: the `fieldAssistants` id of the FA responsible (`slugify(assistant)`; `null` for the N/A office entry). New visits and notes get it automatically; notes take the site's FA at the time. Older records are filled in once with the admin Team tab button "Sync records with assignments". Reassigning a site moves only its Pending visits made by an SFO or admin; completed visits, and pending visits an FA made himself (`ownerType` `fa`), stay with the FA who made them. The admin site form says how many were left.
 
 ## recordedByRole and review (V2 release B)
 `checkins`, and `observations`, carry `recordedByRole`: the role of whoever typed the record (`fa`, `sfo`, `admin`, `member`). Records without it were entered by the SFO. It is a display label; `createdBy` stays the audit truth.
 `checkins.review` is `{status: "verified" | "followup", by, atMs}`, set by a Verify / Needs follow-up button an SFO or admin sees on started visits. Field Assistants cannot change it (rules). The team list shows days with visits this week (of 6), assigned sites, scheduled and done per week, plus overdue visits, sites not visited this week, open follow-ups and visits whose GPS evidence is missing or far from the site.
 
 ## Ownership (V2 release C)
-`checkins` and `observations` carry `ownerType` (`fa` or `sfo`), `ownerUid`, `assistantId` and `sfoUid`; `sites` carry `assistantId` and `sfoUid`. An FA's records belong to the FA and are tagged with the SFO who supervises him (`fieldAssistants/<id>.supervisorUid`). An SFO's records belong to that SFO and are never shown to FAs. An SFO reads his own and his FAs' records and writes only his own; on an FA's visit he can change only `review`, and on any note only the done mark. An FA can also read and mark done a follow-up an SFO assigned to him (`assignedTo` equals his name). The admin Team tab sets each FA's supervisor, and "Sync records with assignments" re-tags older or reassigned records. The older `member` role is treated like an SFO.
+`checkins` and `observations` carry `ownerType` (`fa` or `sfo`), `ownerUid`, `assistantId` and `sfoUid`; `sites` carry `assistantId` and `sfoUid`. An FA's records belong to the FA and are tagged with the SFO who supervises him (`fieldAssistants/<id>.supervisorUid`). An SFO's records belong to that SFO and are never shown to FAs. An SFO reads his own and his FAs' records and writes only his own; on an FA's visit he can change only `review`, and on any note only the done mark. An FA can also read and mark done a follow-up an SFO assigned to him (`assignedToId` equals his id) at one of his sites; these show on his Today screen under "My tasks", with or without a due date. On create, an SFO's visit or note must be about a Field Assistant he supervises (or an office entry with none), and an FA's visit or note must be at one of his own sites. If an FA's supervisor is changed while he is signed in, the app re-reads his record and retries a refused write once. The admin Team tab sets each FA's supervisor, and "Sync records with assignments" re-tags older or reassigned records. The older `member` role is treated like an SFO.
