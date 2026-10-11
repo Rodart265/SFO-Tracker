@@ -3109,7 +3109,7 @@ function renderSitesTeam() {
 function acctRowsHTML() {
   const rows = [["Role", ROLE_NAME[myRole] || "No role"]];
   if (isFa()) {
-    rows.push(["Supervisor", mySupervisor || "Not set yet"]);
+    rows.push(["Supervisor", mySupervisor || (mySfoUid ? "Assigned" : "Not set yet")]);
     rows.push(["Sites", String(sites.filter((s) => s.id !== "n-a").length)]);
   } else if (!isAdmin()) {
     const fas = allAssistants().length;
