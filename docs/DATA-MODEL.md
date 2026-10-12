@@ -96,14 +96,18 @@ admin button "Sync records with assignments" copies each into the signed-in admi
 document (`migratedFrom` names the old id; the old one is kept), and until then an admin's
 first save of a week starts from the shared one.
 
-## Weekly visit limits (soft)
-The programme week is Monday to Saturday. A Field Assistant is expected in the field on
-all six days; an SFO on four days of his own choosing. The app counts days with a visit
-(Pending, Completed or Rescheduled, not Skipped) in the Monday-to-Saturday week of the
-visit's date, and asks "Add anyway?" when a visit would be an extra day, a fourth-plus
-visit in one day (`MAX_VISITS_PER_DAY` = 3), or on a Sunday. Nothing is stored for this and
-the rules do not enforce it. Admins are not limited. Constants: `FA_VISIT_DAYS`,
-`SFO_VISIT_DAYS`, `MAX_VISITS_PER_DAY` in `index.html`.
+## Visit limits
+Per day (hard): a Field Assistant plans at most 3 sites a day (`FA_MAX_PER_DAY`), an SFO at
+most 4 (`SFO_MAX_PER_DAY`). An admin's own visits count like an SFO's. The app refuses to
+add, move, reschedule or reopen a visit that would go over it. Only the person's own visits
+count (an admin's list holds everyone's, so it is filtered by `ownerUid`), and Skipped
+visits don't count. This is enforced in the app only; nothing is stored for it and the
+security rules do not enforce it, so a second phone working offline could still go over.
+
+Per week (soft): the programme week is Monday to Saturday. A Field Assistant is expected
+in the field on all six days; an SFO on four days of his own choosing. The app asks
+"Add anyway?" when a visit would be an extra day, or falls on a Sunday. Admins are not
+subject to the weekly limits. Constants: `FA_VISIT_DAYS`, `SFO_VISIT_DAYS` in `index.html`.
 
 ## Last visited
 Not stored; computed. A site's last visit is its most recent Completed visit, dated by the
