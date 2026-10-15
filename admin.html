@@ -121,7 +121,9 @@ input:disabled,select:disabled{background:var(--chip-mute-bg);color:var(--ink-so
 .notice{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--chip-warn-bg);color:var(--chip-warn-fg);border-radius:var(--radius-md);padding:6px 6px 6px 12px;margin-bottom:10px;font-size:14px;font-weight:600;}
 .notice .btn-link{color:var(--chip-warn-fg);}
 .count-line{font-size:13px;color:var(--ink-soft);margin:6px 0 10px;}
-.visit-row{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--line);border-left:6px solid var(--line);border-radius:var(--radius-md);padding:12px 13px;margin-bottom:8px;background:#fff;}
+.visit-row{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--line);border-left:6px solid var(--line);border-radius:var(--radius-md);padding:12px 13px;margin-bottom:8px;background:#fff;width:100%;text-align:left;font:inherit;}
+.visit-row.open{border-left-color:var(--flag);border-color:var(--ink);}
+.visit-row .ic{align-self:center;color:var(--ink-faint);}
 .visit-row.flagged{border-left-color:var(--issue);}
 .visit-row .v-main{flex:1;min-width:0;}
 .visit-row .name{font-size:19px;line-height:1.1;overflow-wrap:anywhere;}
@@ -167,6 +169,43 @@ button.counter{cursor:pointer;}
 .kv dt{color:var(--ink-soft);font-weight:600;}
 .kv dd{margin:0;overflow-wrap:anywhere;}
 
+/* Teams */
+.team-card{background:#fff;border:1px solid var(--line);border-left:6px solid var(--leaf-soft);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:12px;}
+.team-card.unassigned{border-left-color:var(--warn);}
+.team-card .head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+.team-card .title{font-stretch:72%;font-weight:800;font-size:20px;line-height:1.1;overflow-wrap:anywhere;}
+.team-card .badge{font-size:13px;font-weight:700;color:var(--leaf);flex-shrink:0;}
+.team-card.unassigned .badge{color:var(--warn);}
+.team-card .sub{font-size:13px;color:var(--ink-soft);margin-top:3px;overflow-wrap:anywhere;}
+.fa-row{display:flex;align-items:center;gap:10px;border-top:1px solid var(--line);padding:10px 0;margin-top:8px;}
+.fa-row + .fa-row{margin-top:0;}
+.fa-main{flex:1;min-width:0;}
+.fa-name{font-weight:700;font-size:16px;overflow-wrap:anywhere;}
+.fa-meta{font-size:13px;color:var(--ink-soft);margin-top:2px;line-height:1.4;}
+.fa-meta .bad{color:var(--issue);font-weight:700;}
+.fa-row select{width:46%;min-width:140px;flex-shrink:0;}
+.team-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+.team-actions button{min-height:44px;}
+
+/* Visit detail */
+.dl-h{font-stretch:72%;font-weight:800;font-size:17px;margin:18px 0 4px;border-top:3px solid var(--ink);padding-top:8px;}
+.dl-row{display:grid;grid-template-columns:118px 1fr;gap:8px;padding:7px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.4;}
+.dl-k{color:var(--ink-soft);font-weight:600;}
+.dl-v{overflow-wrap:anywhere;}
+.dl-v a,.detail-links a{color:var(--leaf);font-weight:700;}
+.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:6px;}
+.photos a{display:block;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden;background:#fff;color:var(--ink);text-decoration:none;}
+.photos img{display:block;width:100%;aspect-ratio:1;object-fit:cover;background:var(--chip-mute-bg);}
+.photos span{display:block;font-size:11px;padding:4px 6px;color:var(--ink-soft);overflow-wrap:anywhere;}
+.notes-list{margin:6px 0 0;padding-left:18px;font-size:14px;line-height:1.5;}
+.notes-list li{margin-bottom:4px;}
+.check-list{margin:6px 0 0;padding:0;list-style:none;font-size:14px;line-height:1.6;}
+.check-list li::before{content:"\2713  ";color:var(--leaf);font-weight:800;}
+.check-list li.no::before{content:"\2013  ";color:var(--ink-faint);}
+.card-close{float:right;}
+.ov-card .ov-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;}
+.ov-card .text{font-size:14px;margin-top:6px;line-height:1.4;overflow-wrap:anywhere;}
+
 /* Modal */
 .modal-backdrop{position:fixed;inset:0;background:rgba(28,33,30,.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50;}
 .modal{background:#fff;border:2px solid var(--ink);border-radius:var(--radius-md);max-width:420px;width:100%;padding:18px;}
@@ -207,19 +246,19 @@ button.counter{cursor:pointer;}
       <button id="signout-btn" type="button">Sign out</button>
     </div>
     <div id="tabs" role="tablist" aria-label="Admin sections">
-      <button class="tab-btn active" id="tab-sites" data-tab="sites" role="tab" aria-selected="true" aria-controls="panel-sites" type="button">Sites</button>
-      <button class="tab-btn" id="tab-import" data-tab="import" role="tab" aria-selected="false" aria-controls="panel-import" type="button">Import</button>
+      <button class="tab-btn active" id="tab-oversight" data-tab="oversight" role="tab" aria-selected="true" aria-controls="panel-oversight" type="button">Overview</button>
       <button class="tab-btn" id="tab-visits" data-tab="visits" role="tab" aria-selected="false" aria-controls="panel-visits" type="button">Visits</button>
+      <button class="tab-btn" id="tab-sites" data-tab="sites" role="tab" aria-selected="false" aria-controls="panel-sites" type="button">Sites</button>
       <button class="tab-btn" id="tab-team" data-tab="team" role="tab" aria-selected="false" aria-controls="panel-team" type="button">Team</button>
+      <button class="tab-btn" id="tab-import" data-tab="import" role="tab" aria-selected="false" aria-controls="panel-import" type="button">Import</button>
       <button class="tab-btn" id="tab-program" data-tab="program" role="tab" aria-selected="false" aria-controls="panel-program" type="button">Program</button>
-      <button class="tab-btn" id="tab-oversight" data-tab="oversight" role="tab" aria-selected="false" aria-controls="panel-oversight" type="button">Oversight</button>
     </div>
-    <div class="panel" id="panel-sites" role="tabpanel" aria-labelledby="tab-sites"></div>
+    <div class="panel hidden" id="panel-sites" role="tabpanel" aria-labelledby="tab-sites"></div>
     <div class="panel hidden" id="panel-import" role="tabpanel" aria-labelledby="tab-import"></div>
     <div class="panel hidden" id="panel-visits" role="tabpanel" aria-labelledby="tab-visits"></div>
     <div class="panel hidden" id="panel-team" role="tabpanel" aria-labelledby="tab-team"></div>
     <div class="panel hidden" id="panel-program" role="tabpanel" aria-labelledby="tab-program"></div>
-    <div class="panel hidden" id="panel-oversight" role="tabpanel" aria-labelledby="tab-oversight"></div>
+    <div class="panel" id="panel-oversight" role="tabpanel" aria-labelledby="tab-oversight"></div>
   </div>
 </div>
 
@@ -355,7 +394,7 @@ let loaded = {};
 let errs = {};
 let unsubs = [];
 let authSeq = 0;
-let activeTab = "sites";
+let activeTab = "oversight";
 let built = {};
 let siteCardMode = null;   // null | "new" | "edit"
 let editingSiteId = null;
@@ -539,7 +578,7 @@ onAuthStateChanged(auth, (user) => {
 function enterMain(user) {
   $("#who").textContent = "Signed in as " + (user.email || user.uid);
   showScreen("main");
-  setTab("sites", false);
+  setTab("oversight", false);
   startListeners();
   render();
 }
@@ -576,7 +615,7 @@ document.addEventListener("click", (e) => {
 });
 
 /* ============================= TABS ============================= */
-const TABS = ["sites", "import", "visits", "team", "program", "oversight"];
+const TABS = ["oversight", "visits", "sites", "team", "import", "program"];
 function setTab(tab, doRender = true) {
   activeTab = tab;
   document.querySelectorAll(".tab-btn").forEach((b) => {
@@ -1049,12 +1088,41 @@ function filteredVisits() {
     (b.date || "").localeCompare(a.date || "") || siteName(a).localeCompare(siteName(b)) || (a.order || 0) - (b.order || 0));
 }
 
+/* Who is who, for showing a person's name instead of an email or id. */
+const personName = (email) => {
+  if (!email) return "";
+  const u = users.find((x) => (x.email || "").toLowerCase() === String(email).toLowerCase());
+  return (u && u.name) || email;
+};
+const faById = (id) => faRecords.find((f) => f.id === id);
+/* The Field Assistant record a visit or note is about (falls back to the name on the record or its site). */
+function faOfRecord(o) {
+  const siteAsg = (sites.find((x) => x.id === o.siteId) || {}).assistant;
+  const id = o.assistantId ? o.assistantId : faId(o.assistant || siteAsg);
+  return id ? (faById(id) || { id, name: o.assistant || siteAsg || id }) : null;
+}
+function supervisorNameOf(o) {
+  const fa = faOfRecord(o);
+  const uid = (fa && fa.supervisorUid) || o.sfoUid || null;
+  if (!uid) return "";
+  return supLabel(users.find((x) => x.id === uid)) || (fa && (fa.supervisorName || fa.supervisorEmail)) || "Assigned";
+}
+const tsMs = (t) => (t && t.seconds ? t.seconds * 1000 : null);
+function fmtWhen(ms) {
+  const d = new Date(ms);
+  return isoFromDate(d) + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+}
+const PURPOSES = ["Routine Audit & Seedling Management", "Routine Audit & Nursery Management", "Data Integrity & Progress Check", "Data Integrity Follow-up", "Weekly Reporting & Office Admin"];
+let openVisitId = null;
+let visitToken = 0;
+
 function renderVisits() {
   const el = $("#panel-visits");
   if (!built.visits) {
     el.innerHTML = `
-      <p class="hint">Search every visit. Visits flagged "needs attention" were completed without a recorded start location, or started far from the site.</p>
+      <p class="hint">Every visit from every SFO and Field Assistant. Tap a visit to see its result, GPS check, photos and notes, and to correct it. "Needs attention" means completed without a start location, started far from the site, or a phone with the wrong date.</p>
       <div id="visits-banner"></div>
+      <div id="visit-detail-slot"></div>
       <div class="filters">
         <div class="field"><label for="vf-week">Week</label><select id="vf-week"><option value="">All weeks</option></select></div>
         <div class="field"><label for="vf-status">Status</label>
@@ -1074,8 +1142,8 @@ function renderVisits() {
     $("#vf-attn").addEventListener("change", (e) => { vf.attention = e.target.checked; bump(); });
     $("#visit-more").addEventListener("click", () => { vf.limit += 50; renderVisitList(); });
     $("#visit-rows").addEventListener("click", (e) => {
-      const b = e.target.closest("[data-del]");
-      if (b) deleteVisit(b.dataset.del);
+      const b = e.target.closest("[data-open]");
+      if (b) openVisitCard(b.dataset.open);
     });
     $("#visit-notice").addEventListener("click", (e) => {
       if (e.target.closest("[data-clear-ids]")) { vf.ids = null; vf.idsLabel = ""; vf.limit = 50; renderVisitList(); }
@@ -1103,6 +1171,23 @@ function syncVisitControls() {
   $("#vf-attn").checked = vf.attention;
 }
 
+function visitRowHTML(c) {
+  const day = DAY_SHORT[c.day] || c.day || "";
+  const when = [c.date || "No date", day, Number.isFinite(c.week) ? "Week " + c.week : ""].filter(Boolean).join(" · ");
+  const sup = supervisorNameOf(c);
+  const np = Array.isArray(c.photos) ? c.photos.length : 0;
+  const nn = observations.filter((o) => o.checkinId === c.id).length;
+  return `
+    <button class="visit-row ${isFlagged(c) ? "flagged" : ""} ${c.id === openVisitId ? "open" : ""}" type="button" data-open="${esc(c.id)}">
+      <div class="v-main">
+        <div class="name">${esc(siteName(c))}</div>
+        <div class="meta">${esc(when)}${SEP}${esc(c.assistant || "No assistant")}${sup ? SEP + "SFO: " + esc(sup) : ""}${SEP}${esc(c.purpose || "No purpose")}</div>
+        <div class="chips">${statusChip(c.status)}${evidenceChip(c)}${clockMismatch(c) ? chip("warn", "Phone clock off") : ""}${c.ownerType === "fa" ? chip("mute", "Made by FA") : ""}${np ? chip("mute", np + (np === 1 ? " photo" : " photos")) : ""}${nn ? chip("mute", nn + (nn === 1 ? " note" : " notes")) : ""}</div>
+      </div>
+      ${icon("chevron-right", 16)}
+    </button>`;
+}
+
 function renderVisitList() {
   const rowsEl = $("#visit-rows"), moreBtn = $("#visit-more"), countEl = $("#visit-count");
   if (!rowsEl) return;
@@ -1113,28 +1198,177 @@ function renderVisitList() {
   const all = filteredVisits();
   const shown = all.slice(0, vf.limit);
   countEl.textContent = all.length ? `Showing ${shown.length} of ${all.length} visit${all.length === 1 ? "" : "s"}` : "";
-  rowsEl.innerHTML = shown.map((c) => {
-    const day = DAY_SHORT[c.day] || c.day || "";
-    const when = [c.date || "No date", day, Number.isFinite(c.week) ? "Week " + c.week : ""].filter(Boolean).join(" · ");
-    return `
-      <div class="visit-row ${isFlagged(c) ? "flagged" : ""}">
-        <div class="v-main">
-          <div class="name">${esc(siteName(c))}</div>
-          <div class="meta">${esc(when)}${SEP}${esc(c.assistant || "No assistant")}${SEP}${esc(c.purpose || "No purpose")}</div>
-          <div class="chips">${statusChip(c.status)}${evidenceChip(c)}${clockMismatch(c) ? chip("warn", "Phone clock off") : ""}</div>
-        </div>
-        <button class="btn-del" type="button" data-del="${esc(c.id)}" aria-label="Delete visit: ${esc(siteName(c))}, ${esc(c.date || "no date")}">Delete</button>
-      </div>`;
-  }).join("") || `<div class="empty">${checkins.length ? "No visits match these filters." : "No visits yet."}</div>`;
+  rowsEl.innerHTML = shown.map(visitRowHTML).join("") || `<div class="empty">${checkins.length ? "No visits match these filters." : "No visits yet."}</div>`;
   const remaining = all.length - shown.length;
   moreBtn.classList.toggle("hidden", remaining <= 0);
   moreBtn.textContent = `Show more (${remaining} remaining)`;
 }
 
-async function deleteVisit(id) {
+/* ---- one visit in full: result, GPS, photos, notes, and a correction form ---- */
+function dl(k, v) { return v ? `<div class="dl-row"><div class="dl-k">${esc(k)}</div><div class="dl-v">${v}</div></div>` : ""; }
+function mapLink(lat, lng, label) {
+  return typeof lat === "number" && typeof lng === "number"
+    ? `<a href="https://www.google.com/maps?q=${encodeURIComponent(lat + "," + lng)}" target="_blank" rel="noopener">${esc(label)}</a>` : "";
+}
+function fixRow(label, f) {
+  if (!f) return "";
+  const parts = [];
+  if (typeof f.distanceM === "number") parts.push(Math.round(f.distanceM).toLocaleString() + " m from the site");
+  if (typeof f.accuracyM === "number") parts.push("accurate to about " + Math.round(f.accuracyM) + " m");
+  if (Number.isFinite(f.capturedAtMs)) parts.push("phone time " + fmtWhen(f.capturedAtMs));
+  return dl(label, `${evidenceChip({ evidence: { start: f } })} ${esc(parts.join(" · "))} ${mapLink(f.lat, f.lng, "Open on map")}`);
+}
+
+function visitCardHTML(c) {
+  const site = sites.find((x) => x.id === c.siteId);
+  const sup = supervisorNameOf(c);
+  const day = DAY_SHORT[c.day] || c.day || "";
+  const photos = Array.isArray(c.photos) ? c.photos : [];
+  const notes = observations.filter((o) => o.checkinId === c.id).sort((a, b) => (tsMs(a.createdAt) || 0) - (tsMs(b.createdAt) || 0));
+  const items = Array.isArray(c.checklistItems) ? c.checklistItems : [];
+  const checked = Array.isArray(c.checkedItems) ? c.checkedItems : [];
+  const rv = c.review && c.review.status;
+  const ev = c.evidence || {};
+  const doneAt = tsMs(c.completedAt);
+  const startedMs = tsMs(c.startedAt);
+
+  const assistants = faRecords.map((f) => f.name).filter(Boolean).sort((a, b) => a.localeCompare(b));
+  if (c.assistant && c.assistant !== "N/A" && !assistants.includes(c.assistant)) assistants.push(c.assistant);
+  const purposes = [...PURPOSES];
+  if (c.purpose && !purposes.includes(c.purpose)) purposes.push(c.purpose);
+  const faOwned = c.ownerType === "fa";
+
+  return `
+    <div class="edit-card detail-card">
+      <button class="btn-secondary card-close" type="button" data-role="close">Close</button>
+      <h2>${esc(siteName(c))}</h2>
+      <div class="field-note" style="margin:-8px 0 8px;">${esc([c.date || "No date", day, Number.isFinite(c.week) ? "Week " + c.week : ""].filter(Boolean).join(" · "))}</div>
+
+      <div class="dl-h" style="border-top:none;margin-top:6px;">Who and what</div>
+      ${dl("Field Assistant", esc(c.assistant || "None"))}
+      ${dl("Supervisor (SFO)", sup ? esc(sup) : `<span class="chip chip-warn">Not assigned</span>`)}
+      ${dl("Recorded by", esc(personName(c.createdBy) || "Unknown") + SEP + esc(faOwned ? "Field Assistant" : "SFO or admin"))}
+      ${dl("Purpose", esc(c.purpose || "No purpose"))}
+
+      <div class="dl-h">Result</div>
+      ${dl("Status", statusChip(c.status) + (c.statusNote ? " " + esc(c.statusNote) : ""))}
+      ${c.status === "Completed" ? dl("Completed", esc([c.completedTime, doneAt ? isoFromDate(new Date(doneAt)) : "", c.completedBy ? "by " + personName(c.completedBy) : ""].filter(Boolean).join(" · ") || "No details")) : ""}
+      ${dl("Started", c.startedBy || startedMs ? esc([startedMs ? fmtWhen(startedMs) : "", c.startedBy ? "by " + personName(c.startedBy) : ""].filter(Boolean).join(" · ")) : "")}
+      ${dl("SFO review", rv ? esc(String(rv).replace(/([A-Z])/g, " $1").toLowerCase()) + (c.review.by ? esc(" by " + personName(c.review.by)) : "") : "")}
+      ${items.length ? `<ul class="check-list">${items.map((t, i) => `<li class="${checked[i] ? "" : "no"}">${esc(t)}</li>`).join("")}</ul>` : ""}
+
+      <div class="dl-h">GPS check</div>
+      ${fixRow("At start", ev.start)}${fixRow("At end", ev.end)}
+      ${!ev.start && !ev.end ? dl("At start", chip("mute", "Not recorded")) : ""}
+      ${site && typeof site.lat === "number" ? dl("Site location", mapLink(site.lat, site.lng, "Open the site on the map")) : dl("Site location", chip("warn", "Site has no GPS"))}
+
+      <div class="dl-h">Photos (${photos.length})</div>
+      ${photos.length ? `<div class="photos">${photos.filter((p) => p && /^https:\/\//.test(p.url || "")).map((p) => `
+        <a href="${esc(p.url)}" target="_blank" rel="noopener"><img src="${esc(p.url)}" loading="lazy" alt="Visit photo"><span>${esc(personName(p.takenBy))}${Number.isFinite(p.takenAtMs) ? SEP + esc(fmtWhen(p.takenAtMs)) : ""}</span></a>`).join("")}</div>` : `<div class="field-note">No photos on this visit.</div>`}
+
+      <div class="dl-h">Notes and issues (${notes.length})</div>
+      ${notes.length ? `<ul class="notes-list">${notes.map((o) => `<li><strong>${esc({ issue: "Issue", followUp: "Follow-up", action: "Action", observation: "Note" }[o.type] || "Note")}</strong>${o.status ? " (" + esc(o.status) + ")" : ""}: ${esc(o.text)}<div class="field-note">by ${esc(personName(o.author) || "unknown")}${o.assignedTo ? SEP + "assigned to " + esc(o.assignedTo) : ""}${validISO(o.dueDate) ? SEP + "due " + esc(o.dueDate) : ""}</div></li>`).join("")}</ul>` : `<div class="field-note">No notes on this visit.</div>`}
+
+      <div class="dl-h">Correct this visit</div>
+      <div class="field"><label for="vd-date">Date</label><input id="vd-date" type="date" value="${esc(validISO(c.date) ? c.date : "")}"></div>
+      <div class="field"><label for="vd-status">Status</label>
+        <select id="vd-status">${VISIT_STATUSES.map((st) => `<option value="${st}" ${st === c.status ? "selected" : ""}>${st}</option>`).join("")}</select>
+        <div class="field-note">To reopen a completed visit, set it back to Pending.</div></div>
+      <div class="field ${c.status === "Completed" ? "" : "hidden"}" id="vd-time-wrap"><label for="vd-time">Time of the visit (24 hour, needed for Completed)</label>
+        <input id="vd-time" type="time" value="${esc(/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(c.completedTime || "") ? c.completedTime : "")}"></div>
+      <div class="field"><label for="vd-note">Reason (for skipped or rescheduled)</label><input id="vd-note" type="text" value="${esc(c.statusNote || "")}" autocomplete="off"></div>
+      <div class="field"><label for="vd-purpose">Purpose</label>
+        <select id="vd-purpose">${purposes.map((p) => `<option value="${esc(p)}" ${p === c.purpose ? "selected" : ""}>${esc(p)}</option>`).join("")}</select></div>
+      <div class="field"><label for="vd-assistant">Field assistant</label>
+        <select id="vd-assistant" ${faOwned ? "disabled" : ""}>
+          <option value="N/A" ${c.assistant === "N/A" ? "selected" : ""}>Office / no assistant (N/A)</option>
+          ${assistants.map((a) => `<option value="${esc(a)}" ${a === c.assistant ? "selected" : ""}>${esc(a)}</option>`).join("")}
+        </select>
+        ${faOwned ? `<div class="field-note">This visit was made by the Field Assistant, so his phone finds it by his own record. It can't be moved to someone else.</div>` : ""}</div>
+      <div class="edit-actions">
+        <button class="btn-save" data-role="save" type="button">Save changes</button>
+        <button class="btn-danger" data-role="delete" type="button">Delete</button>
+      </div>
+      <div class="save-msg" data-role="msg" role="status"></div>
+    </div>`;
+}
+
+function closeVisitCard() {
+  openVisitId = null; visitToken++;
+  const slot = $("#visit-detail-slot");
+  if (slot) slot.innerHTML = "";
+  renderVisitList();
+}
+
+function openVisitCard(id) {
+  const c = checkins.find((x) => x.id === id);
+  const slot = $("#visit-detail-slot");
+  if (!c || !slot) return;
+  openVisitId = id;
+  const token = ++visitToken;
+  slot.innerHTML = visitCardHTML(c);
+  const card = $(".detail-card", slot);
+  $('[data-role="close"]', card).addEventListener("click", closeVisitCard);
+  $('[data-role="save"]', card).addEventListener("click", () => saveVisit(c, card, token));
+  $('[data-role="delete"]', card).addEventListener("click", () => deleteVisit(c.id, $('[data-role="msg"]', card), token));
+  $("#vd-status", card).addEventListener("change", (e) => { $("#vd-time-wrap", card).classList.toggle("hidden", e.target.value !== "Completed"); });
+  renderVisitList();
+  slot.scrollIntoView({ behavior: smoothScroll(), block: "start" });
+}
+
+async function saveVisit(c, card, token) {
+  const msg = $('[data-role="msg"]', card), btn = $('[data-role="save"]', card);
+  const fail = (t) => { msg.className = "save-msg err"; msg.textContent = t; };
+  const date = $("#vd-date", card).value.trim(), status = $("#vd-status", card).value, note = $("#vd-note", card).value.trim();
+  const purpose = $("#vd-purpose", card).value, assistant = $("#vd-assistant", card).value, time = $("#vd-time", card).value.trim();
+  const faOwned = c.ownerType === "fa";
+
+  if (date && !validISO(date)) return fail("That isn't a valid date.");
+  if (date && !weekdayName(date)) return fail(date + " is a Sunday. Visits run Monday to Saturday.");
+  const becoming = status === "Completed" && c.status !== "Completed";
+  const leaving = c.status === "Completed" && status !== "Completed";
+  if (status === "Completed") {
+    if (!date) return fail("A completed visit needs a date.");
+    if (becoming && date > todayISO()) return fail("A completed visit can't be dated in the future.");
+    if (!/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(time) && (becoming || time)) return fail("Enter the time of the visit, for example 09:30.");
+  }
+  const asg = faOwned ? c.assistant : assistant;
+  const clash = date && checkins.some((o) => o.id !== c.id && o.siteId === c.siteId && o.date === date
+    && (o.assistant || "").trim().toLowerCase() === (asg || "").trim().toLowerCase()
+    && (o.purpose || "").trim().toLowerCase() === (purpose || "").trim().toLowerCase());
+  if (clash) return fail("Another visit already has the same site, date, assistant and purpose.");
+
+  const patch = { date, status, statusNote: note, purpose, updatedAt: serverTimestamp(), updatedBy: who() };
+  if (!faOwned && assistant !== c.assistant) { patch.assistant = assistant; patch.assistantId = faId(assistant); }
+  if (date) {
+    patch.day = weekdayName(date);
+    const w = weekOfISO(date, week1Anchor());
+    if (w !== null && w >= 1) patch.week = w;
+  }
+  if (status === "Rescheduled" && date !== (c.date || "") && validISO(c.date)) patch.rescheduledFrom = c.date;
+  if (becoming) { patch.completedAt = serverTimestamp(); patch.completedBy = who(); patch.completedTime = time; }
+  else if (leaving) { patch.completedAt = null; patch.completedBy = ""; patch.completedTime = ""; }
+  else if (status === "Completed" && time && time !== (c.completedTime || "")) patch.completedTime = time;
+
+  const real = Object.entries(patch).filter(([k, val]) => !["updatedAt", "updatedBy"].includes(k)
+    && ((val !== null && typeof val === "object") || String(val ?? "") !== String(c[k] ?? "")));
+  if (!real.length) { msg.className = "save-msg"; msg.textContent = "Nothing was changed."; return; }
+
+  btn.disabled = true;
+  msg.className = "save-msg"; msg.textContent = pendingMsg();
+  try {
+    await updateDoc(doc(db, "checkins", c.id), patch);
+    msg.className = "save-msg ok"; msg.textContent = "Saved.";
+    setTimeout(() => { if (openVisitId === c.id && visitToken === token) openVisitCard(c.id); }, 900);
+  } catch (err) {
+    btn.disabled = false;
+    fail("Couldn't save: " + (err.code || err.message) + (err.code === "permission-denied" ? ". The security rules refused this change." : ""));
+  }
+}
+
+async function deleteVisit(id, msg, token) {
   const c = checkins.find((x) => x.id === id);
   if (!c) return;
-  const msg = $("#visit-msg");
   const ok = await confirmModal({
     title: "Delete this visit?",
     body: `${siteName(c)}, ${c.date || "no date"}, ${c.assistant || "no assistant"}, ${c.purpose || "no purpose"} (${c.status || "no status"}). This can't be undone. Any photos stay in storage.`,
@@ -1144,7 +1378,9 @@ async function deleteVisit(id) {
   msg.className = "save-msg"; msg.textContent = navigator.onLine ? "Deleting…" : "You're offline. The delete will send when you're back online.";
   try {
     await deleteDoc(doc(db, "checkins", id));
-    msg.className = "save-msg ok"; msg.textContent = "Visit deleted.";
+    if (openVisitId === id && visitToken === token) closeVisitCard();
+    const m = $("#visit-msg");
+    if (m) { m.className = "save-msg ok"; m.textContent = "Visit deleted."; }
   } catch (err) {
     msg.className = "save-msg err"; msg.textContent = "Couldn't delete: " + (err.code || err.message);
   }
@@ -1155,6 +1391,7 @@ function openVisits(preset) {
   vf = { ...VF_DEFAULT(), ...preset };
   setTab("visits");
   syncVisitControls();
+  if (preset && preset.open) { openVisitCard(preset.open); return; }
   const c = $("#visit-count");
   if (c) c.focus({ preventScroll: true });
   $("#panel-visits").scrollIntoView({ behavior: smoothScroll(), block: "start" });
@@ -1173,15 +1410,21 @@ function renderTeam() {
   if (!built.team) {
     el.innerHTML = `
       <p class="hint">Everyone who can sign in to the apps. Admins can change roles here. "No access" blocks someone without deleting their sign-in.</p>
+      <div class="sec-title">Teams</div>
+      <p class="hint">Each Field Assistant reports to one SFO. An SFO's phone only shows the sites, visits and notes tagged with their own ID, so choosing a supervisor here also re-tags that Field Assistant's records.</p>
+      <div class="save-msg" id="fa-sup-msg" role="status"></div>
+      <div id="fa-supervisors"></div>
+
+      <div class="sec-title">People and roles</div>
       <div id="team-banner"></div>
       <div id="team-edit-slot"></div>
       <div id="team-list"></div>
+
+      <div class="sec-title">Tools</div>
       <div class="edit-card" id="fa-card">
         <h2>Field Assistant records</h2>
-        <p class="hint">Creates one record per Field Assistant named on your sites, supervised by you. Records that already exist are left alone. The office entry (N/A) is skipped. A record is not a login.</p>
-        <div class="save-msg" id="fa-sup-msg" role="status"></div>
-        <div id="fa-supervisors"></div>
-        <button class="btn-save" id="fa-create" type="button" style="width:100%;flex:none;">Preview and create</button>
+        <p class="hint">"Create records from sites" makes one record for each Field Assistant named on your sites (skipping any that exist and the office entry N/A), supervised by you. "Sync records with assignments" re-tags sites, visits, notes and weekly check-ins so each SFO sees their own. Nothing is deleted.</p>
+        <button class="btn-save" id="fa-create" type="button" style="width:100%;flex:none;">Create records from sites</button>
         <button class="btn-save" id="fa-link" type="button" style="width:100%;flex:none;margin-top:10px;">Sync records with assignments</button>
         <div class="save-msg" id="fa-msg" role="status"></div>
       </div>
@@ -1202,6 +1445,16 @@ function renderTeam() {
     $("#fa-create").addEventListener("click", createFaRecords);
     $("#fa-link").addEventListener("click", linkExistingRecords);
     $("#fa-supervisors").addEventListener("change", (e) => { const sel = e.target.closest("[data-sup]"); if (sel) setSupervisor(sel.dataset.sup, sel.value); });
+    $("#fa-supervisors").addEventListener("click", async (e) => {
+      const fix = e.target.closest("[data-fix-sup]"), all = e.target.closest("[data-move-all]");
+      if (fix) { const uid = fix.dataset.fixSup; assignSupervisors(faRecords.filter((f) => f.supervisorUid === uid).map((f) => f.id), uid); return; }
+      if (all) {
+        const uid = all.dataset.moveAll, u = u0(uid), name = supLabel(u) || "this person";
+        const ids = faRecords.filter((f) => f.supervisorUid !== uid).map((f) => f.id);
+        const ok = await confirmModal({ title: "Move " + ids.length + " Field Assistants?", body: ids.length + " Field Assistants will report to " + name + ". Their sites, visits and notes are re-tagged so " + name + " sees them. Nothing is deleted.", confirmLabel: "Move them" });
+        if (ok) assignSupervisors(ids, uid);
+      }
+    });
     $("#team-list").addEventListener("click", (e) => {
       const row = e.target.closest("[data-uid]");
       if (!row) return;
@@ -1215,23 +1468,62 @@ function renderTeam() {
   renderTeamList();
   renderFaSupervisors();
 }
-/* The supervisor pickers are drawn from live data, so a Field Assistant record created
-   (or a user added) after this tab was first opened shows up without a reload. Skipped
-   while one of the pickers is open, so a snapshot can't close it under the person's thumb. */
+/* Teams: one card per supervisor, with his Field Assistants under him and a picker on each.
+   Drawn from live data, so a record created after this tab was first opened shows up without a
+   reload. Skipped while a picker is open, so a snapshot can't close it under the person's thumb. */
 let faSig = "";
 function renderFaSupervisors() {
   const host = $("#fa-supervisors");
   if (!host) return;
-  const sups = users.filter((u) => ["admin", "sfo", "member"].includes(u.role) && u.active !== false);
-  const sig = JSON.stringify([faRecords.map((f) => [f.id, f.name, f.supervisorUid || ""]), sups.map((u) => [u.id, u.name || u.email || ""])]);
+  const sups = users.filter((u) => ["admin", "sfo", "member"].includes(u.role) && u.active !== false)
+    .sort((a, b) => (a.name || a.email || "").localeCompare(b.name || b.email || ""));
+  const sitesOf = {};
+  sites.forEach((s) => { if (s.id === "n-a") return; const k = faId(s.assistant); if (k) (sitesOf[k] = sitesOf[k] || []).push(s); });
+  const info = (f) => { const mine = sitesOf[f.id] || []; return { total: mine.length, hidden: f.supervisorUid ? mine.filter((s) => s.sfoUid !== f.supervisorUid).length : 0 }; };
+  const sig = JSON.stringify([faRecords.map((f) => [f.id, f.name, f.supervisorUid || "", f.linkedUid ? 1 : 0, info(f).total, info(f).hidden]), sups.map((u) => [u.id, u.name || u.email || "", u.role])]);
   if (sig === faSig || host.contains(document.activeElement)) return;
   faSig = sig;
-  host.innerHTML = faRecords.length ? faRecords.slice().sort((a, b) => (a.name || "").localeCompare(b.name || "")).map((f) => `
-    <div class="field"><label for="sup-${esc(f.id)}">${esc(f.name)}: supervisor</label>
-      <select id="sup-${esc(f.id)}" data-sup="${esc(f.id)}">
-        <option value="">Not assigned</option>
-        ${sups.map((u) => `<option value="${esc(u.id)}" ${f.supervisorUid === u.id ? "selected" : ""}>${esc(u.name || u.email || u.id)}</option>`).join("")}
-      </select></div>`).join("") : `<p class="hint">No Field Assistant records yet.</p>`;
+  if (!faRecords.length) { host.innerHTML = `<div class="empty">No Field Assistant records yet. Use "Create records from sites" further down.</div>`; return; }
+
+  const byName = (a, b) => (a.name || "").localeCompare(b.name || "");
+  const supIds = new Set(sups.map((u) => u.id));
+  const pick = (f) => `
+    <select data-sup="${esc(f.id)}" aria-label="Supervisor for ${esc(f.name)}">
+      <option value="" ${f.supervisorUid ? "" : "selected"}>Not assigned</option>
+      ${sups.map((u) => `<option value="${esc(u.id)}" ${f.supervisorUid === u.id ? "selected" : ""}>${esc(u.name || u.email || u.id)}</option>`).join("")}
+    </select>`;
+  const faRow = (f) => {
+    const i = info(f);
+    return `
+      <div class="fa-row">
+        <div class="fa-main">
+          <div class="fa-name">${esc(f.name)}</div>
+          <div class="fa-meta">${i.total} site${i.total === 1 ? "" : "s"}${i.hidden ? `${SEP}<span class="bad">${i.hidden} not showing on the SFO's phone</span>` : ""}${SEP}${f.linkedUid ? "has a login" : "no login yet"}</div>
+        </div>
+        ${pick(f)}
+      </div>`;
+  };
+  const cards = sups.map((u) => {
+    const mine = faRecords.filter((f) => f.supervisorUid === u.id).sort(byName);
+    const others = faRecords.filter((f) => f.supervisorUid !== u.id);
+    const totalSites = mine.reduce((n, f) => n + info(f).total, 0);
+    const hidden = mine.reduce((n, f) => n + info(f).hidden, 0);
+    return `
+      <div class="team-card">
+        <div class="head"><span class="title">${esc(u.name || u.email || u.id)}</span><span class="badge">${mine.length} FA${mine.length === 1 ? "" : "s"}${SEP}${totalSites} sites</span></div>
+        <div class="sub">${esc(u.email || "No email on file")}${SEP}${esc(ROLE_LABEL[roleKey(u)])}</div>
+        ${hidden ? `<div class="notice" style="margin-top:8px;"><span>${hidden} site${hidden === 1 ? "" : "s"} won't show on this person's phone yet.</span><button type="button" class="btn-link" data-fix-sup="${esc(u.id)}">Fix now</button></div>` : ""}
+        ${mine.map(faRow).join("") || `<div class="field-note" style="margin-top:8px;">No Field Assistants yet. Pick this person as supervisor on a Field Assistant below, or move them all here.</div>`}
+        ${others.length ? `<div class="team-actions"><button class="btn-secondary" type="button" data-move-all="${esc(u.id)}">Move all other Field Assistants here (${others.length})</button></div>` : ""}
+      </div>`;
+  });
+  const loose = faRecords.filter((f) => !f.supervisorUid || !supIds.has(f.supervisorUid)).sort(byName);
+  host.innerHTML = cards.join("") + (loose.length ? `
+    <div class="team-card unassigned">
+      <div class="head"><span class="title">No supervisor</span><span class="badge">${loose.length} FA${loose.length === 1 ? "" : "s"}</span></div>
+      <div class="sub">Nobody sees these Field Assistants' sites until a supervisor is picked.</div>
+      ${loose.map(faRow).join("")}
+    </div>` : "");
 }
 
 function renderTeamList() {
@@ -1380,44 +1672,65 @@ function supLabel(u) { return (u && (u.name || u.email)) || ""; }
 
 /* Point everything that belongs to one Field Assistant at his supervisor: his sites and
    the visits and notes he made. An SFO's phone only reads records carrying his sfoUid, so
-   without this the SFO sees nothing even though the assignment saved. Returns the number
-   of records changed. */
+   without this the SFO sees nothing even though the assignment saved. Sites go first and
+   each kind is written separately, so one stubborn record can't stop the sites from moving.
+   Returns { changed, failed: [what went wrong] }. */
 async function retagFa(faKey, supUid) {
-  const edits = [];
-  sites.forEach((x) => { if (faId(x.assistant) === faKey && (x.sfoUid || null) !== (supUid || null)) edits.push(["sites", x.id, { sfoUid: supUid || null, assistantId: faKey }]); });
+  const want = supUid || null;
+  const todo = { sites: [], checkins: [], observations: [] };
+  sites.forEach((x) => { if (faId(x.assistant) === faKey && ((x.sfoUid || null) !== want || x.assistantId !== faKey)) todo.sites.push([x.id, { sfoUid: want, assistantId: faKey }]); });
   const mine = (d) => d.ownerType === "fa" && (d.assistantId === faKey || (d.assistantId === undefined && faId(d.assistant) === faKey));
-  checkins.forEach((d) => { if (mine(d) && (d.sfoUid || null) !== (supUid || null)) edits.push(["checkins", d.id, { sfoUid: supUid || null }]); });
-  observations.forEach((d) => { if (mine(d) && (d.sfoUid || null) !== (supUid || null)) edits.push(["observations", d.id, { sfoUid: supUid || null }]); });
-  for (let i = 0; i < edits.length; i += 400) {
-    const batch = writeBatch(db);
-    edits.slice(i, i + 400).forEach(([col, id, diff]) => batch.update(doc(db, col, id), { ...diff, updatedAt: serverTimestamp(), updatedBy: who() }));
-    await batch.commit();
+  checkins.forEach((d) => { if (mine(d) && (d.sfoUid || null) !== want) todo.checkins.push([d.id, { sfoUid: want }]); });
+  observations.forEach((d) => { if (mine(d) && (d.sfoUid || null) !== want) todo.observations.push([d.id, { sfoUid: want }]); });
+  const out = { changed: 0, failed: [] };
+  for (const col of ["sites", "checkins", "observations"]) {
+    const list = todo[col];
+    for (let i = 0; i < list.length; i += 200) {
+      const chunk = list.slice(i, i + 200);
+      try {
+        const batch = writeBatch(db);
+        chunk.forEach(([id, diff]) => batch.update(doc(db, col, id), { ...diff, updatedAt: serverTimestamp(), updatedBy: who() }));
+        await batch.commit();
+        out.changed += chunk.length;
+      } catch (err) {
+        out.failed.push(col + " (" + (err.code || err.message) + ")");
+      }
+    }
   }
-  return edits.length;
+  return out;
 }
-async function setSupervisor(id, uid) {
+/* Save the supervisor on one or more FA records, then move their sites, visits and notes across. */
+async function assignSupervisors(ids, uid) {
   const msg = $("#fa-sup-msg");
-  const fa = faRecords.find((f) => f.id === id);
-  const name = fa ? fa.name : id;
-  msg.className = "save-msg"; msg.textContent = "Saving " + name + "…";
+  const u = uid ? u0(uid) : null;
+  const label = supLabel(u);
+  const names = ids.map((id) => (faById(id) || { name: id }).name);
+  const who_ = names.length === 1 ? names[0] : names.length + " Field Assistants";
+  const show = (cls, text) => { msg.className = "save-msg " + cls; msg.textContent = text; msg.scrollIntoView({ behavior: smoothScroll(), block: "nearest" }); };
+  show("", "Saving " + who_ + "…");
   try {
-    const u = users.find((x) => x.id === uid);
-    await updateDoc(doc(db, "fieldAssistants", id), { supervisorUid: uid || null, supervisorEmail: (u && u.email) || "", supervisorName: supLabel(u), updatedAt: serverTimestamp(), updatedBy: who() });
+    const batch = writeBatch(db);
+    ids.forEach((id) => batch.update(doc(db, "fieldAssistants", id), { supervisorUid: uid || null, supervisorEmail: (u && u.email) || "", supervisorName: label, updatedAt: serverTimestamp(), updatedBy: who() }));
+    await batch.commit();
   } catch (err) {
-    msg.className = "save-msg err"; msg.textContent = "Couldn't save the supervisor for " + name + ": " + (err.code || err.message) + ". The picker may show a choice that was not saved.";
+    show("err", "Couldn't save the supervisor for " + who_ + ": " + (err.code || err.message) + (err.code === "permission-denied" ? ". The security rules refused it. Check you are signed in as an admin." : "") + ".");
+    faSig = ""; renderFaSupervisors();
     return;
   }
-  try {
-    const n = await retagFa(id, uid || null);
-    msg.className = "save-msg ok";
-    msg.textContent = uid
-      ? name + " now reports to " + (supLabel(u0(uid)) || "that person") + "." + (n ? " Updated " + n + " site/visit/note record" + (n === 1 ? "" : "s") + " so they show on the supervisor's phone." : "") + (supLabel(u0(uid)) ? "" : " That account has no name or email on file, so " + name + "'s app will only say \"Assigned\". Add a name under its entry above.")
-      : name + " has no supervisor now.";
-  } catch (err) {
-    msg.className = "save-msg err";
-    msg.textContent = "Supervisor saved, but updating " + name + "'s records failed: " + (err.code || err.message) + ". Tap \"Sync records with assignments\" to retry.";
+  let changed = 0; const failed = [];
+  for (const id of ids) { const r = await retagFa(id, uid || null); changed += r.changed; failed.push(...r.failed); }
+  if (failed.length) {
+    show("err", "Supervisor saved for " + who_ + ", but some records could not be updated: " + [...new Set(failed)].join(", ") + ". Tap \"Fix now\" on the supervisor's card, or \"Sync records with assignments\", to try again.");
+  } else if (!uid) {
+    show("ok", who_ + (ids.length === 1 ? " has" : " have") + " no supervisor now.");
+  } else {
+    show("ok", who_ + (ids.length === 1 ? " now reports to " : " now report to ") + (label || "that person") + "." + (changed ? " Updated " + changed + " site, visit and note record" + (changed === 1 ? "" : "s") + " so they show on that phone." : "") + (label ? "" : " That account has no name or email on file, so the Field Assistant's app will only say \"Assigned\". Add a name to its entry under People and roles."));
   }
+  if (host_has_focus()) document.activeElement.blur();
+  faSig = ""; renderFaSupervisors();
 }
+function host_has_focus() { const h = $("#fa-supervisors"); return !!h && h.contains(document.activeElement); }
+async function setSupervisor(id, uid) { return assignSupervisors([id], uid); }
 const u0 = (uid) => users.find((x) => x.id === uid);
 async function linkExistingRecords() {
   const msg = $("#fa-msg"), btn = $("#fa-link");
@@ -1605,11 +1918,89 @@ function dqCard({ title, badge, sub, lines, action, ok }) {
     </div>`;
 }
 
+/* Is everything wired so each SFO sees his own team? */
+function setupCheckHTML() {
+  const cards = [];
+  const card = (ok, title, sub, buttons) => `
+    <div class="ov-card ${ok ? "ok" : ""}">
+      <div class="head"><span class="title">${esc(title)}</span><span class="badge">${ok ? "OK" : "Needs action"}</span></div>
+      ${sub ? `<div class="sub">${esc(sub)}</div>` : ""}
+      ${buttons ? `<div class="ov-actions">${buttons}</div>` : ""}
+    </div>`;
+  const goTeam = `<button type="button" class="btn-link" data-goto="team">Open Team</button>`;
+  const noSup = faRecords.filter((f) => !f.supervisorUid);
+  cards.push(!faRecords.length
+    ? card(false, "No Field Assistant records yet", "Create them from the sites on the Team tab.", goTeam)
+    : noSup.length
+      ? card(false, noSup.length + " of " + faRecords.length + " Field Assistants have no supervisor", "Nobody sees their sites until a supervisor is picked.", goTeam)
+      : card(true, "All " + faRecords.length + " Field Assistants have a supervisor"));
+  let hidden = 0, noRecord = 0;
+  sites.forEach((s) => {
+    if (s.id === "n-a") return;
+    const k = faId(s.assistant);
+    if (!k) return;
+    const fa = faById(k);
+    if (!fa) { noRecord++; return; }
+    if (fa.supervisorUid && s.sfoUid !== fa.supervisorUid) hidden++;
+  });
+  if (faRecords.length) cards.push(hidden
+    ? card(false, hidden + " site" + (hidden === 1 ? "" : "s") + " won't show on the supervisor's phone", "The site isn't tagged with its supervisor's ID yet. The fix only adds those tags.", `<button type="button" class="btn-link" data-fix="sync">Fix now</button>${goTeam}`)
+    : card(true, "Every assigned site shows on its supervisor's phone"));
+  if (noRecord) cards.push(card(false, noRecord + " site" + (noRecord === 1 ? "" : "s") + " name an assistant who has no record", "Create the records on the Team tab.", goTeam));
+  return `<div class="sec-title">Setup check</div>${cards.join("")}`;
+}
+
+/* Open issues and follow-ups, with who raised them and who supervises the Field Assistant. */
+function issuesHTML(openIssues) {
+  if (!openIssues.length) return `<div class="empty">No open issues or follow-ups.</div>`;
+  const rows = openIssues.slice(0, 15).map((o, i) => {
+    const site = sites.find((s) => s.id === o.siteId);
+    const fa = faOfRecord(o), sup = supervisorNameOf(o);
+    const ms = tsMs(o.createdAt);
+    const days = ms ? Math.floor((Date.now() - ms) / 86400000) : null;
+    const meta = [
+      o.type === "issue" ? "Issue" : "Follow-up",
+      "raised by " + (personName(o.author) || "unknown"),
+      fa ? "FA: " + fa.name : "",
+      sup ? "SFO: " + sup : "no supervisor assigned",
+      o.assignedTo ? "assigned to " + o.assignedTo : "",
+      validISO(o.dueDate) ? "due " + o.dueDate : ""
+    ].filter(Boolean);
+    let open = "";
+    if (o.checkinId && checkins.some((c) => c.id === o.checkinId)) {
+      ovPresets["n" + i] = { ids: new Set([o.checkinId]), idsLabel: "the visit this note belongs to", open: o.checkinId };
+      open = `<button type="button" class="btn-link" data-ov="n${i}">Open visit</button>`;
+    }
+    return `
+      <div class="ov-card">
+        <div class="head"><span class="title">${esc(site ? site.name : o.siteId)}</span><span class="badge">${days != null ? days + " days open" : ""}</span></div>
+        <div class="sub">${meta.map(esc).join(SEP)}</div>
+        <div class="text">${esc(o.text)}</div>
+        <div class="ov-actions">${open}<button type="button" class="btn-link" data-resolve="${esc(o.id)}">Mark resolved</button></div>
+      </div>`;
+  }).join("");
+  return rows + (openIssues.length > 15 ? `<p class="hint">Showing 15 of ${openIssues.length}.</p>` : "");
+}
+
+async function resolveObservation(id, btn) {
+  const msg = $("#ov-msg");
+  btn.disabled = true;
+  if (msg) { msg.className = "save-msg"; msg.textContent = pendingMsg(); }
+  try {
+    await updateDoc(doc(db, "observations", id), { status: "Resolved", resolvedAt: serverTimestamp(), resolvedBy: who(), updatedAt: serverTimestamp(), updatedBy: who() });
+    const m = $("#ov-msg");
+    if (m) { m.className = "save-msg ok"; m.textContent = "Marked resolved."; }
+  } catch (err) {
+    btn.disabled = false;
+    if (msg) { msg.className = "save-msg err"; msg.textContent = "Couldn't update: " + (err.code || err.message); }
+  }
+}
+
 let ovPresets = {};
 function renderOversight() {
   const el = $("#panel-oversight");
   const banner = errHTML(["sites", "checkins", "observations", "program"]);
-  if (isLoading(["sites", "checkins", "observations", "program"]) && !banner) { el.innerHTML = loadingHTML("overview"); return; }
+  if (isLoading(["sites", "checkins", "observations", "program", "users", "fieldAssistants"]) && !banner) { el.innerHTML = loadingHTML("overview"); return; }
 
   const real = sites.filter((s) => s.id !== "n-a");
   const maxWeek = checkins.reduce((m, c) => Math.max(m, c.week || 0), 0);
@@ -1708,7 +2099,8 @@ function renderOversight() {
 
   el.innerHTML = `
     ${banner}
-    <p class="hint">What's slipping across all sites, not limited to one week like the main app's Analytics tab.</p>
+    ${setupCheckHTML()}
+    <p class="hint" style="margin-top:22px;">What's slipping across all sites, not limited to one week like the main app's Analytics tab.</p>
     <div class="sec-title">This week${anchor ? ": Week " + wk + " (" + esc(addDaysISO(anchor, 7 * (wk - 1))) + " to " + esc(sunday) + ")" : ""}</div>
     ${checkins.length ? `<div class="counters">${counterHTML}</div>${anchor ? "" : `<p class="hint">Follow-ups due needs a Week-1 Monday. Set one on the Program tab.</p>`}` : `<div class="empty">No visits yet.</div>`}
 
@@ -1728,21 +2120,18 @@ function renderOversight() {
       : `<div class="empty">No stale sites.</div>`}
 
     <div class="sec-title">Oldest open issues and follow-ups</div>
-    ${openIssues.length ? openIssues.slice(0, 15).map((o) => {
-      const site = sites.find((s) => s.id === o.siteId);
-      const days = o.createdAt?.seconds ? Math.floor((Date.now() / 1000 - o.createdAt.seconds) / 86400) : null;
-      return `
-        <div class="ov-card">
-          <div class="head"><span class="title">${esc(site ? site.name : o.siteId)}</span><span class="badge">${days != null ? days + " days open" : ""}</span></div>
-          <div class="sub">${esc(o.type === "issue" ? "Issue" : "Follow-up")}${SEP}${esc(o.text)}</div>
-        </div>`;
-    }).join("") + (openIssues.length > 15 ? `<p class="hint">Showing 15 of ${openIssues.length}.</p>` : "")
-      : `<div class="empty">No open issues or follow-ups.</div>`}
+    <div class="save-msg" id="ov-msg" role="status"></div>
+    ${issuesHTML(openIssues)}
   `;
 }
 $("#panel-oversight").addEventListener("click", (e) => {
   const b = e.target.closest("[data-ov]");
-  if (b && ovPresets[b.dataset.ov]) openVisits(ovPresets[b.dataset.ov]);
+  if (b && ovPresets[b.dataset.ov]) { openVisits(ovPresets[b.dataset.ov]); return; }
+  const g = e.target.closest("[data-goto]");
+  if (g) { setTab(g.dataset.goto); return; }
+  if (e.target.closest("[data-fix]")) { setTab("team"); linkExistingRecords(); return; }
+  const r = e.target.closest("[data-resolve]");
+  if (r) resolveObservation(r.dataset.resolve, r);
 });
 </script>
 </body>
