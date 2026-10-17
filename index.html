@@ -1050,6 +1050,7 @@ let weeklyCheckins = [];
 let programDoc = null;   // meta/program: { week1Monday, ... } set by an admin
 let myRole = null;       // "admin" | "sfo" | "member" | "fa"; set once the access check passes
 let myFaId = null, mySfoUid = null, myFaName = null, myName = "", mySupervisor = "";
+let faRecords = []; // Field Assistant records this person may read: their own team (admins: all)
 let faVisits = [], obsOwn = [], tasksForMe = []; // FA-owned visits (read-only for an SFO); notes an FA owns; tasks an SFO assigned to this FA       // an FA's own record id (from users/<uid>.faId); null for everyone else
 let outbox = [];         // photos waiting to upload (mirror of the IndexedDB outbox)
 let startingVisit = new Set(); // visit ids with a GPS check-in in flight
@@ -1197,7 +1198,7 @@ function clearAuthForm() {
 }
 
 function resetState() {
-  sites = []; checkins = []; observations = []; weeklyCheckins = []; programDoc = null; myRole = null; myFaId = null; mySfoUid = null; myFaName = null; myName = ""; mySupervisor = ""; faVisits = []; obsOwn = []; tasksForMe = [];
+  sites = []; checkins = []; observations = []; weeklyCheckins = []; programDoc = null; myRole = null; myFaId = null; mySfoUid = null; myFaName = null; myName = ""; mySupervisor = ""; faVisits = []; obsOwn = []; tasksForMe = []; faRecords = [];
   loadedKeys = {}; listenErrors = {}; snapFromCache = {};
   pendingCounts = { sites: 0, checkins: 0, observations: 0, weeklyCheckins: 0 }; pendingCheckinIds = new Set();
   addItemDraft = null; setupIncomplete = false;
@@ -1352,6 +1353,7 @@ function startListeners() {
     ...(isFa() ? [watch("tasks", query(collection(db, "observations"), where("assistantId", "==", myFaId), where("ownerType", "==", "sfo"), where("type", "==", "followUp"), where("assignedToId", "==", myFaId)),
       (snap) => { tasksForMe = docsOf(snap); observations = [...obsOwn, ...tasksForMe]; })] : []),
     isFa() ? (loadedKeys.weeklyCheckins = true, () => {}) : watch("weeklyCheckins", scoped ? query(collection(db, "weeklyCheckins"), where("sfoUid", "==", uid)) : collection(db, "weeklyCheckins"), (snap) => { weeklyCheckins = docsOf(snap); countPending("weeklyCheckins", snap); }),
+    ...(isFa() ? [] : [watch("fieldAssistants", scoped ? query(collection(db, "fieldAssistants"), where("supervisorUid", "==", uid)) : collection(db, "fieldAssistants"), (snap) => { faRecords = docsOf(snap); })]),
     watch("program", doc(db, "meta", "program"), (snap) => { programDoc = snap.exists() ? snap.data() : null; }),
   ];
 }
@@ -1532,6 +1534,74 @@ function openIssuesForSite(siteId) { return observations.filter((o) => o.siteId 
 function openFollowUps() { return observations.filter((o) => o.type === "followUp" && isUnresolved(o)); }
 function isDueOrOverdue(o) { return !!o.dueDate && o.dueDate <= todayISO(); }
 
+/* --- Time in the field ---
+   A day's time = the start of the first site to the finish of the last. Start: this phone's own clock when
+   "Start visit" was tapped (right even if it synced later), else the server's time. Finish: the end-location
+   time, else the time typed on completion, else when Complete was tapped. A time that falls on a different
+   day from the visit is ignored: it means a wrong phone clock. */
+function ftTimes(c) {
+  const day0 = new Date(c.date + "T00:00:00").getTime();
+  const same = (ms) => Number.isFinite(ms) && ms >= day0 && ms < day0 + 86400000;
+  const ev = c.evidence || {};
+  const out = { start: null, finish: null };
+  const s1 = ev.start && ev.start.capturedAtMs, s2 = c.startedAt && c.startedAt.seconds ? c.startedAt.seconds * 1000 : null;
+  if (same(s1)) out.start = s1; else if (same(s2)) out.start = s2;
+  const e1 = ev.end && ev.end.capturedAtMs;
+  const hm = /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(c.completedTime || "") ? c.completedTime : null;
+  if (same(e1)) out.finish = e1;
+  else if (hm) out.finish = day0 + (Number(hm.slice(0, 2)) * 60 + Number(hm.slice(3))) * 60000;
+  else if (same(c.completedAtMs)) out.finish = c.completedAtMs;
+  else if (c.completedAt && same(c.completedAt.seconds * 1000)) out.finish = c.completedAt.seconds * 1000;
+  return out;
+}
+/* One person's visits -> Map of date -> { start, finish, mins, sites }. */
+function ftByDay(list) {
+  const days = new Map();
+  list.forEach((c) => {
+    if (!c.date || !validISO(c.date)) return;
+    if (c.status !== "Completed" && !isStarted(c)) return;
+    const t = ftTimes(c);
+    let d = days.get(c.date);
+    if (!d) { d = { starts: [], finishes: [], sites: 0 }; days.set(c.date, d); }
+    if (c.status === "Completed") d.sites++;
+    if (t.start !== null) d.starts.push(t.start);
+    if (t.finish !== null) d.finishes.push(t.finish);
+  });
+  const out = new Map();
+  days.forEach((d, date) => {
+    const start = d.starts.length ? Math.min(...d.starts) : null, finish = d.finishes.length ? Math.max(...d.finishes) : null;
+    out.set(date, { start, finish, sites: d.sites, mins: start !== null && finish !== null && finish >= start ? Math.round((finish - start) / 60000) : null });
+  });
+  return out;
+}
+const ftDur = (m) => (m >= 60 ? Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") + " min" : m + " min");
+const ftClock = (ms) => { const d = new Date(ms); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); };
+function fieldTimeCardHTML(wk) {
+  if (isAdmin()) return ""; // admins read this on the admin page's Field time tab
+  const names = isFa() ? [] : [...new Set(faVisits.map((c) => c.assistant).filter((a) => a && a !== "N/A"))].sort();
+  const people = [{ name: "You", list: checkins, you: true }, ...names.map((fa) => ({ name: fa, list: faVisits.filter((c) => c.assistant === fa) }))];
+  const today = todayISO();
+  const rows = people.map((p) => {
+    const days = ftByDay(p.list.filter((c) => c.week === wk));
+    let total = 0, counted = 0;
+    days.forEach((d) => { if (d.mins !== null) { total += d.mins; counted++; } });
+    return { ...p, days, total, counted, today: wk === currentWeek() ? ftByDay(p.list.filter((c) => c.date === today)).get(today) : undefined };
+  }).filter((r) => r.days.size || r.today);
+  const sub = (r) => {
+    const t = r.today;
+    if (t && t.start !== null) return "Today " + ftClock(t.start) + (t.finish !== null ? " to " + ftClock(t.finish) + (t.mins !== null ? " · " + ftDur(t.mins) : "") : ", not finished yet");
+    return r.counted ? r.counted + " day" + (r.counted === 1 ? "" : "s") + " counted · average " + ftDur(Math.round(r.total / r.counted)) : "No start and finish times yet";
+  };
+  const dayLines = (r) => r.you ? [...r.days.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([date, d]) =>
+    `<div class="acct-row"><span style="font-size:13px;">${esc(fmtDayDate(date))}${d.start !== null ? " · " + ftClock(d.start) : ""}${d.finish !== null ? " to " + ftClock(d.finish) : ""}</span><span style="font-size:13px;">${d.mins !== null ? esc(ftDur(d.mins)) : "no " + (d.start === null ? "start" : "finish")}</span></div>`).join("") : "";
+  return `
+    <div class="dash-card">
+      <h2>Time in the field · Week ${wk}</h2>
+      ${rows.length ? rows.map((r) => `
+        <div class="acct-row"><span><strong>${esc(r.name)}</strong><br><span style="font-size:13px;color:var(--ink-soft);">${esc(sub(r))}</span></span><span>${r.counted ? esc(ftDur(r.total)) : "—"}</span></div>${dayLines(r)}`).join("") : `<div style="font-size:13.5px;color:var(--ink-soft);line-height:1.5;">No start or finish times recorded this week yet. Tap Start visit when you arrive at the first site.</div>`}
+    </div>`;
+}
+
 /* --- Check-in timing ---
    A check-in only counts as overdue if it carries a real date. Undated
    check-ins are schedule placeholders, not missed visits. */
@@ -1544,6 +1614,12 @@ function overdueCheckins() { return checkins.filter(isOverdue).sort((a, b) => a.
    Firestore sites first so it stays right as the directory changes. */
 function allAssistants() {
   const fromSites = sites.map((s) => s.assistant);
+  /* Once the Field Assistant records have loaded they decide who is on this person's team, so a new SFO's
+     Field Assistants show before any site is added, and one moved to another SFO stops showing. Until then
+     (or if there are none) fall back to what the sites and visits name. */
+  if (faRecords.length && loadedKeys.fieldAssistants && !listenErrors.fieldAssistants) {
+    return [...new Set([...faRecords.map((f) => f.name), ...fromSites].filter((a) => a && a !== "N/A"))].sort();
+  }
   const fromCheckins = checkins.map((c) => c.assistant);
   return [...new Set([...fromSites, ...fromCheckins].filter((a) => a && a !== "N/A"))].sort();
 }
@@ -1829,8 +1905,8 @@ async function changeStatus(c, newStatus) {
     doneTime = r.value;
   }
   const patch = { status: newStatus, statusNote: "" };
-  if (newStatus === "Completed") { patch.completedAt = serverTimestamp(); patch.completedBy = meEmail(); patch.completedTime = doneTime; }
-  else if (c.status === "Completed") { patch.completedAt = null; patch.completedBy = ""; patch.completedTime = ""; }
+  if (newStatus === "Completed") { patch.completedAt = serverTimestamp(); patch.completedAtMs = Date.now(); patch.completedBy = meEmail(); patch.completedTime = doneTime; } // completedAtMs is this phone's clock when Complete was tapped; completedAt is the server's, which is late if the phone was offline
+  else if (c.status === "Completed") { patch.completedAt = null; patch.completedAtMs = null; patch.completedBy = ""; patch.completedTime = ""; }
   if (newStatus === "Rescheduled") {
     const r = await openDialog({
       title: "Reschedule this visit", message: c.date ? `Currently ${fmtDayDate(c.date)}.` : "",
@@ -3548,6 +3624,7 @@ function renderAnalytics() {
       <div class="stat-tile"><div class="num" style="${overdueVisits ? "color:var(--obs-issue)" : ""}">${overdueVisits}</div><div class="label">Overdue visits</div></div>
       <div class="stat-tile"><div class="num" style="${dueFups ? "color:var(--obs-followUp)" : ""}">${dueFups}</div><div class="label">Follow-ups due</div></div>
     </div>
+    ${fieldTimeCardHTML(wk)}
     <div class="dash-card">
       <h2>Sites needing attention</h2>
       ${risk.length ? risk.slice(0, 8).map((r) => `
