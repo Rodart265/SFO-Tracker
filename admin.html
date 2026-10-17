@@ -1465,7 +1465,7 @@ function visitCardHTML(c) {
 
       <div class="dl-h">Result</div>
       ${dl("Status", statusChip(c.status) + (c.statusNote ? " " + esc(c.statusNote) : ""))}
-      ${c.status === "Completed" ? dl("Completed", esc([c.completedTime, doneAt ? isoFromDate(new Date(doneAt)) : "", c.completedBy ? "by " + personName(c.completedBy) : ""].filter(Boolean).join(" · ") || "No details")) : ""}
+      ${c.status === "Completed" ? dl("Completed", esc([c.completedTime, doneAt ? isoFromDate(new Date(doneAt)) : "", c.completedBy ? "by " + personName(c.completedBy) : "", Number.isFinite(c.completedAtMs) ? "Complete tapped at " + fmtClock(c.completedAtMs) : ""].filter(Boolean).join(" · ") || "No details")) : ""}
       ${dl("Started", c.startedBy || startedMs ? esc([startedMs ? fmtWhen(startedMs) : "", c.startedBy ? "by " + personName(c.startedBy) : ""].filter(Boolean).join(" · ")) : "")}
       ${dl("SFO review", rv ? esc(String(rv).replace(/([A-Z])/g, " $1").toLowerCase()) + (c.review.by ? esc(" by " + personName(c.review.by)) : "") : "")}
       ${items.length ? `<ul class="check-list">${items.map((t, i) => `<li class="${checked[i] ? "" : "no"}">${esc(t)}</li>`).join("")}</ul>` : ""}
@@ -1632,10 +1632,14 @@ function visitTimes(c) {
   const s1 = ev.start && ev.start.capturedAtMs, s2 = tsMs(c.startedAt);
   if (sameDay(s1)) { out.start = s1; out.startSrc = "phone time at start"; }
   else if (sameDay(s2)) { out.start = s2; out.startSrc = "server time at start"; }
-  const e1 = ev.end && ev.end.capturedAtMs, e4 = tsMs(c.completedAt);
+  const e1 = ev.end && ev.end.capturedAtMs, e3 = c.completedAtMs, e4 = tsMs(c.completedAt);
   if (sameDay(e1)) { out.finish = e1; out.finishSrc = "end location time"; }
   else if (hhmmOk(c.completedTime)) { out.finish = day0 + (Number(c.completedTime.slice(0, 2)) * 60 + Number(c.completedTime.slice(3))) * 60000; out.finishSrc = "time entered at completion"; }
+  else if (sameDay(e3)) { out.finish = e3; out.finishSrc = "phone time when Complete was tapped"; }
   else if (sameDay(e4)) { out.finish = e4; out.finishSrc = "when it was marked complete"; }
+  /* The time typed at completion against the phone's clock when Complete was tapped: a big gap
+     means the visit was completed well after it happened (or the time was typed wrongly). */
+  out.tapGapMin = out.finishSrc === "time entered at completion" && sameDay(e3) ? Math.round(Math.abs(e3 - out.finish) / 60000) : null;
   return out;
 }
 function personOfVisit(c) {
@@ -1655,6 +1659,7 @@ function fieldDays() {
     let g = groups.get(k);
     if (!g) { g = { ...p, date: c.date, visits: 0, completed: 0, starts: [], finishes: [], noStart: 0, noFinish: 0 }; groups.set(k, g); }
     g.visits++;
+    if (t.tapGapMin !== null && t.tapGapMin > 180) g.tapGap = (g.tapGap || 0) + 1;
     if (c.status === "Completed") g.completed++;
     if (t.start !== null) g.starts.push(t); else g.noStart++;
     if (t.finish !== null) g.finishes.push(t); else g.noFinish++;
@@ -1673,6 +1678,7 @@ function fieldDays() {
     }
     if (first && g.noStart) flags.push(g.noStart + " visit" + (g.noStart === 1 ? "" : "s") + " had no start time");
     if (last && g.noFinish) flags.push(g.noFinish + " visit" + (g.noFinish === 1 ? "" : "s") + " had no finish time");
+    if (g.tapGap) flags.push(g.tapGap + " visit" + (g.tapGap === 1 ? "" : "s") + ": the time typed is over 3 h from when Complete was tapped");
     return { ...g, week: weekOfISO(g.date, anchor), startMs: first ? first.start : null, finishMs: last ? last.finish : null, startSrc: first ? first.startSrc : "", finishSrc: last ? last.finishSrc : "", mins, flags };
   }).sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name));
 }
