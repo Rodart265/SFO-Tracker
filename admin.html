@@ -315,6 +315,13 @@ function chip(cls, text) { return `<span class="chip chip-${cls}">${esc(text)}</
 function pendingMsg() { return navigator.onLine ? "Saving…" : "You're offline. This will send when you're back online."; }
 
 const EPAS = ["Chilaza", "Ming'ongo", "Mpingu", "Office"];
+/* The EPAs a site can be given: the usual ones, any already on a site (another SFO's own EPAs), and Office last. */
+function epaChoices(current) {
+  const set = new Set(EPAS.filter((e) => e !== "Office"));
+  sites.forEach((s) => { if (s.id !== "n-a" && s.epa && s.epa !== "Office") set.add(s.epa); });
+  if (current && current !== "Office") set.add(current);
+  return [...[...set].sort((a, b) => a.localeCompare(b)), "Office"];
+}
 const SITE_STATUSES = ["active", "paused", "closed"];
 const VISIT_STATUSES = ["Pending", "Completed", "Rescheduled", "Skipped"];
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -658,7 +665,7 @@ function render() {
 }
 
 function knownAssistants() {
-  const all = [...sites.map((s) => s.assistant), ...checkins.map((c) => c.assistant)];
+  const all = [...faRecords.map((f) => f.name), ...sites.map((s) => s.assistant), ...checkins.map((c) => c.assistant)];
   return [...new Set(all.filter((a) => a && a !== "N/A"))].sort((a, b) => a.localeCompare(b));
 }
 
@@ -671,7 +678,7 @@ function renderSites() {
       <div id="sites-banner"></div>
       <div class="toolbar"><button class="btn-add" id="add-site-btn" type="button">Add site</button></div>
       <div id="edit-slot"></div>
-      <div class="search-bar">${icon("search", 15)}<input id="site-search" type="search" aria-label="Search sites" placeholder="Search by site, manager or nursery ID" value="${esc(siteSearch)}"></div>
+      <div class="search-bar">${icon("search", 15)}<input id="site-search" type="search" aria-label="Search sites" placeholder="Search by site, assistant, SFO, EPA or nursery ID" value="${esc(siteSearch)}"></div>
       <div id="site-list"></div>`;
     $("#site-search").addEventListener("input", (e) => { siteSearch = e.target.value; renderSiteList(); });
     $("#add-site-btn").addEventListener("click", () => {
@@ -699,7 +706,7 @@ function renderSiteList() {
   const q = siteSearch.trim().toLowerCase();
   let filtered = sites.filter((s) => s.id !== "n-a");
   if (q) filtered = filtered.filter((s) =>
-    (s.name || "").toLowerCase().includes(q) || (s.nurseryId || "").toLowerCase().includes(q) || (s.nmName || "").toLowerCase().includes(q));
+    (s.name || "").toLowerCase().includes(q) || (s.nurseryId || "").toLowerCase().includes(q) || (s.nmName || "").toLowerCase().includes(q) || (s.assistant || "").toLowerCase().includes(q) || (s.epa || "").toLowerCase().includes(q) || supervisorNameOf(s).toLowerCase().includes(q));
   filtered.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
 
   /* Most recent completed visit per site, by anyone. */
@@ -727,7 +734,7 @@ function renderSiteList() {
       <button class="site-row ${isEditing ? "editing" : ""} ${status === "closed" ? "closed" : ""}" data-site="${esc(s.id)}" type="button">
         <div style="flex:1;min-width:0;">
           <div class="name">${esc(s.name)} ${statusChip}</div>
-          <div class="meta">${esc(s.assistant || "No assistant")}${SEP}${esc(s.epa || "No EPA")}${SEP}${esc(s.nmName || "No manager on file")}${SEP}target ${fmtNum(s.potfillingTarget)}
+          <div class="meta">${esc(s.assistant || "No assistant")}${supervisorNameOf(s) ? SEP + "SFO: " + esc(supervisorNameOf(s)) : ""}${SEP}${esc(s.epa || "No EPA")}${SEP}${esc(s.nmName || "No manager on file")}${SEP}target ${fmtNum(s.potfillingTarget)}
             ${flags.map((f) => `<span class="flag">${esc(f)}</span>`).join("")}${lastVisitText(s.id)}
           </div>
         </div>
@@ -753,8 +760,7 @@ function renderEditSlot() {
   const assistants = knownAssistants();
   if (site.assistant && !assistants.includes(site.assistant) && site.assistant !== "N/A") assistants.push(site.assistant);
   const pendingCount = isNew ? 0 : checkins.filter((c) => c.siteId === site.id && c.status === "Pending" && c.ownerType !== "fa").length;
-  const epas = [...EPAS];
-  if (site.epa && !epas.includes(site.epa)) epas.push(site.epa);
+  const epas = epaChoices(site.epa);
   const status = SITE_STATUSES.includes(site.status) ? site.status : "active";
 
   slot.innerHTML = `
@@ -767,7 +773,9 @@ function renderEditSlot() {
           <select id="f-epa" data-field="epa">
             ${(isNew || !site.epa) ? `<option value="" selected>Not set</option>` : ""}
             ${epas.map((e) => `<option value="${esc(e)}" ${e === site.epa ? "selected" : ""}>${esc(e)}</option>`).join("")}
+            <option value="__new__">Add a new EPA…</option>
           </select></div>
+        <div class="field hidden" id="f-epa-new-wrap"><label for="f-epa-new">New EPA name</label><input id="f-epa-new" data-field="epaNew" autocomplete="off"></div>
         <div class="field"><label for="f-status">Status</label>
           <select id="f-status" data-field="status">
             ${SITE_STATUSES.map((s) => `<option value="${s}" ${s === status ? "selected" : ""}>${s[0].toUpperCase() + s.slice(1)}</option>`).join("")}
@@ -775,8 +783,9 @@ function renderEditSlot() {
         <div class="field"><label for="f-assistant">Field assistant</label>
           <select id="f-assistant" data-field="assistant">
             <option value="" ${site.assistant ? "" : "selected"}>Not assigned</option>
-            ${assistants.map((fa) => `<option value="${esc(fa)}" ${fa === site.assistant ? "selected" : ""}>${esc(fa)}</option>`).join("")}
+            ${assistants.map((fa) => `<option value="${esc(fa)}" ${fa === site.assistant ? "selected" : ""}>${esc(fa)}${faSupText(fa) ? " (" + esc(faSupText(fa)) + ")" : " (no supervisor)"}</option>`).join("")}
           </select>
+          <div class="field-note" data-role="fa-note"></div>
           ${isNew ? "" : `<div class="field-note">${pendingCount} pending visit${pendingCount === 1 ? "" : "s"} for this site will move to the new assistant if you change it.</div>`}
         </div>
         <div class="field"><label for="f-nurseryId">Nursery ID</label><input id="f-nurseryId" data-field="nurseryId" value="${esc(site.nurseryId || "")}"></div>
@@ -803,6 +812,16 @@ function renderEditSlot() {
   $('[data-role="cancel"]', card).addEventListener("click", () => { closeSiteCard(); renderSiteList(); });
   $('[data-role="save"]', card).addEventListener("click", () => saveSite(site, card, token));
   $('[data-role="geo"]', card).addEventListener("click", () => useMyLocation(card));
+  const faSel = $('[data-field="assistant"]', card), faNote = $('[data-role="fa-note"]', card);
+  const showFaNote = () => {
+    const a = faSel.value, sup = faSupText(a);
+    faNote.textContent = !a || a === "N/A" ? "No Field Assistant: no SFO will see this site." : sup ? "This site will show on " + sup + "'s phone." : a + " has no supervisor yet, so no SFO will see this site. Set one on the Team tab.";
+  };
+  faSel.addEventListener("change", showFaNote); showFaNote();
+  $('[data-field="epa"]', card).addEventListener("change", (e) => {
+    $("#f-epa-new-wrap", card).classList.toggle("hidden", e.target.value !== "__new__");
+    if (e.target.value === "__new__") $("#f-epa-new", card).focus();
+  });
   if (isNew) {
     const nameInput = $('[data-field="name"]', card);
     nameInput.addEventListener("input", () => {
@@ -814,6 +833,11 @@ function renderEditSlot() {
   if (first) first.focus({ preventScroll: true });
 }
 
+/* Who supervises the Field Assistant with this name, as a label. */
+function faSupText(name) {
+  const f = faById(faId(name));
+  return f && f.supervisorUid ? (supLabel(u0(f.supervisorUid)) || f.supervisorName || f.supervisorEmail || "") : "";
+}
 function useMyLocation(card) {
   const btn = $('[data-role="geo"]', card);
   const msg = $('[data-role="geo-msg"]', card);
@@ -876,8 +900,14 @@ async function saveSite(site, card, token) {
      query both match on it), so it must follow the field assistant's supervisor. */
   const faRec = faRecords.find((f) => f.id === faId(val("assistant")));
   const sfoUid = (faRec && faRec.supervisorUid) || null;
+  let epaVal = val("epa");
+  if (epaVal === "__new__") {
+    epaVal = val("epaNew");
+    if (!epaVal) return fail("Type the name of the new EPA, or pick an existing one.");
+    if (epaVal.length > 40) return fail("The EPA name is too long. Use 40 characters or fewer.");
+  }
   const fields = {
-    epa: val("epa"), status: val("status"), assistant: val("assistant"), assistantId: faId(val("assistant")), sfoUid, nurseryId: val("nurseryId"),
+    epa: epaVal, status: val("status"), assistant: val("assistant"), assistantId: faId(val("assistant")), sfoUid, nurseryId: val("nurseryId"),
     potfillingTarget: target, nmName: val("nmName"), nmPhone, lat, lng
   };
 
@@ -929,28 +959,47 @@ async function saveSite(site, card, token) {
 
 /* ============================= IMPORT ============================= */
 /* Pasted columns, tab-separated:
-   Field Assistant | Nursery ID | Nursery Site | Potfilling Target | NM Name | NM Number
-   The Field Assistant column is read but not applied; reassign on the Sites tab. */
+   Field Assistant | Nursery ID | Nursery Site | Potfilling Target | NM Name | NM Number | EPA
+   A site that already exists is updated (nursery ID, target, manager, phone). A site that does
+   not exist yet is added, if its Field Assistant already has a record (add one on the Team tab)
+   and the EPA column is filled in. The EPA column is optional for existing sites. */
 function parseImportText(text) {
   return text.split("\n").map((l) => l.trim()).filter(Boolean)
     .filter((l) => !/^field assistant\b/i.test(l))
     .map((line) => {
-      const [fa, nurseryId, siteName, target, nmName, nmPhoneRaw] = line.split("\t").map((c) => c.trim());
+      const [fa, nurseryId, siteName, target, nmName, nmPhoneRaw, epa] = line.split("\t").map((c) => c.trim());
       const t = target ? Number(target.replace(/,/g, "")) : null;
-      return { fa, nurseryId, siteName, target: Number.isFinite(t) ? t : null, nmName, nmPhoneRaw };
+      return { fa, nurseryId, siteName, target: Number.isFinite(t) ? t : null, nmName, nmPhoneRaw, epa: epa || "" };
     }).filter((r) => r.siteName);
 }
 
 function buildImportPreview(rows) {
+  const seen = new Set();
   return rows.map((r) => {
     const id = slugify(r.siteName || "");
     const existing = sites.find((s) => s.id === id);
-    if (!existing) return { ...r, id, status: "unmatched", diffs: [] };
+    const faKey = faId(r.fa);
+    const faRec = faKey ? faById(faKey) : null;
+    if (id === "n-a" || !id) return { ...r, id, status: "invalid", diffs: ["that site name is reserved or empty"] };
+    if (seen.has(id)) return { ...r, id, status: "clash", diffs: ["this site is listed twice in what you pasted"] };
+    seen.add(id);
 
     let nmPhone = null;
     if (r.nmPhoneRaw) {
       nmPhone = normalizePhone(r.nmPhoneRaw);
       if (!nmPhone) return { ...r, id, status: "invalid", diffs: [`phone "${r.nmPhoneRaw}" isn't a valid Malawi number`] };
+    }
+
+    if (!existing) {
+      if (!r.fa) return { ...r, id, status: "unmatched", diffs: ["no Field Assistant on this row, so a new site can't be added"] };
+      if (!faRec) return { ...r, id, status: "unmatched", diffs: [`"${r.fa}" has no Field Assistant record yet. Add them on the Team tab first`] };
+      if (!r.epa) return { ...r, id, status: "invalid", diffs: ["a new site needs an EPA in the 7th column"] };
+      const sup = supLabel(u0(faRec.supervisorUid)) || faRec.supervisorName || "";
+      return { ...r, id, nmPhone, faRec, status: "new", diffs: [`assistant: ${faRec.name}${sup ? " (" + sup + ")" : " (no supervisor yet)"}`, `EPA: ${r.epa}`] };
+    }
+    /* A name that is already used by a site of a different Field Assistant is not touched. */
+    if (faKey && existing.assistant && existing.assistant !== "N/A" && faId(existing.assistant) !== faKey) {
+      return { ...r, id, status: "clash", diffs: [`a site called "${existing.name}" already belongs to ${existing.assistant}. Rename the new one`] };
     }
     const diffs = [];
     if (r.nurseryId && r.nurseryId !== existing.nurseryId) diffs.push(`nursery ID: ${existing.nurseryId || "—"} → ${r.nurseryId}`);
@@ -962,8 +1011,8 @@ function buildImportPreview(rows) {
 }
 
 const IMPORT_CHIP = {
-  update: ["update", "Will update"], nochange: ["nochange", "No change"],
-  unmatched: ["unmatched", "No match"], invalid: ["invalid", "Check phone"]
+  new: ["update", "Will add"], update: ["update", "Will update"], nochange: ["nochange", "No change"],
+  unmatched: ["unmatched", "Can't add"], invalid: ["invalid", "Check row"], clash: ["invalid", "Name in use"]
 };
 
 function renderImport() {
@@ -971,7 +1020,7 @@ function renderImport() {
   if (built.import) return;
   built.import = true;
   el.innerHTML = `
-    <p class="hint">Paste rows copied from your sheet: Field Assistant, Nursery ID, Nursery Site, Potfilling Target, NM Name, NM Number, separated by tabs. The Field Assistant column is ignored here; change assignments on the Sites tab. Nothing is saved until you review and apply.</p>
+    <p class="hint">Paste rows copied from your sheet, tab-separated: Field Assistant, Nursery ID, Nursery Site, Potfilling Target, NM Name, NM Number, EPA. Sites that already exist are updated. New sites are added when their Field Assistant already has a record (Team tab) and the EPA is filled in. Nothing is saved until you review and apply.</p>
     <label class="hint" for="import-text" style="display:block;margin-bottom:6px;">Rows from your sheet</label>
     <textarea id="import-text" placeholder="Paste rows here"></textarea>
     <div style="display:flex;gap:8px;margin-top:10px;">
@@ -979,7 +1028,7 @@ function renderImport() {
     </div>
     <div id="import-preview" aria-live="polite"></div>`;
   $("#parse-btn").addEventListener("click", () => {
-    if (!loaded.sites) {
+    if (!loaded.sites || !loaded.fieldAssistants) {
       $("#import-preview").innerHTML = `<p class="hint" style="margin-top:12px;">${errs.sites ? "Sites couldn't be loaded, so there's nothing to match against. Check the Sites tab." : "Sites are still loading. Try again in a moment."}</p>`;
       return;
     }
@@ -995,9 +1044,10 @@ function renderImportPreview() {
     return;
   }
   const count = (s) => importRows.filter((r) => r.status === s).length;
-  const updates = count("update");
+  const adds = count("new"), updates = count("update"), changes = adds + updates;
+  const bad = count("unmatched") + count("invalid") + count("clash");
   previewEl.innerHTML = `
-    <div class="sec-title">${updates} to update, ${count("nochange")} unchanged, ${count("unmatched")} unmatched, ${count("invalid")} need attention</div>
+    <div class="sec-title">${adds} to add, ${updates} to update, ${count("nochange")} unchanged, ${bad} need attention</div>
     ${importRows.map((r) => {
       const [cls, label] = IMPORT_CHIP[r.status];
       return `
@@ -1009,7 +1059,7 @@ function renderImportPreview() {
           </div>
         </div>`;
     }).join("")}
-    ${updates ? `<button class="btn-save" id="confirm-import" type="button" style="margin-top:12px;width:100%;">Apply ${updates} update${updates === 1 ? "" : "s"}</button>` : ""}
+    ${changes ? `<button class="btn-save" id="confirm-import" type="button" style="margin-top:12px;width:100%;">Apply ${changes} change${changes === 1 ? "" : "s"}</button>` : ""}
     <div class="save-msg" id="import-msg" role="status"></div>`;
 
   const confirmBtn = $("#confirm-import");
@@ -1019,22 +1069,33 @@ function renderImportPreview() {
     confirmBtn.disabled = true;
     msg.className = "save-msg"; msg.textContent = pendingMsg();
     try {
-      const batch = writeBatch(db);
+      const ops = [];
       importRows.filter((r) => r.status === "update").forEach((r) => {
         const patch = { updatedAt: serverTimestamp(), updatedBy: who() };
         if (r.nurseryId) patch.nurseryId = r.nurseryId;
         if (r.target != null) patch.potfillingTarget = r.target;
         if (r.nmName) patch.nmName = r.nmName;
         if (r.nmPhone) patch.nmPhone = r.nmPhone;
-        batch.update(doc(db, "sites", r.id), patch);
+        ops.push(["update", doc(db, "sites", r.id), patch]);
       });
-      await batch.commit();
-      msg.className = "save-msg ok"; msg.textContent = `Applied ${updates} update${updates === 1 ? "" : "s"}.`;
+      importRows.filter((r) => r.status === "new").forEach((r) => {
+        ops.push(["set", doc(db, "sites", r.id), {
+          name: r.siteName, epa: r.epa, status: "active", assistant: r.faRec.name, assistantId: r.faRec.id, sfoUid: r.faRec.supervisorUid || null,
+          nurseryId: r.nurseryId || "", potfillingTarget: r.target, nmName: r.nmName || "", nmPhone: r.nmPhone || "", lat: null, lng: null,
+          createdAt: serverTimestamp(), createdBy: who(), updatedAt: serverTimestamp(), updatedBy: who()
+        }]);
+      });
+      for (let i = 0; i < ops.length; i += 400) {
+        const batch = writeBatch(db);
+        ops.slice(i, i + 400).forEach(([kind, ref, data]) => (kind === "set" ? batch.set(ref, data) : batch.update(ref, data)));
+        await batch.commit();
+      }
+      msg.className = "save-msg ok"; msg.textContent = `Applied ${changes} change${changes === 1 ? "" : "s"}.${adds ? " New sites have no GPS yet. Add it on the Sites tab while standing at each nursery." : ""}`;
       importRows = null;
       confirmBtn.remove();
     } catch (err) {
       confirmBtn.disabled = false;
-      msg.className = "save-msg err"; msg.textContent = "Import failed, nothing was saved: " + (err.code || err.message);
+      msg.className = "save-msg err"; msg.textContent = "Import failed, some or none of it may have been saved: " + (err.code || err.message);
     }
   });
 }
@@ -1083,7 +1144,7 @@ function filteredVisits() {
   if (vf.status) list = list.filter((c) => c.status === vf.status);
   if (vf.attention) list = list.filter(isFlagged);
   const q = vf.q.trim().toLowerCase();
-  if (q) list = list.filter((c) => [siteName(c), c.siteId, c.assistant, c.purpose, c.date].join(" ").toLowerCase().includes(q));
+  if (q) list = list.filter((c) => [siteName(c), c.siteId, c.assistant, c.purpose, c.date, supervisorNameOf(c)].join(" ").toLowerCase().includes(q));
   return [...list].sort((a, b) =>
     (b.date || "").localeCompare(a.date || "") || siteName(a).localeCompare(siteName(b)) || (a.order || 0) - (b.order || 0));
 }
@@ -1127,7 +1188,7 @@ function renderVisits() {
         <div class="field"><label for="vf-week">Week</label><select id="vf-week"><option value="">All weeks</option></select></div>
         <div class="field"><label for="vf-status">Status</label>
           <select id="vf-status"><option value="">All statuses</option>${VISIT_STATUSES.map((s) => `<option value="${s}">${s}</option>`).join("")}</select></div>
-        <div class="field wide"><label for="vf-q">Search site, assistant or purpose</label><input id="vf-q" type="search" autocomplete="off" placeholder="e.g. Kasungu, Grace, pot filling"></div>
+        <div class="field wide"><label for="vf-q">Search site, assistant, SFO or purpose</label><input id="vf-q" type="search" autocomplete="off" placeholder="e.g. Kasungu, Grace, pot filling"></div>
         <div class="wide"><label class="toggle"><input type="checkbox" id="vf-attn"> Needs attention only</label></div>
       </div>
       <div id="visit-notice"></div>
@@ -1414,6 +1475,17 @@ function renderTeam() {
       <p class="hint">Each Field Assistant reports to one SFO. An SFO's phone only shows the sites, visits and notes tagged with their own ID, so choosing a supervisor here also re-tags that Field Assistant's records.</p>
       <div class="save-msg" id="fa-sup-msg" role="status"></div>
       <div id="fa-supervisors"></div>
+      <details class="add-card" id="add-fa">
+        <summary>Add a Field Assistant</summary>
+        <div class="inner">
+          <p class="hint">Creates a Field Assistant for an SFO. Add their sites afterwards: on the Sites tab (pick this Field Assistant), or paste them on the Import tab. A record is not a login.</p>
+          <div class="field"><label for="nf-name">Full name</label><input id="nf-name" type="text" autocomplete="off">
+            <div class="field-note" id="nf-id-note">The ID is made from the name.</div></div>
+          <div class="field"><label for="nf-sup">Supervisor</label><select id="nf-sup"></select></div>
+          <button class="btn-save" id="nf-save" type="button" style="width:100%;flex:none;">Add Field Assistant</button>
+          <div class="save-msg" id="nf-msg" role="status"></div>
+        </div>
+      </details>
 
       <div class="sec-title">People and roles</div>
       <div id="team-banner"></div>
@@ -1442,6 +1514,8 @@ function renderTeam() {
         </div>
       </details>`;
     $("#au-save").addEventListener("click", addUserByUid);
+    $("#nf-save").addEventListener("click", addFieldAssistant);
+    $("#nf-name").addEventListener("input", (e) => { const id = slugify(e.target.value); $("#nf-id-note").textContent = id ? "The ID will be: " + id : "The ID is made from the name."; });
     $("#fa-create").addEventListener("click", createFaRecords);
     $("#fa-link").addEventListener("click", linkExistingRecords);
     $("#fa-supervisors").addEventListener("change", (e) => { const sel = e.target.closest("[data-sup]"); if (sel) setSupervisor(sel.dataset.sup, sel.value); });
@@ -1467,6 +1541,46 @@ function renderTeam() {
   $("#team-banner").innerHTML = errHTML(["users"]);
   renderTeamList();
   renderFaSupervisors();
+  renderNewFaForm();
+}
+/* The supervisor list on the Add form follows the live team list, and keeps what was chosen. */
+function renderNewFaForm() {
+  const sel = $("#nf-sup");
+  if (!sel || document.activeElement === sel) return;
+  const sups = users.filter((u) => ["admin", "sfo", "member"].includes(u.role) && u.active !== false)
+    .sort((a, b) => (a.name || a.email || "").localeCompare(b.name || b.email || ""));
+  const html = `<option value="">Choose a supervisor…</option>` + sups.map((u) => `<option value="${esc(u.id)}">${esc(u.name || u.email || u.id)}${u.role === "admin" ? " (admin)" : ""}</option>`).join("");
+  if (sel.dataset.sig === html) return;
+  const cur = sel.value;
+  sel.innerHTML = html; sel.dataset.sig = html;
+  if (cur && sups.some((u) => u.id === cur)) sel.value = cur;
+}
+async function addFieldAssistant() {
+  const msg = $("#nf-msg"), btn = $("#nf-save");
+  const fail = (t) => { msg.className = "save-msg err"; msg.textContent = t; };
+  const name = $("#nf-name").value.trim().replace(/\s+/g, " "), supUid = $("#nf-sup").value;
+  if (!name) return fail("Enter the Field Assistant's name.");
+  const id = slugify(name);
+  if (!id || id === "n-a") return fail("That name can't be used. Use the person's real name.");
+  if (!supUid) return fail("Choose a supervisor.");
+  if (!loaded.fieldAssistants || !loaded.users) return fail("Still loading. Try again in a moment.");
+  const dup = faById(id);
+  if (dup) return fail(`A Field Assistant with the ID "${id}" already exists${dup.supervisorName ? ", supervised by " + dup.supervisorName : ""}. If this is a different person, add something to the name, such as a middle initial.`);
+  const u = u0(supUid);
+  btn.disabled = true;
+  msg.className = "save-msg"; msg.textContent = pendingMsg();
+  try {
+    await setDoc(doc(db, "fieldAssistants", id), {
+      name, supervisorUid: supUid, supervisorEmail: (u && u.email) || "", supervisorName: supLabel(u), active: true, linkedUid: null,
+      createdAt: serverTimestamp(), createdBy: who(), updatedAt: serverTimestamp(), updatedBy: who()
+    });
+    msg.className = "save-msg ok"; msg.textContent = `Added ${name}, supervised by ${supLabel(u) || "that person"}. Now add their sites.`;
+    $("#nf-name").value = ""; $("#nf-id-note").textContent = "The ID is made from the name.";
+  } catch (err) {
+    fail("Couldn't add: " + (err.code || err.message));
+  } finally {
+    btn.disabled = false;
+  }
 }
 /* Teams: one card per supervisor, with his Field Assistants under him and a picker on each.
    Drawn from live data, so a record created after this tab was first opened shows up without a
