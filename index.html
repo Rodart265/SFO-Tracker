@@ -917,6 +917,23 @@ const PROGRAMME_DISTRICT = "Lilongwe";
 /* A site goes amber after this many days without a completed visit, red after STALE_RED_DAYS. */
 const STALE_AMBER_DAYS = 14, STALE_RED_DAYS = 21;
 const EPA_CLASS = { "Chilaza": "chilaza", "Ming'ongo": "mingongo", "Mpingu": "mpingu", "Office": "office" };
+/* Colour for any EPA: the known ones keep theirs, a new one gets a steady pick from the three coloured ones. */
+function epaTone(epa) {
+  if (EPA_CLASS[epa]) return EPA_CLASS[epa];
+  if (!epa) return "office";
+  let h = 0;
+  for (const ch of String(epa)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return ["chilaza", "mingongo", "mpingu"][h % 3];
+}
+/* The EPAs in the data this person can see, so another SFO's own EPAs appear without a code change.
+   The usual ones keep their order, new ones follow A to Z, and Office is always last. */
+function epaList() {
+  const seen = new Set();
+  [...sites, ...checkins].forEach((x) => { if (x.id !== "n-a" && x.epa && x.epa !== "Office") seen.add(x.epa); });
+  const known = REFERENCE.epas.filter((e) => e !== "Office" && seen.has(e));
+  const extra = [...seen].filter((e) => !known.includes(e)).sort((a, b) => a.localeCompare(b));
+  return [...known, ...extra, "Office"];
+}
 const OBS_TYPES = ["observation", "issue", "action", "followUp"];
 const OBS_LABEL = { observation: "Observation", issue: "Issue", action: "Action", followUp: "Follow-up" };
 const STATUS_ICON = {
@@ -2637,7 +2654,7 @@ function renderSchedule() {
 
 function renderCheckinCard(c) {
   const site = siteById(c.siteId);
-  const epaClass = EPA_CLASS[c.epa] || "office";
+  const epaClass = epaTone(c.epa);
   const items = c.checklistItems || [];
   const checkedCount = (c.checkedItems || []).filter(Boolean).length;
   const isDrawerOpen = openDrawerId === c.id;
@@ -2842,7 +2859,7 @@ function renderEditFormBody(d, mode) {
       </div>
       <div class="field"><label>Week <span class="field-hint" data-hint="week" hidden>set from the date</span></label><input type="number" min="1" data-field="week" aria-label="Week" value="${d.week}"></div>
       <div class="field"><label>EPA</label>
-        <div class="segmented" data-role="epa-seg" role="group" aria-label="EPA">${REFERENCE.epas.map((e) => `<button data-value="${esc(e)}" class="${d.epa === e ? "active" : ""}">${esc(e)}</button>`).join("")}</div>
+        <div class="segmented" data-role="epa-seg" role="group" aria-label="EPA">${[...new Set([...epaList(), ...(d.epa ? [d.epa] : [])])].map((e) => `<button data-value="${esc(e)}" class="${d.epa === e ? "active" : ""}">${esc(e)}</button>`).join("")}</div>
       </div>
       <div class="field"><label>Field Assistant</label>
         <button class="picker-btn ${d.assistant ? "" : "placeholder"}" data-role="fa-picker" type="button" ${lk ? "disabled" : ""}><span>${esc(d.assistant || "Select a field assistant…")}</span>${icon("chevron-right", 16)}</button>
@@ -3085,7 +3102,7 @@ document.addEventListener("click", async (e) => {
 function renderSiteProfile() {
   const el = document.getElementById("site-profile-screen");
   const site = siteById(selectedSiteId);
-  const epaClass = EPA_CLASS[site.epa] || "office";
+  const epaClass = epaTone(site.epa);
   const history = checkinsForSite(site.id);
   const faHist = faVisits.filter((c) => c.siteId === site.id).sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
   const openIssues = openIssuesForSite(site.id).length;
@@ -3248,7 +3265,7 @@ function renderTeamList(q) {
   const rows = teamRows(q);
   if (!rows.length) return `<div class="empty-state"><b>No field assistants found</b>${q ? `Nothing matches “${esc(q)}”.` : "Assign sites to field assistants in the admin page."}</div>`;
   return `<div class="sec-title">${rows.length} field assistant${rows.length === 1 ? "" : "s"}</div>` + rows.map((r) => {
-    const epaClass = EPA_CLASS[r.epa] || "office";
+    const epaClass = epaTone(r.epa);
     return `
       <button class="site-row" data-fa="${esc(r.fa)}">
         <span class="avatar" style="background:var(--epa-${epaClass}-bg);color:var(--epa-${epaClass}-fg)">${initials(r.fa)}</span>
@@ -3279,7 +3296,7 @@ function renderSitesTeam() {
   const gate = screenGate("sites and team");
   if (gate) { el.innerHTML = gate; return; }
   const faMode = !isFa() && !isAdmin() && sitesView !== "team"; // SFOs get FA chips here; admins keep the EPA pills
-  const epaOptions = faMode ? [] : ["All", ...REFERENCE.epas.filter((e) => e !== "Office")];
+  const epaOptions = faMode ? [] : ["All", ...epaList().filter((e) => e !== "Office")];
   const q = siteSearch.trim().toLowerCase();
 
   let filtered = sites.filter((s) => s.id !== "n-a");
@@ -3344,7 +3361,7 @@ function renderSitesTeam() {
     ${filtered.length ? `
       <div class="sec-title">${filtered.length} site${filtered.length === 1 ? "" : "s"}</div>
       ${filtered.map((s) => {
-        const epaClass = EPA_CLASS[s.epa] || "office";
+        const epaClass = epaTone(s.epa);
         const issues = openIssuesForSite(s.id).length;
         const noGps = typeof s.lat !== "number" || typeof s.lng !== "number";
         return `
@@ -3390,7 +3407,7 @@ function renderSitesTeam() {
       <div class="sec-title">${visitHits.length} check-in${visitHits.length === 1 ? "" : "s"}</div>
       ${visitHits.map((c) => `
         <button class="res-card" data-site="${esc(c.siteId)}">
-          <span class="res-dot" style="background:var(--epa-${EPA_CLASS[c.epa] || "office"}-dot)"></span>
+          <span class="res-dot" style="background:var(--epa-${epaTone(c.epa)}-dot)"></span>
           <span class="res-body">
             <span class="res-head">
               <span class="res-site">${esc(siteById(c.siteId).name)}</span>
@@ -3491,10 +3508,10 @@ function renderAnalytics() {
   const dueFups = openFollowUps().filter(isDueOrOverdue).length;
   const overdueVisits = overdueCheckins().length;
 
-  const epaRows = REFERENCE.epas.map((epa) => {
+  const epaRows = epaList().map((epa) => {
     const items = checkins.filter((c) => c.epa === epa);
     const c = items.filter((v) => v.status === "Completed").length;
-    return { epa, total: items.length, completed: c, pct: items.length ? Math.round((c / items.length) * 100) : 0, cls: EPA_CLASS[epa] };
+    return { epa, total: items.length, completed: c, pct: items.length ? Math.round((c / items.length) * 100) : 0, cls: epaTone(epa) };
   }).filter((r) => r.total > 0);
 
   const statusCounts = STATUSES.map((s) => ({ status: s, count: checkins.filter((c) => c.status === s).length }));
@@ -3505,7 +3522,7 @@ function renderAnalytics() {
     const items = checkins.filter((c) => c.assistant === fa);
     const c = items.filter((v) => v.status === "Completed").length;
     const epa = items[0]?.epa || "";
-    return { fa, epa, cls: EPA_CLASS[epa], total: items.length, pct: items.length ? Math.round((c / items.length) * 100) : 0 };
+    return { fa, epa, cls: epaTone(epa), total: items.length, pct: items.length ? Math.round((c / items.length) * 100) : 0 };
   });
 
   const risk = computeSiteRisk();
