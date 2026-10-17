@@ -248,11 +248,13 @@ button.counter{cursor:pointer;}
     <div id="tabs" role="tablist" aria-label="Admin sections">
       <button class="tab-btn active" id="tab-oversight" data-tab="oversight" role="tab" aria-selected="true" aria-controls="panel-oversight" type="button">Overview</button>
       <button class="tab-btn" id="tab-visits" data-tab="visits" role="tab" aria-selected="false" aria-controls="panel-visits" type="button">Visits</button>
+      <button class="tab-btn" id="tab-fieldtime" data-tab="fieldtime" role="tab" aria-selected="false" aria-controls="panel-fieldtime" type="button">Field time</button>
       <button class="tab-btn" id="tab-sites" data-tab="sites" role="tab" aria-selected="false" aria-controls="panel-sites" type="button">Sites</button>
       <button class="tab-btn" id="tab-team" data-tab="team" role="tab" aria-selected="false" aria-controls="panel-team" type="button">Team</button>
       <button class="tab-btn" id="tab-import" data-tab="import" role="tab" aria-selected="false" aria-controls="panel-import" type="button">Import</button>
       <button class="tab-btn" id="tab-program" data-tab="program" role="tab" aria-selected="false" aria-controls="panel-program" type="button">Program</button>
     </div>
+    <div class="panel hidden" id="panel-fieldtime" role="tabpanel" aria-labelledby="tab-fieldtime"></div>
     <div class="panel hidden" id="panel-sites" role="tabpanel" aria-labelledby="tab-sites"></div>
     <div class="panel hidden" id="panel-import" role="tabpanel" aria-labelledby="tab-import"></div>
     <div class="panel hidden" id="panel-visits" role="tabpanel" aria-labelledby="tab-visits"></div>
@@ -274,11 +276,11 @@ button.counter{cursor:pointer;}
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, collection, doc, onSnapshot, writeBatch, serverTimestamp,
-  getDocFromServer, getDocs, setDoc, updateDoc, deleteDoc
+  getDocFromServer, getDocs, setDoc, updateDoc, deleteDoc, Timestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -420,7 +422,7 @@ function resetState() {
   siteCardMode = null; editingSiteId = null; siteSearch = ""; importRows = null;
   editingUid = null; programDirty = false; vf = VF_DEFAULT(); weekSig = "";
   built = {}; faSig = "";
-  ["sites", "import", "visits", "team", "program", "oversight"].forEach((t) => { $("#panel-" + t).innerHTML = ""; });
+  ["sites", "import", "visits", "team", "program", "oversight", "fieldtime"].forEach((t) => { $("#panel-" + t).innerHTML = ""; });
   if (modalResolve) closeModal(false);
 }
 
@@ -622,7 +624,7 @@ document.addEventListener("click", (e) => {
 });
 
 /* ============================= TABS ============================= */
-const TABS = ["oversight", "visits", "sites", "team", "import", "program"];
+const TABS = ["oversight", "visits", "fieldtime", "sites", "team", "import", "program"];
 function setTab(tab, doRender = true) {
   activeTab = tab;
   document.querySelectorAll(".tab-btn").forEach((b) => {
@@ -659,6 +661,7 @@ function render() {
   if (activeTab === "sites") renderSites();
   else if (activeTab === "import") renderImport();
   else if (activeTab === "visits") renderVisits();
+  else if (activeTab === "fieldtime") renderFieldTime();
   else if (activeTab === "team") renderTeam();
   else if (activeTab === "program") renderProgram();
   else renderOversight();
@@ -1184,6 +1187,19 @@ function renderVisits() {
       <p class="hint">Every visit from every SFO and Field Assistant. Tap a visit to see its result, GPS check, photos and notes, and to correct it. "Needs attention" means completed without a start location, started far from the site, or a phone with the wrong date.</p>
       <div id="visits-banner"></div>
       <div id="visit-detail-slot"></div>
+      <details class="add-card" id="recover-card" style="margin-top:0;margin-bottom:14px;">
+        <summary>Recover deleted visits<span id="recover-count"></span></summary>
+        <div class="inner">
+          <p class="hint">A deleted visit can't be undone, but its notes still carry its ID. This brings the visit itself back on the schedule as Pending. Its status, time, GPS and photo links can't be rebuilt from here: set them again with "Correct this visit". If you have a backup file the page saved when the visit was deleted, restore it from that instead and everything comes back.</p>
+          <div id="recover-list"></div>
+          <div class="field" style="margin-top:12px;"><label for="rc-id">Or paste a visit ID, or a photo file name from Cloudinary</label>
+            <input id="rc-id" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="2026-10-12_site-name_firstname-lastname_purpose_abc123"></div>
+          <button class="btn-secondary" id="rc-check" type="button">Check this ID</button>
+          <div id="rc-preview"></div>
+          <div class="field" style="margin-top:14px;"><label for="rc-file">Restore from a backup file</label><input id="rc-file" type="file" accept=".json,application/json"></div>
+          <div class="save-msg" id="rc-msg" role="status"></div>
+        </div>
+      </details>
       <div class="filters">
         <div class="field"><label for="vf-week">Week</label><select id="vf-week"><option value="">All weeks</option></select></div>
         <div class="field"><label for="vf-status">Status</label>
@@ -1206,6 +1222,32 @@ function renderVisits() {
       const b = e.target.closest("[data-open]");
       if (b) openVisitCard(b.dataset.open);
     });
+    $("#recover-card").addEventListener("click", async (e) => {
+      const one = e.target.closest("[data-restore]"), all = e.target.closest("[data-restore-all]");
+      if (!one && !all) return;
+      const msg = $("#rc-msg");
+      const list = one ? [recoverCache[one.dataset.restore]] : Object.entries(recoverCache).filter(([k, p]) => k[0] === "o" && !p.problems.length && !checkins.some((c) => c.id === p.id)).map(([, p]) => p);
+      msg.className = "save-msg"; msg.textContent = pendingMsg();
+      try {
+        for (const p of list) await restoreShell(p);
+        msg.className = "save-msg ok"; msg.textContent = "Brought back " + list.length + " visit" + (list.length === 1 ? "" : "s") + " as Pending. Open each one and use Correct this visit to set its status and time again.";
+        $("#rc-preview").innerHTML = "";
+      } catch (err) { msg.className = "save-msg err"; msg.textContent = "Couldn't bring it back: " + (err.code || err.message); }
+    });
+    $("#rc-check").addEventListener("click", () => {
+      const raw = $("#rc-id").value.trim();
+      if (!raw) { $("#rc-preview").innerHTML = ""; return; }
+      recoverCache.m = parseVisitId(raw, false);
+      $("#rc-preview").innerHTML = visitCandidateHTML(recoverCache.m, "", "m");
+    });
+    $("#rc-file").addEventListener("change", async (e) => {
+      const f = e.target.files && e.target.files[0], msg = $("#rc-msg");
+      if (!f) return;
+      msg.className = "save-msg"; msg.textContent = "Restoring…";
+      try { const id = await restoreFromBackupText(await f.text()); msg.className = "save-msg ok"; msg.textContent = "Restored the visit " + id + " with its results."; }
+      catch (err) { msg.className = "save-msg err"; msg.textContent = err.message; }
+      e.target.value = "";
+    });
     $("#visit-notice").addEventListener("click", (e) => {
       if (e.target.closest("[data-clear-ids]")) { vf.ids = null; vf.idsLabel = ""; vf.limit = 50; renderVisitList(); }
     });
@@ -1222,6 +1264,7 @@ function renderVisits() {
     sel.value = vf.week;
   }
   renderVisitList();
+  renderRecover();
 }
 
 function syncVisitControls() {
@@ -1263,6 +1306,115 @@ function renderVisitList() {
   const remaining = all.length - shown.length;
   moreBtn.classList.toggle("hidden", remaining <= 0);
   moreBtn.textContent = `Show more (${remaining} remaining)`;
+}
+
+/* ---- bringing back deleted visits ---- */
+/* A visit's ID is date_site_assistant_purpose_owner, and notes (and photo file names in Cloudinary)
+   keep carrying it after the visit is deleted. This reads an ID back into a visit. */
+function parseVisitId(raw, exact) {
+  let id = String(raw || "").trim().replace(/^sfo-visits\//, "").replace(/\.(jpe?g|png)$/i, "");
+  const parts = id.split("_");
+  const bad = (why) => ({ id, problems: [why] });
+  if (parts.length < 4) return bad("That doesn't look like a visit ID.");
+  const ownerKnown = (code) => !!code && users.some((u) => u.id.slice(0, 6).toLowerCase() === code.toLowerCase());
+  if (!exact) id = parts.slice(0, ownerKnown(parts[4]) ? 5 : 4).join("_"); // a photo name carries a photo ID on the end
+  const [date, siteId, faSlug, purposeSlug, ownerCode] = id.split("_");
+  const problems = [];
+  const site = sites.find((s) => s.id === siteId);
+  const fa = faSlug === "n-a" ? { id: null, name: "N/A" } : faRecords.find((f) => f.id === faSlug || slugify(f.name) === faSlug);
+  const purpose = PURPOSES.find((p) => slugify(p) === purposeSlug);
+  if (!validISO(date)) problems.push("the date isn't valid");
+  if (!site) problems.push('no site called "' + siteId + '"');
+  if (!fa) problems.push('no Field Assistant record for "' + faSlug + '"');
+  if (!purpose) problems.push('the purpose "' + purposeSlug + '" isn\'t one the app knows');
+  const owner = ownerCode ? users.find((u) => u.id.slice(0, 6).toLowerCase() === ownerCode.toLowerCase()) : null;
+  if (problems.length) return { id, problems };
+  const ownerType = owner && owner.role === "fa" ? "fa" : "sfo";
+  const sfoUid = ownerType === "fa" ? (fa && fa.supervisorUid) || null : (owner && owner.id) || (faById(fa.id) || {}).supervisorUid || site.sfoUid || null;
+  return { id, problems: [], date, site, fa, purpose, ownerType, ownerUid: owner ? owner.id : sfoUid, sfoUid };
+}
+async function restoreShell(p) {
+  const w = validISO(p.date) ? weekOfISO(p.date, week1Anchor()) : null;
+  const order = checkins.reduce((m, c) => Math.max(m, c.order ?? 0), -1) + 1;
+  await setDoc(doc(db, "checkins", p.id), {
+    siteId: p.site.id, epa: p.site.epa || "", assistant: p.fa.name, assistantId: p.fa.id, purpose: p.purpose,
+    date: p.date, day: weekdayName(p.date) || "", week: w !== null && w >= 1 ? w : null,
+    status: "Pending", statusNote: "", rescheduledFrom: "", checklistItems: [], checkedItems: [], order,
+    ownerType: p.ownerType, ownerUid: p.ownerUid, sfoUid: p.sfoUid,
+    restoredAtMs: Date.now(), restoredBy: who(),
+    createdAt: serverTimestamp(), createdBy: who(), updatedAt: serverTimestamp(), updatedBy: who()
+  });
+}
+function visitCandidateHTML(p, extra, key) {
+  const exists = checkins.some((c) => c.id === p.id);
+  const label = p.problems.length ? esc(p.id) : esc([fmtDayLong(p.date), p.site.name, p.fa.name, p.purpose].join(" · "));
+  return `
+    <div class="import-row">
+      <span class="chip ${exists ? "chip-mute" : p.problems.length ? "chip-bad" : "chip-ok"}">${exists ? "Exists" : p.problems.length ? "Can't rebuild" : "Can bring back"}</span>
+      <div class="cell"><div>${label}</div><div class="diffs">${esc(exists ? "This visit is already on the schedule." : p.problems.length ? p.problems.join(", ") : "")}${extra ? SEP + esc(extra) : ""}</div>
+        ${!exists && !p.problems.length ? `<button type="button" class="btn-link" data-restore="${esc(key)}">Bring it back</button>` : ""}</div>
+    </div>`;
+}
+let recoverCache = {};
+function renderRecover() {
+  const list = $("#recover-list"), count = $("#recover-count");
+  if (!list) return;
+  const manual = recoverCache.m;
+  recoverCache = manual ? { m: manual } : {};
+  if (isLoading(["checkins", "observations", "sites", "fieldAssistants", "users"])) { list.innerHTML = ""; return; }
+  const have = new Set(checkins.map((c) => c.id));
+  const orphans = new Map();
+  observations.forEach((o) => { if (o.checkinId && !have.has(o.checkinId)) (orphans.get(o.checkinId) || orphans.set(o.checkinId, []).get(o.checkinId)).push(o); });
+  const items = [...orphans.entries()].map(([id, notes], i) => {
+    const p = parseVisitId(id, true);
+    recoverCache["o" + i] = p;
+    return visitCandidateHTML(p, notes.length + (notes.length === 1 ? " note" : " notes") + " still point" + (notes.length === 1 ? "s" : "") + " at it", "o" + i);
+  });
+  count.textContent = orphans.size ? " (" + orphans.size + " found)" : "";
+  const ok = [...orphans.keys()].map((_, i) => recoverCache["o" + i]).filter((p) => !p.problems.length);
+  list.innerHTML = items.length
+    ? `<div class="sec-title" style="margin-top:0;">Visits that notes still point at</div>${items.join("")}${ok.length > 1 ? `<button class="btn-secondary" type="button" data-restore-all style="margin-top:10px;">Bring back all ${ok.length}</button>` : ""}`
+    : `<div class="field-note">No notes point at a missing visit. A deleted visit with no notes can't be found this way. Paste its ID below, or restore it from a backup file.</div>`;
+}
+async function restoreFromBackupText(text) {
+  let data;
+  try { data = JSON.parse(text); } catch (e) { throw new Error("That file isn't a visit backup."); }
+  const v = data && data._backup === "sfo-tracker-visit" && data.visit;
+  if (!v || !v.id) throw new Error("That file isn't a visit backup.");
+  if (checkins.some((c) => c.id === v.id)) throw new Error("That visit is already on the schedule.");
+  const get = (k, d) => (v[k] === undefined ? d : v[k]);
+  const ms = (t) => (t && Number.isFinite(t.__ts) ? t.__ts : null);
+  await setDoc(doc(db, "checkins", v.id), {
+    siteId: get("siteId", ""), epa: get("epa", ""), assistant: get("assistant", ""), assistantId: get("assistantId", null), purpose: get("purpose", ""),
+    date: get("date", ""), day: get("day", ""), week: get("week", null),
+    status: "Pending", statusNote: "", rescheduledFrom: get("rescheduledFrom", ""), checklistItems: get("checklistItems", []), checkedItems: get("checkedItems", []), order: get("order", checkins.reduce((m, c) => Math.max(m, c.order ?? 0), -1) + 1),
+    ownerType: get("ownerType", "sfo"), ownerUid: get("ownerUid", null), sfoUid: get("sfoUid", null),
+    createdAt: serverTimestamp(), createdBy: who(), updatedAt: serverTimestamp(), updatedBy: who()
+  });
+  /* The security rules only let a visit be created as Pending with no evidence, so the rest goes on in a second write. */
+  const patch = { updatedAt: serverTimestamp(), updatedBy: who(), restoredAtMs: Date.now(), restoredBy: who(), restoredFrom: "backup file" };
+  if (get("statusNote", "")) patch.statusNote = v.statusNote;
+  if (Array.isArray(v.photos) && v.photos.length) patch.photos = v.photos.slice(0, 20);
+  if (v.evidence && typeof v.evidence === "object") patch.evidence = v.evidence;
+  if (v.startedBy) patch.startedBy = v.startedBy;
+  if (ms(v.startedAt) !== null) patch.startedAt = Timestamp.fromMillis(ms(v.startedAt));
+  if (v.review && typeof v.review === "object") patch.review = v.review;
+  if (VISIT_STATUSES.includes(v.status) && v.status !== "Pending") {
+    patch.status = v.status;
+    if (v.status === "Completed") {
+      patch.completedAt = serverTimestamp(); patch.completedBy = who(); patch.completedTime = hhmmOk(v.completedTime) ? v.completedTime : "12:00";
+      patch.originalCompletedBy = v.completedBy || ""; if (ms(v.completedAt) !== null) patch.originalCompletedAtMs = ms(v.completedAt);
+    }
+  }
+  try { await updateDoc(doc(db, "checkins", v.id), patch); }
+  catch (err) { throw new Error("The visit is back on the schedule, but its results couldn't be restored (" + (err.code || err.message) + "). Open it and use Correct this visit."); }
+  return v.id;
+}
+/* A copy of the visit goes to the tablet's downloads before it is deleted. */
+function visitBackupText(c) {
+  const plain = JSON.stringify({ _backup: "sfo-tracker-visit", savedAtMs: Date.now(), savedBy: who(), visit: c, notes: observations.filter((o) => o.checkinId === c.id) },
+    (k, val) => (val && typeof val === "object" && typeof val.seconds === "number" && typeof val.nanoseconds === "number" ? { __ts: val.seconds * 1000 } : val), 2);
+  return plain;
 }
 
 /* ---- one visit in full: result, GPS, photos, notes, and a correction form ---- */
@@ -1432,16 +1584,18 @@ async function deleteVisit(id, msg, token) {
   if (!c) return;
   const ok = await confirmModal({
     title: "Delete this visit?",
-    body: `${siteName(c)}, ${c.date || "no date"}, ${c.assistant || "no assistant"}, ${c.purpose || "no purpose"} (${c.status || "no status"}). This can't be undone. Any photos stay in storage.`,
+    body: `${siteName(c)}, ${c.date || "no date"}, ${c.assistant || "no assistant"}, ${c.purpose || "no purpose"} (${c.status || "no status"}). This can't be undone. A backup file is saved to your downloads first, and any photos stay in storage.`,
     confirmLabel: "Delete visit"
   });
   if (!ok) return;
+  let backedUp = true;
+  try { saveTextFile("visit-backup_" + id + ".json", visitBackupText(c), "application/json"); } catch (e) { backedUp = false; }
   msg.className = "save-msg"; msg.textContent = navigator.onLine ? "Deleting…" : "You're offline. The delete will send when you're back online.";
   try {
     await deleteDoc(doc(db, "checkins", id));
     if (openVisitId === id && visitToken === token) closeVisitCard();
     const m = $("#visit-msg");
-    if (m) { m.className = "save-msg ok"; m.textContent = "Visit deleted."; }
+    if (m) { m.className = "save-msg ok"; m.textContent = backedUp ? "Visit deleted. A backup file was saved to your downloads." : "Visit deleted. The backup file couldn't be saved."; }
   } catch (err) {
     msg.className = "save-msg err"; msg.textContent = "Couldn't delete: " + (err.code || err.message);
   }
@@ -1456,6 +1610,153 @@ function openVisits(preset) {
   const c = $("#visit-count");
   if (c) c.focus({ preventScroll: true });
   $("#panel-visits").scrollIntoView({ behavior: smoothScroll(), block: "start" });
+}
+
+/* ============================= FIELD TIME ============================= */
+/* Time in the field for a day = the start of the person's first site to the finish of their last.
+   Start: where the phone recorded "Start visit" (its own clock, so an offline start still counts at
+   the right moment), else the server's time at start. Finish: the "end location" time if one was
+   recorded, else the time entered when the visit was completed, else when it was marked complete.
+   A time that falls on a different day from the visit is ignored: it means a wrong phone clock. */
+let ftf = { week: "current", team: "", person: "" };
+const hhmmOk = (v) => /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(v || "");
+function fmtClock(ms) { const d = new Date(ms); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
+function fmtDur(mins) { const h = Math.floor(mins / 60), m = mins % 60; return h ? h + " h " + String(m).padStart(2, "0") + " min" : m + " min"; }
+function fmtDayLong(iso) { return new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }); }
+
+function visitTimes(c) {
+  const day0 = new Date(c.date + "T00:00:00").getTime();
+  const sameDay = (ms) => Number.isFinite(ms) && ms >= day0 && ms < day0 + 86400000;
+  const ev = c.evidence || {};
+  const out = { start: null, startSrc: "", finish: null, finishSrc: "" };
+  const s1 = ev.start && ev.start.capturedAtMs, s2 = tsMs(c.startedAt);
+  if (sameDay(s1)) { out.start = s1; out.startSrc = "phone time at start"; }
+  else if (sameDay(s2)) { out.start = s2; out.startSrc = "server time at start"; }
+  const e1 = ev.end && ev.end.capturedAtMs, e4 = tsMs(c.completedAt);
+  if (sameDay(e1)) { out.finish = e1; out.finishSrc = "end location time"; }
+  else if (hhmmOk(c.completedTime)) { out.finish = day0 + (Number(c.completedTime.slice(0, 2)) * 60 + Number(c.completedTime.slice(3))) * 60000; out.finishSrc = "time entered at completion"; }
+  else if (sameDay(e4)) { out.finish = e4; out.finishSrc = "when it was marked complete"; }
+  return out;
+}
+function personOfVisit(c) {
+  if (c.ownerType === "fa") {
+    const f = faOfRecord(c);
+    return { key: "fa:" + (f ? f.id : c.assistant), name: f ? f.name : (c.assistant || "Unknown"), role: "Field Assistant", teamUid: (f && f.supervisorUid) || c.sfoUid || "" };
+  }
+  const u = users.find((x) => x.id === c.ownerUid) || users.find((x) => (x.email || "").toLowerCase() === String(c.createdBy || "").toLowerCase());
+  return { key: "sfo:" + (u ? u.id : c.createdBy || "unknown"), name: (u && (u.name || u.email)) || c.createdBy || "Unknown", role: u ? ROLE_LABEL[roleKey(u)] : "SFO", teamUid: u ? u.id : "" };
+}
+function fieldDays() {
+  const groups = new Map();
+  checkins.forEach((c) => {
+    if (!validISO(c.date)) return;
+    if (c.status !== "Completed" && !(c.startedBy || startOf(c))) return; // a visit that was never started or finished has no times
+    const p = personOfVisit(c), t = visitTimes(c), k = p.key + "|" + c.date;
+    let g = groups.get(k);
+    if (!g) { g = { ...p, date: c.date, visits: 0, completed: 0, starts: [], finishes: [], noStart: 0, noFinish: 0 }; groups.set(k, g); }
+    g.visits++;
+    if (c.status === "Completed") g.completed++;
+    if (t.start !== null) g.starts.push(t); else g.noStart++;
+    if (t.finish !== null) g.finishes.push(t); else g.noFinish++;
+  });
+  const anchor = week1Anchor();
+  return [...groups.values()].map((g) => {
+    const first = g.starts.reduce((a, b) => (a && a.start <= b.start ? a : b), null);
+    const last = g.finishes.reduce((a, b) => (a && a.finish >= b.finish ? a : b), null);
+    const flags = [];
+    let mins = null;
+    if (!first) flags.push("No start time recorded");
+    if (!last) flags.push("No finish time recorded");
+    if (first && last) {
+      if (last.finish < first.start) flags.push("Finish is before the start. Check the times");
+      else mins = Math.round((last.finish - first.start) / 60000);
+    }
+    if (first && g.noStart) flags.push(g.noStart + " visit" + (g.noStart === 1 ? "" : "s") + " had no start time");
+    if (last && g.noFinish) flags.push(g.noFinish + " visit" + (g.noFinish === 1 ? "" : "s") + " had no finish time");
+    return { ...g, week: weekOfISO(g.date, anchor), startMs: first ? first.start : null, finishMs: last ? last.finish : null, startSrc: first ? first.startSrc : "", finishSrc: last ? last.finishSrc : "", mins, flags };
+  }).sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name));
+}
+function filteredFieldDays() {
+  const all = fieldDays();
+  const wk = ftf.week === "current" ? currentWeek(week1Anchor()) : ftf.week === "" ? null : Number(ftf.week);
+  return all.filter((d) => (wk === null || d.week === wk) && (!ftf.team || d.teamUid === ftf.team) && (!ftf.person || d.key === ftf.person));
+}
+
+function renderFieldTime() {
+  const el = $("#panel-fieldtime");
+  if (!built.fieldtime) {
+    el.innerHTML = `
+      <p class="hint">How long each person spent in the field on a day: from the start of their first site to the finish of their last site. The finish is the end-location time if there is one, otherwise the time entered when the visit was completed.</p>
+      <div id="ft-banner"></div>
+      <div class="filters">
+        <div class="field"><label for="ft-week">Week</label><select id="ft-week"></select></div>
+        <div class="field"><label for="ft-team">SFO's team</label><select id="ft-team"></select></div>
+        <div class="field wide"><label for="ft-person">Person</label><select id="ft-person"></select></div>
+      </div>
+      <div id="ft-body"></div>
+      <button class="btn-secondary more-btn" id="ft-csv" type="button">Download as a spreadsheet (CSV)</button>
+      <div class="save-msg" id="ft-msg" role="status"></div>`;
+    $("#ft-week").addEventListener("change", (e) => { ftf.week = e.target.value; renderFieldTime(); });
+    $("#ft-team").addEventListener("change", (e) => { ftf.team = e.target.value; renderFieldTime(); });
+    $("#ft-person").addEventListener("change", (e) => { ftf.person = e.target.value; renderFieldTime(); });
+    $("#ft-csv").addEventListener("click", downloadFieldCsv);
+    built.fieldtime = true;
+  }
+  $("#ft-banner").innerHTML = errHTML(["checkins", "users", "fieldAssistants"]);
+  const body = $("#ft-body");
+  if (isLoading(["checkins", "users", "fieldAssistants"])) { body.innerHTML = loadingHTML("field time"); return; }
+
+  const all = fieldDays();
+  const weeks = [...new Set(all.map((d) => d.week).filter(Number.isFinite))].sort((a, b) => b - a);
+  const sups = users.filter((u) => ["admin", "sfo", "member"].includes(u.role));
+  const fill = (id, html, val) => { const s = $(id); if (document.activeElement === s) return; s.innerHTML = html; s.value = val; };
+  fill("#ft-week", `<option value="current">This week (Week ${currentWeek(week1Anchor())})</option><option value="">All weeks</option>` + weeks.map((w) => `<option value="${w}">Week ${w}</option>`).join(""), ftf.week);
+  fill("#ft-team", `<option value="">Everyone</option>` + sups.map((u) => `<option value="${esc(u.id)}">${esc(u.name || u.email || u.id)}</option>`).join(""), ftf.team);
+  const people = [...new Map(all.map((d) => [d.key, d])).values()].sort((a, b) => a.name.localeCompare(b.name));
+  fill("#ft-person", `<option value="">Everyone</option>` + people.map((p) => `<option value="${esc(p.key)}">${esc(p.name)} (${esc(p.role)})</option>`).join(""), ftf.person);
+
+  const rows = filteredFieldDays();
+  if (!rows.length) { body.innerHTML = `<div class="empty">${all.length ? "No field days match these filters." : "No visits with start or finish times yet."}</div>`; return; }
+
+  const totals = new Map();
+  rows.forEach((d) => {
+    let t = totals.get(d.key);
+    if (!t) { t = { name: d.name, role: d.role, mins: 0, days: 0, unknown: 0, sites: 0 }; totals.set(d.key, t); }
+    t.sites += d.completed;
+    if (d.mins === null) t.unknown++; else { t.mins += d.mins; t.days++; }
+  });
+  const summary = [...totals.values()].sort((a, b) => a.name.localeCompare(b.name)).map((t) => `
+    <div class="ov-card ok">
+      <div class="head"><span class="title">${esc(t.name)}</span><span class="badge">${t.days ? esc(fmtDur(t.mins)) : "No time yet"}</span></div>
+      <div class="sub">${esc(t.role)}${SEP}${t.days} day${t.days === 1 ? "" : "s"} counted${t.days ? SEP + "average " + esc(fmtDur(Math.round(t.mins / t.days))) + " a day" : ""}${SEP}${t.sites} site${t.sites === 1 ? "" : "s"} completed${t.unknown ? SEP + t.unknown + " day" + (t.unknown === 1 ? "" : "s") + " can't be calculated" : ""}</div>
+    </div>`).join("");
+  const days = rows.map((d) => `
+    <div class="visit-row ${d.mins === null ? "flagged" : ""}" style="cursor:default;">
+      <div class="v-main">
+        <div class="name">${esc(fmtDayLong(d.date))}${SEP}${esc(d.name)}</div>
+        <div class="meta">${d.mins !== null ? `<strong>${esc(fmtDur(d.mins))}</strong>${SEP}` : ""}${d.startMs !== null ? esc(fmtClock(d.startMs)) : "no start"} to ${d.finishMs !== null ? esc(fmtClock(d.finishMs)) : "no finish"}${SEP}${d.completed} of ${d.visits} site${d.visits === 1 ? "" : "s"} completed${Number.isFinite(d.week) ? SEP + "Week " + d.week : ""}</div>
+        <div class="chips">${chip("mute", d.role)}${d.startSrc ? chip("mute", "start: " + d.startSrc) : ""}${d.finishSrc ? chip("mute", "finish: " + d.finishSrc) : ""}${d.flags.map((f) => chip("warn", f)).join("")}</div>
+      </div>
+    </div>`).join("");
+  body.innerHTML = `<div class="sec-title">Totals</div>${summary}<div class="sec-title">Day by day</div>${days}`;
+}
+
+function csvCell(v) { const s = String(v ?? ""); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+function saveTextFile(name, text, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = document.createElement("a");
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+function downloadFieldCsv() {
+  const msg = $("#ft-msg");
+  const rows = filteredFieldDays();
+  if (!rows.length) { msg.className = "save-msg err"; msg.textContent = "Nothing to download for these filters."; return; }
+  const head = ["Week", "Date", "Person", "Role", "First start", "Last finish", "Minutes in the field", "Hours in the field", "Sites completed", "Visits started or completed", "Start from", "Finish from", "Notes"];
+  const lines = [head, ...rows.map((d) => [d.week ?? "", d.date, d.name, d.role, d.startMs !== null ? fmtClock(d.startMs) : "", d.finishMs !== null ? fmtClock(d.finishMs) : "", d.mins ?? "", d.mins !== null ? (d.mins / 60).toFixed(2) : "", d.completed, d.visits, d.startSrc, d.finishSrc, d.flags.join("; ")])];
+  saveTextFile("field-time.csv", "\ufeff" + lines.map((l) => l.map(csvCell).join(",")).join("\r\n"), "text/csv;charset=utf-8");
+  msg.className = "save-msg ok"; msg.textContent = "Downloaded " + rows.length + " day" + (rows.length === 1 ? "" : "s") + ".";
 }
 
 /* ============================= TEAM ============================= */
@@ -1488,6 +1789,21 @@ function renderTeam() {
       </details>
 
       <div class="sec-title">People and roles</div>
+      <details class="add-card" id="add-person" style="margin-top:0;margin-bottom:14px;">
+        <summary>Add a person (creates their login)</summary>
+        <div class="inner">
+          <p class="hint">Creates the login and gives the role in one step, so you don't need the Firebase console. Leave the password empty and they get an email with a link to choose their own.</p>
+          <div class="field"><label for="np-name">Name</label><input id="np-name" type="text" autocomplete="off"></div>
+          <div class="field"><label for="np-email">Email</label><input id="np-email" type="email" autocomplete="off" inputmode="email" autocapitalize="off"></div>
+          <div class="field"><label for="np-role">Role</label>
+            <select id="np-role"><option value="sfo">Senior Field Officer</option><option value="fa">Field Assistant</option><option value="admin">Admin</option></select></div>
+          <div class="field hidden" id="np-fa-wrap"><label for="np-fa">Which Field Assistant is this?</label><select id="np-fa"></select>
+            <div class="field-note">Only Field Assistants without a login are listed. Add the Field Assistant first if they aren't there.</div></div>
+          <div class="field"><label for="np-pass">Temporary password (optional)</label><input id="np-pass" type="text" autocomplete="off" autocapitalize="off" placeholder="Leave empty to email them a link"></div>
+          <button class="btn-save" id="np-save" type="button" style="width:100%;flex:none;">Create login</button>
+          <div class="save-msg" id="np-msg" role="status"></div>
+        </div>
+      </details>
       <div id="team-banner"></div>
       <div id="team-edit-slot"></div>
       <div id="team-list"></div>
@@ -1514,6 +1830,8 @@ function renderTeam() {
         </div>
       </details>`;
     $("#au-save").addEventListener("click", addUserByUid);
+    $("#np-save").addEventListener("click", addPerson);
+    $("#np-role").addEventListener("change", (e) => { $("#np-fa-wrap").classList.toggle("hidden", e.target.value !== "fa"); });
     $("#nf-save").addEventListener("click", addFieldAssistant);
     $("#nf-name").addEventListener("input", (e) => { const id = slugify(e.target.value); $("#nf-id-note").textContent = id ? "The ID will be: " + id : "The ID is made from the name."; });
     $("#fa-create").addEventListener("click", createFaRecords);
@@ -1542,6 +1860,7 @@ function renderTeam() {
   renderTeamList();
   renderFaSupervisors();
   renderNewFaForm();
+  renderPersonForm();
 }
 /* The supervisor list on the Add form follows the live team list, and keeps what was chosen. */
 function renderNewFaForm() {
@@ -1921,6 +2240,79 @@ async function linkExistingRecords() {
   } finally {
     btn.disabled = false;
   }
+}
+
+/* ---- creating a login from this page (no Firebase console needed) ---- */
+/* A second app instance creates the account, so this admin stays signed in as the admin. */
+async function createLogin(email, password) {
+  const secondary = initializeApp(firebaseConfig, "creator-" + Date.now());
+  try {
+    const sAuth = getAuth(secondary);
+    const cred = await createUserWithEmailAndPassword(sAuth, email, password);
+    try { await signOut(sAuth); } catch (e) { /* the instance is thrown away next */ }
+    return cred.user.uid;
+  } finally {
+    try { await deleteApp(secondary); } catch (e) { /* nothing to clean up */ }
+  }
+}
+function randomPassword() {
+  const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = new Uint32Array(16);
+  (window.crypto || { getRandomValues: (a) => a.forEach((_, i) => { a[i] = Math.floor(Math.random() * 4294967295); }) }).getRandomValues(bytes);
+  return [...bytes].map((n) => chars[n % chars.length]).join("");
+}
+function loginError(err) {
+  switch (err && err.code) {
+    case "auth/email-already-in-use": return "That email already has a login. In the Firebase console open Authentication, then Users, copy its User UID, and use Add by UID below.";
+    case "auth/invalid-email": return "That email address isn't valid.";
+    case "auth/weak-password": return "That password is too weak. Use at least 8 characters, or leave it empty to email them a link.";
+    case "auth/operation-not-allowed": return "Creating logins from this page is switched off for the project. Create the login in the Firebase console (Authentication, Users, Add user) and use Add by UID below.";
+    case "auth/network-request-failed": return "No connection. Check your internet and try again.";
+    default: return "Couldn't create the login (" + ((err && err.code) || (err && err.message) || "unknown") + ").";
+  }
+}
+function renderPersonForm() {
+  const sel = $("#np-fa");
+  if (!sel || document.activeElement === sel) return;
+  const html = `<option value="">Choose a Field Assistant…</option>` + faRecords.filter((f) => !f.linkedUid).sort((a, b) => (a.name || "").localeCompare(b.name || "")).map((f) => `<option value="${esc(f.id)}">${esc(f.name)}</option>`).join("");
+  if (sel.dataset.sig === html) return;
+  const cur = sel.value; sel.innerHTML = html; sel.dataset.sig = html; if (cur) sel.value = cur;
+}
+async function addPerson() {
+  const msg = $("#np-msg"), btn = $("#np-save");
+  const fail = (t) => { msg.className = "save-msg err"; msg.textContent = t; };
+  const name = $("#np-name").value.trim().replace(/\s+/g, " "), email = $("#np-email").value.trim(), role = $("#np-role").value, typed = $("#np-pass").value;
+  const faRec = role === "fa" ? faById($("#np-fa").value) : null;
+  if (!name) return fail("Enter their name.");
+  if (!/^\S+@\S+\.\S+$/.test(email)) return fail("Enter a valid email address.");
+  if (role === "fa" && !faRec) return fail("Choose which Field Assistant this login is for. Add the Field Assistant first if they aren't listed.");
+  if (typed && typed.length < 8) return fail("A password needs at least 8 characters, or leave it empty to email them a link.");
+  if (!loaded.users) return fail("The team list is still loading. Try again in a moment.");
+  if (users.some((u) => (u.email || "").toLowerCase() === email.toLowerCase())) return fail("That email is already on the team.");
+  const emailLink = !typed, password = typed || randomPassword();
+  btn.disabled = true;
+  msg.className = "save-msg"; msg.textContent = navigator.onLine ? "Creating the login…" : "You're offline. This needs a connection.";
+  let uid;
+  try { uid = await createLogin(email, password); }
+  catch (err) { btn.disabled = false; return fail(loginError(err)); }
+  try {
+    await setDoc(doc(db, "users", uid), {
+      role, email, name, active: true, assistant: faRec ? faRec.name : "", faId: faRec ? faRec.id : null,
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp(), updatedBy: who()
+    });
+    if (faRec) { try { await updateDoc(doc(db, "fieldAssistants", faRec.id), { linkedUid: uid, updatedAt: serverTimestamp(), updatedBy: who() }); } catch (e) { /* linked on the next role save */ } }
+  } catch (err) {
+    btn.disabled = false;
+    return fail("The login was created but its role couldn't be saved (" + (err.code || err.message) + "). Use Add by UID below with this UID: " + uid);
+  }
+  let note = "Created " + name + " as " + ROLE_LABEL[role].toLowerCase() + ".";
+  if (emailLink) {
+    try { await sendPasswordResetEmail(auth, email); note += " An email with a link to choose their password is on its way to " + email + ". Ask them to check spam too."; }
+    catch (e) { note += " The email couldn't be sent. Give them this temporary password and ask them to change it with Forgot password: " + password; }
+  } else note += " Give them the password you typed; they can change it with Forgot password.";
+  msg.className = "save-msg ok"; msg.textContent = note;
+  ["#np-name", "#np-email", "#np-pass"].forEach((s) => { $(s).value = ""; });
+  btn.disabled = false;
 }
 
 async function addUserByUid() {
